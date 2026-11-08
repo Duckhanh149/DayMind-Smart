@@ -57,9 +57,11 @@ jobs:
       - run: flutter config --no-analytics
       - run: flutter --version
       - run: flutter pub get --enforce-lockfile
+      - uses: android-actions/setup-android@v3
+        if: runner.os == 'Linux'
       - name: Install Android platform dependencies
         if: runner.os == 'Linux'
-        run: sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;36.0.0"
+        run: sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
       - run: flutter analyze
       - run: flutter test
       - name: Build Android APK
