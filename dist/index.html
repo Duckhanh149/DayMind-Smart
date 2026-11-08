@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#52634b">
+  <meta name="description" content="DayMind SMART — không gian quản lý công việc cá nhân. Sắp xếp một ngày có chủ đích, dữ liệu lưu trên thiết bị của bạn.">
+  <title>DayMind SMART · Một ngày có chủ đích</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./vendor/sql-wasm.js"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Điều hướng chính">
+      <a class="brand" href="#today" aria-label="DayMind SMART, trang Hôm nay"><span class="brand-mark">d<span></span></span><span>daymind<small>SMART</small></span></a>
+      <div class="workspace-label"><span class="avatar">B</span><div>Không gian của bạn<small>Riêng tư · Trên thiết bị</small></div><span class="tiny-dot"></span></div>
+      <button class="search-trigger" id="search-trigger"><span data-icon="search"></span><span>Tìm công việc</span><kbd>⌘ K</kbd></button>
+      <div class="nav-heading">KHÔNG GIAN LÀM VIỆC</div>
+      <nav id="navigation">
+        <button class="nav-item active" data-view="today"><span data-icon="sun"></span>Hôm nay<span class="nav-count" id="count-today">0</span></button>
+        <button class="nav-item" data-view="all"><span data-icon="grid"></span>Tất cả công việc<span class="nav-count" id="count-all">0</span></button>
+        <button class="nav-item" data-view="inbox"><span data-icon="inbox"></span>Hộp thư<span class="nav-count" id="count-inbox">0</span></button>
+        <button class="nav-item" data-view="upcoming"><span data-icon="calendar"></span>Sắp tới</button>
+        <button class="nav-item" data-view="completed"><span data-icon="check-circle"></span>Đã hoàn thành</button>
+      </nav>
+      <div class="nav-heading categories-heading">DANH MỤC<button class="icon-button" id="add-category" aria-label="Thêm danh mục" data-icon="plus"></button></div>
+      <div id="category-nav"></div>
+      <div class="sidebar-bottom">
+        <div class="calm-card"><span class="sprout" data-icon="leaf"></span><strong>Từng việc nhỏ.<br>Một ngày nhẹ nhàng.</strong><p>Không cần làm tất cả.<br>Chỉ cần điều quan trọng.</p></div>
+        <button class="nav-item" data-view="trash"><span data-icon="trash"></span>Thùng rác</button>
+        <button class="nav-item" id="settings-button"><span data-icon="settings"></span>Cài đặt<span class="version">v0.1</span></button>
+        <div class="local-status"><i></i><span id="save-status" role="status" aria-live="polite">Đang mở dữ liệu…</span><span data-icon="shield"></span></div>
+      </div>
+    </aside>
+    <div class="main-shell">
+      <header class="topbar"><div class="breadcrumb"><button class="icon-button mobile-menu" id="menu-button" aria-label="Mở thanh điều hướng" aria-expanded="false" data-icon="menu"></button><span>Không gian cá nhân</span><span class="crumb-divider">/</span><strong id="breadcrumb-title">Hôm nay</strong></div><div class="topbar-right"><span class="topbar-date" id="topbar-date"></span><button class="icon-button" id="theme-button" aria-label="Chuyển giao diện tối" data-icon="moon"></button><span class="top-avatar" aria-label="Không gian cá nhân">B</span></div></header>
+      <main id="main" tabindex="-1">
+        <section class="page-heading"><div><div class="eyebrow" id="day-label">MỘT KHỞI ĐẦU MỚI</div><h1 id="page-title">Một ngày có chủ đích<span>.</span></h1><p id="page-subtitle">Dành tâm trí cho điều quan trọng. DayMind giữ phần còn lại.</p></div><button class="primary-button" id="add-task"><span data-icon="plus"></span>Thêm công việc<kbd>N</kbd></button></section>
+        <section class="overview" aria-label="Tổng quan công việc"><button class="stat-card" id="stat-today"><span class="stat-icon sage" data-icon="sun"></span><span class="stat-label">Cần làm hôm nay</span><strong id="stat-today-value">0</strong><small>Mỗi việc, một bước tiến</small></button><button class="stat-card" id="stat-done"><span class="stat-icon green" data-icon="check-circle"></span><span class="stat-label">Đã hoàn thành hôm nay</span><strong id="stat-done-value">0</strong><small>Ghi nhận mọi nỗ lực</small></button><button class="stat-card" id="stat-overdue"><span class="stat-icon terracotta" data-icon="clock"></span><span class="stat-label">Công việc quá hạn</span><strong id="stat-overdue-value">0</strong><small>Một chút quan tâm hôm nay</small></button><button class="stat-card" id="stat-high"><span class="stat-icon sand" data-icon="flag"></span><span class="stat-label">Ưu tiên cao</span><strong id="stat-high-value">0</strong><small>Những điều cần tập trung</small></button></section>
+        <div class="content-grid"><section class="task-panel" aria-labelledby="task-list-heading">
+          <div class="panel-heading"><div><h2 id="task-list-heading" tabindex="-1">Kế hoạch hôm nay <span id="list-count">0</span></h2><p id="list-caption">Một danh sách vừa đủ, một tâm trí nhẹ hơn.</p></div><button class="icon-button" id="refresh-button" aria-label="Tải lại dữ liệu" data-icon="refresh"></button></div>
+          <div class="task-toolbar"><div class="segmented" role="group" aria-label="Lọc công việc"><button class="selected" data-filter="all">Tất cả</button><button data-filter="HIGH">Ưu tiên cao</button><button data-filter="IN_PROGRESS">Đang làm</button></div><label class="sort-label"><span data-icon="sort"></span><select id="sort-select" aria-label="Sắp xếp công việc"><option value="smart">Theo thời hạn</option><option value="priority">Theo ưu tiên</option><option value="newest">Mới nhất</option></select></label></div>
+          <div class="search-inline" id="search-wrap" hidden><span data-icon="search"></span><input type="search" id="search-input" placeholder="Tìm tên hoặc mô tả công việc…" aria-label="Tìm công việc"><button class="icon-button" id="clear-search" aria-label="Đóng tìm kiếm" data-icon="x"></button></div>
+          <div id="active-category" hidden></div><div id="task-list" aria-live="polite"><div class="loading-state"><span class="spinner"></span>Đang mở không gian của bạn…</div></div>
+          <form id="quick-add" class="quick-add"><span data-icon="plus"></span><input id="quick-title" name="title" maxlength="240" placeholder="Thêm một việc cần làm…" aria-label="Tên công việc mới" required autocomplete="off"><button type="submit" aria-label="Lưu công việc nhanh"><span data-icon="arrow-right"></span></button><kbd>Enter ↵</kbd></form>
+          <div class="list-footer"><span data-icon="lock"></span>Dữ liệu được lưu trên trình duyệt này.<button id="all-tasks-link">Xem tất cả công việc <span data-icon="arrow-right"></span></button></div>
+        </section>
+        <aside class="right-column" aria-label="Góc của bạn"><section class="progress-card"><div class="small-heading">NHỊP ĐỘ HÔM NAY<span data-icon="sparkles"></span></div><div class="progress-ring" id="progress-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring-track" cx="60" cy="60" r="51"></circle><circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="51"></circle></svg><div><strong id="progress-value">0<span>%</span></strong><small>hoàn thành</small></div></div><h3 id="progress-title">Một bước nhỏ là đủ.</h3><p id="progress-description">Ngày của bạn, nhịp độ của bạn.<br>Bắt đầu với một điều quan trọng.</p><div class="progress-foot"><span class="legend-dot"></span><span id="progress-fraction">Chưa có công việc hôm nay</span></div></section>
+        <section class="focus-card"><div class="small-heading">MỘT CHÚT TẬP TRUNG<span data-icon="leaf"></span></div><div class="focus-art" aria-hidden="true"><svg viewBox="0 0 240 115"><path d="M21 103H220" stroke="currentColor" opacity=".15"/><path d="M144 101C153 80 142 47 164 25M151 71C171 68 184 48 183 34C164 34 151 51 151 71M148 83C127 80 119 63 122 48C138 52 147 64 148 83" fill="none" stroke="currentColor" stroke-width="2"/><path d="M134 91H170L166 104H138Z" fill="currentColor" opacity=".25"/><rect x="55" y="22" width="70" height="78" rx="7" fill="#fffaf0" stroke="currentColor" stroke-width="1.5" transform="rotate(-8 90 60)"/><path d="M71 42l4 4 7-9M71 60l4 4 7-9M71 78l4 4 7-9M90 40h20M90 58h17M90 76h13" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" transform="rotate(-8 90 60)"/><circle cx="201" cy="23" r="5" fill="currentColor" opacity=".2"/><path d="M36 30v10M31 35h10" stroke="currentColor" opacity=".6"/></svg></div><h3>Ít hơn, nhưng tốt hơn.</h3><p>Chọn một việc để bắt đầu.<br>Mọi thứ khác có thể đợi một chút.</p><button class="text-button" id="focus-button">Chọn việc ưu tiên <span data-icon="arrow-right"></span></button></section>
+        <div class="privacy-note"><span data-icon="shield"></span><p>Không tài khoản. Không ồn ào.<br>Chỉ bạn và những điều quan trọng.</p></div>
+        </aside></div>
+        <footer class="page-footer"><span>DAYMIND SMART</span><span>Nhẹ tâm trí. Rõ việc cần làm.</span><span id="timezone-label"></span></footer>
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+  <dialog id="task-dialog" aria-labelledby="task-dialog-title"><form id="task-form"><div class="dialog-header"><div><div class="eyebrow">DÀNH CHỖ CHO ĐIỀU QUAN TRỌNG</div><h2 id="task-dialog-title">Công việc mới</h2></div><button type="button" class="icon-button close-dialog" aria-label="Đóng" data-icon="x"></button></div>
+    <label>Tên công việc <span class="required">*</span><input name="title" id="form-title" placeholder="Bạn muốn hoàn thành điều gì?" maxlength="240" required autocomplete="off"></label>
+    <label>Mô tả<textarea name="description" placeholder="Thêm ghi chú, ý tưởng hoặc các bước cần làm…" maxlength="10000" rows="3"></textarea></label>
+    <div class="form-row"><label>Ưu tiên<select name="priority"><option value="LOW">Thấp — thong thả</option><option value="MEDIUM" selected>Vừa — bình thường</option><option value="HIGH">Cao — cần tập trung</option></select></label><label>Danh mục<select name="categoryId" id="form-category"><option value="">Hộp thư · Chưa phân loại</option></select></label></div>
+    <div class="form-row"><label>Hạn hoàn thành <span class="optional">không bắt buộc</span><input type="datetime-local" name="dueAt"></label><label>Trạng thái<select name="status"><option value="TODO">Cần làm</option><option value="IN_PROGRESS">Đang làm</option><option value="COMPLETED">Đã hoàn thành</option><option value="CANCELLED">Đã hủy</option></select></label></div>
+    <details id="advanced-fields"><summary>Lên lịch thực hiện <span class="optional">tùy chọn</span></summary><div class="form-row"><label>Bắt đầu<input type="datetime-local" name="scheduledStartAt"></label><label>Kết thúc<input type="datetime-local" name="scheduledEndAt"></label></div><p class="field-note">Lịch thực hiện và hạn hoàn thành là hai mốc riêng biệt.</p></details>
+    <p class="field-note" id="form-time-note">Giờ được hiển thị theo múi giờ trên thiết bị của bạn. Chưa bật thông báo tự động.</p><p class="form-warning" id="form-warning" hidden></p><p class="form-error" id="form-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button type="button" class="danger-text" id="delete-task" hidden><span data-icon="trash"></span>Chuyển vào thùng rác</button><span class="spacer"></span><button type="button" class="secondary-button close-dialog">Để sau</button><button type="submit" class="primary-button" id="save-task">Lưu công việc<span data-icon="check"></span></button></div>
+  </form></dialog>
+  <dialog id="settings-dialog" aria-labelledby="settings-title"><div class="dialog-header"><div><div class="eyebrow">KHÔNG GIAN CỦA BẠN</div><h2 id="settings-title">Cài đặt</h2></div><button class="icon-button close-dialog" aria-label="Đóng" data-icon="x"></button></div><div class="settings-section"><h3>Dữ liệu & quyền riêng tư</h3><p>DayMind dùng SQLite trong trình duyệt và lưu bản dữ liệu vào IndexedDB trên thiết bị này. Chưa có tài khoản hoặc đồng bộ đám mây.</p><p>Xóa dữ liệu trình duyệt hoặc dùng chế độ riêng tư có thể làm mất công việc. Dữ liệu chưa được mã hóa bằng mật khẩu.</p><button class="secondary-button" id="persist-button"><span data-icon="shield"></span>Giữ dữ liệu trên thiết bị</button><p class="field-note" id="persist-status"></p></div><div class="settings-section"><h3>Làm quen với DayMind</h3><p>Thêm một bộ công việc mẫu để khám phá. Các việc mẫu được lưu cục bộ và có thể xóa như công việc thông thường.</p><button class="secondary-button" id="demo-button"><span data-icon="sparkles"></span>Thêm dữ liệu mẫu</button></div><div class="settings-section"><h3>Phiên bản web · Giai đoạn 1</h3><p>Quản lý công việc cục bộ. Nhắc việc, lịch lặp lại, thống kê chuyên sâu, Firebase và Companion sẽ được triển khai và kiểm thử theo các giai đoạn tiếp theo.</p><p>Thông báo khi ứng dụng đóng và bản cài Android/Windows chưa được xác minh.</p></div></dialog>
+  <dialog id="category-dialog" aria-labelledby="category-title"><form id="category-form"><div class="dialog-header"><h2 id="category-title">Một danh mục mới</h2><button type="button" class="icon-button close-dialog" aria-label="Đóng" data-icon="x"></button></div><label>Tên danh mục<input name="name" maxlength="40" required placeholder="Ví dụ: Sức khỏe, Dự án mới…"></label><label>Màu nhận diện<input type="color" name="color" value="#6b8b72"></label><p class="form-error" id="category-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="secondary-button close-dialog">Để sau</button><button type="submit" class="primary-button">Tạo danh mục</button></div></form></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><div class="noscript">DayMind cần JavaScript để lưu và quản lý công việc trên thiết bị.</div></noscript>
+</body>
+</html>
