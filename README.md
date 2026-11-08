@@ -1,4 +1,8 @@
-# DayMind SMART · Web
+# DayMind SMART
+
+Ứng dụng **Android và Windows 10/11** nằm tại [apps/daymind](apps/daymind/README.md). Xem giao diện, Companion Mầm, cách build và trạng thái kiểm chứng trong thư mục đó. Website local-first hiện có được giữ ở root bên dưới.
+
+## DayMind SMART · Web
 
 Website được tạo bằng Sites theo yêu cầu mới nhất. Bản này triển khai **phần quản lý công việc cục bộ của giai đoạn 1 trên web**. Không phải bản Flutter Android/Windows hoàn chỉnh.
 

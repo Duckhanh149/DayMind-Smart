@@ -1,0 +1,40 @@
+name: daymind_smart
+description: DayMind SMART — ứng dụng công việc cá nhân và Companion 2D.
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: ^3.13.7
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: 3.5.0
+  go_router: 18.1.3
+  drift: 2.35.3
+  sqlite3: 3.9.1
+  path_provider: 2.1.6
+  path: 1.9.1
+  file_picker: 13.3.2
+  crypto: 3.0.8
+  uuid: ^4.5.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: 2.35.2
+  build_runner: 2.17.1
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: BeVietnamPro
+      fonts:
+        - asset: assets/fonts/be-vietnam-pro-400.ttf
+        - asset: assets/fonts/be-vietnam-pro-500.ttf
+          weight: 500
+        - asset: assets/fonts/be-vietnam-pro-600.ttf
+          weight: 600
+        - asset: assets/fonts/be-vietnam-pro-700.ttf
+          weight: 700

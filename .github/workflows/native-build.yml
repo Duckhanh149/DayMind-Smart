@@ -1,0 +1,101 @@
+name: Build Android and Windows
+on:
+  push:
+    branches: [main, native/flutter-app]
+    paths:
+      - apps/daymind/lib/**
+      - apps/daymind/android/**
+      - apps/daymind/windows/**
+      - apps/daymind/assets/**
+      - apps/daymind/test/**
+      - apps/daymind/integration_test/**
+      - apps/daymind/pubspec.*
+      - apps/daymind/analysis_options.yaml
+      - .github/workflows/native-build.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: apps/daymind
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        if: runner.os == 'Linux'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install pinned Flutter on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          git init "$RUNNER_TEMP/daymind-flutter"
+          git -C "$RUNNER_TEMP/daymind-flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$RUNNER_TEMP/daymind-flutter" fetch --depth 1 origin c197ca5199e9ee5661e865596c9c07294dfab51c
+          git -C "$RUNNER_TEMP/daymind-flutter" checkout FETCH_HEAD
+          echo "$RUNNER_TEMP/daymind-flutter/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Flutter on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          git init "$env:RUNNER_TEMP\daymind-flutter"
+          git -C "$env:RUNNER_TEMP\daymind-flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$env:RUNNER_TEMP\daymind-flutter" fetch --depth 1 origin c197ca5199e9ee5661e865596c9c07294dfab51c
+          git -C "$env:RUNNER_TEMP\daymind-flutter" checkout FETCH_HEAD
+          "$env:RUNNER_TEMP\daymind-flutter\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: flutter config --no-analytics
+      - run: flutter --version
+      - run: flutter pub get --enforce-lockfile
+      - name: Install Android platform dependencies
+        if: runner.os == 'Linux'
+        run: sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;36.0.0"
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build Android APK
+        if: runner.os == 'Linux'
+        run: flutter build apk --debug --target-platform android-arm64,android-x64
+      - name: Build Windows application
+        if: runner.os == 'Windows'
+        run: flutter build windows --release
+      - name: Windows native integration smoke test
+        if: runner.os == 'Windows'
+        run: flutter test integration_test/app_smoke_test.dart -d windows
+      - name: Bundle Visual C++ runtime
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
+          $crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory | Sort-Object FullName | Select-Object -Last 1
+          if (!$crt) { throw "Visual C++ runtime directory not found" }
+          Copy-Item "$($crt.FullName)\*.dll" build/windows/x64/runner/Release/
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { choco install innosetup --yes --no-progress }
+          & $iscc windows/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: DayMind-Android-APK
+          path: apps/daymind/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: DayMind-Windows-10-11-x64
+          path: |
+            apps/daymind/build/windows/x64/runner/Release/
+            apps/daymind/build/windows-installer/DayMind-Setup.exe
+          if-no-files-found: error
