@@ -182,6 +182,43 @@ void main() {
       isTrue,
     );
   });
+  test('quiet boundary in the second DST fold stays on the same day', () {
+    const local = NotificationPreferences(
+      timezoneId: 'America/New_York',
+      quietEnd: 90,
+    );
+    final trigger = DateTime.utc(2026, 11, 1, 6, 15);
+    expect(local.quietEndAfter(trigger), DateTime.utc(2026, 11, 1, 6, 30));
+    final t = task(due: DateTime.utc(2026, 11, 1, 6, 45));
+    final plan = policy.plan(
+      t,
+      const ReminderRule(id: 'fold', taskId: 'test', offsetMinutes: 30),
+      local,
+      DateTime.utc(2026, 11, 1, 4),
+    )!;
+    expect(plan.at, DateTime.utc(2026, 11, 1, 6, 30));
+    expect(plan.suppressed, isFalse);
+  });
+  test(
+    'nonexistent DST quiet end uses first permitted instant before deadline',
+    () {
+      const local = NotificationPreferences(
+        timezoneId: 'America/New_York',
+        quietEnd: 150,
+      );
+      final trigger = DateTime.utc(2026, 3, 8, 6, 50);
+      expect(local.quietEndAfter(trigger), DateTime.utc(2026, 3, 8, 7));
+      final t = task(due: DateTime.utc(2026, 3, 8, 7, 15));
+      final plan = policy.plan(
+        t,
+        const ReminderRule(id: 'gap', taskId: 'test', offsetMinutes: 25),
+        local,
+        DateTime.utc(2026, 3, 8, 6),
+      )!;
+      expect(plan.at, DateTime.utc(2026, 3, 8, 7));
+      expect(plan.suppressed, isFalse);
+    },
+  );
   test('quiet hours defer to 07:00 only when deadline remains future', () {
     final t = task(due: DateTime.utc(2026, 11, 10, 0, 15));
     final plan = policy.plan(

@@ -45,9 +45,9 @@ class ReminderRuntimeTest {
         ReminderRuntime.channel(context)
     }
     @After fun cleanup(){db.close();file.delete();MainActivity.foreground=false}
-    private fun configure(settings:JSONObject){db.execSQL("INSERT OR REPLACE INTO extension_records VALUES('notifications','settings',?,?)",arrayOf(settings.toString(),now))}
+    private fun configure(settings:JSONObject){db.execSQL("INSERT OR REPLACE INTO extension_records VALUES('notifications','settings',?,?)",arrayOf<Any?>(settings.toString(),now))}
     private fun event(key:String="event",at:Long=now-1000,expires:Long=now+900000,priority:Int=1){
-        db.execSQL("INSERT INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,'t','default',1,?,?,'scheduled',0,'Việc',?,?)",arrayOf(key,at,expires,priority,now))
+        db.execSQL("INSERT INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,'t','default',1,?,?,'scheduled',0,'Việc',?,?)",arrayOf<Any?>(key,at,expires,priority,now))
     }
     private fun state(key:String="event")=db.rawQuery("SELECT state FROM reminder_events WHERE event_key=?",arrayOf(key)).use{it.moveToFirst();it.getString(0)}
     private fun count(sql:String)=db.rawQuery(sql,null).use{it.moveToFirst();it.getInt(0)}

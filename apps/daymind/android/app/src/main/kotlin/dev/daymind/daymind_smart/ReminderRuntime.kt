@@ -62,10 +62,10 @@ object ReminderRuntime {
         }
     }
     private fun log(db: SQLiteDatabase, key: String, outcome: String, now: Long) {
-        db.execSQL("INSERT INTO delivery_logs(id,event_key,outcome,at_ms) VALUES(?,?,?,?)", arrayOf(UUID.randomUUID().toString(),key,outcome,now))
+        db.execSQL("INSERT INTO delivery_logs(id,event_key,outcome,at_ms) VALUES(?,?,?,?)", arrayOf<Any?>(UUID.randomUUID().toString(),key,outcome,now))
     }
     private fun state(db: SQLiteDatabase, key: String, state: String, outcome: String, now: Long) {
-        db.execSQL("UPDATE reminder_events SET state=?,updated_ms=? WHERE event_key=?", arrayOf(state,now,key)); log(db,key,outcome,now)
+        db.execSQL("UPDATE reminder_events SET state=?,updated_ms=? WHERE event_key=?", arrayOf<Any?>(state,now,key)); log(db,key,outcome,now)
     }
     private fun owner(db: SQLiteDatabase): String = db.rawQuery("SELECT value FROM extension_records WHERE area='account' AND id='session'", null).use {
         if (it.moveToFirst()) JSONObject(it.getString(0)).optString("ownerId", "") else ""
@@ -112,8 +112,8 @@ object ReminderRuntime {
                         if ((restart && at <= now) || rows.getLong(rows.getColumnIndexOrThrow("expires_ms")) < now || !eligible(db,rows)) {
                             cancel(context,id);state(db,key,"expired","recovery_skipped",now)
                         } else if (at > now && granted(context) && config(db).optBoolean("primaryDevice",true) && count < 128) {
-                            arm(context,id,key,at);db.execSQL("UPDATE reminder_events SET state='scheduled' WHERE event_key=?",arrayOf(key));count++
-                        } else if(at > now) { cancel(context,id);db.execSQL("UPDATE reminder_events SET state='planned' WHERE event_key=?",arrayOf(key)) }
+                            arm(context,id,key,at);db.execSQL("UPDATE reminder_events SET state='scheduled' WHERE event_key=?",arrayOf<Any?>(key));count++
+                        } else if(at > now) { cancel(context,id);db.execSQL("UPDATE reminder_events SET state='planned' WHERE event_key=?",arrayOf<Any?>(key)) }
                     }
                 }
                 db.setTransactionSuccessful()
@@ -178,16 +178,16 @@ object ReminderRuntime {
             try {
                 if(action=="DAYMIND_DISMISS") {
                     val start=intent.getLongExtra("start",now);val end=intent.getLongExtra("end",now)
-                    db.execSQL("UPDATE reminder_events SET state='dismissed',read=1,updated_ms=? WHERE state='unknown' AND event_key IN (SELECT event_key FROM delivery_logs WHERE outcome='display_attempt' AND at_ms>=? AND at_ms<?)",arrayOf(now,start,end))
+                    db.execSQL("UPDATE reminder_events SET state='dismissed',read=1,updated_ms=? WHERE state='unknown' AND event_key IN (SELECT event_key FROM delivery_logs WHERE outcome='display_attempt' AND at_ms>=? AND at_ms<?)",arrayOf<Any?>(now,start,end))
                     log(db,key,"dismissed",now)
                 } else db.rawQuery("SELECT * FROM reminder_events WHERE event_key=? AND state='unknown'",arrayOf(key)).use { event ->
                     if(event.moveToFirst() && eligible(db,event)) {
                         val task=event.getString(event.getColumnIndexOrThrow("task_id"));val occurrence=event.getString(event.getColumnIndexOrThrow("occurrence_id"))
                         if(action=="DAYMIND_done") {
-                            if(occurrence==null) db.execSQL("UPDATE tasks SET status=2,completed_at=?,updated_at=?,revision=revision+1 WHERE id=?",arrayOf(now/1000,now/1000,task))
+                            if(occurrence==null) db.execSQL("UPDATE tasks SET status=2,completed_at=?,updated_at=?,revision=revision+1 WHERE id=?",arrayOf<Any?>(now/1000,now/1000,task))
                             else db.rawQuery("SELECT value FROM extension_records WHERE area='occurrences' AND id=?",arrayOf(occurrence)).use { row ->
                                 if(row.moveToFirst()) { val data=JSONObject(row.getString(0));data.put("status","completed");data.put("completedAt",java.time.Instant.ofEpochMilli(now).toString());data.put("revision",data.optInt("revision",1)+1)
-                                    db.execSQL("UPDATE extension_records SET value=?,updated_ms=? WHERE area='occurrences' AND id=?",arrayOf(data.toString(),now,occurrence)) }
+                                    db.execSQL("UPDATE extension_records SET value=?,updated_ms=? WHERE area='occurrences' AND id=?",arrayOf<Any?>(data.toString(),now,occurrence)) }
                             }
                             val scope=if(occurrence==null)"task_id=?" else "task_id=? AND occurrence_id=?"
                             val args=if(occurrence==null)arrayOf(task) else arrayOf(task,occurrence)
@@ -197,10 +197,10 @@ object ReminderRuntime {
                             state(db,key,"snoozed","snoozed",now);val at=now+600000
                             val next=MessageDigest.getInstance("SHA-256").digest("$key|$at".toByteArray()).joinToString(""){"%02x".format(it)}
                             db.execSQL("INSERT INTO reminder_events(event_key,task_id,rule_id,occurrence_id,occurrence_revision,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,?,?,?,?,?,?,?,?,0,?,?,?)",
-                                arrayOf(next,task,"snooze:$key",occurrence,event.getInt(event.getColumnIndexOrThrow("occurrence_revision")),event.getInt(event.getColumnIndexOrThrow("task_revision")),at,at+900000,"planned",event.getString(event.getColumnIndexOrThrow("title")),event.getInt(event.getColumnIndexOrThrow("priority")),now))
+                                arrayOf<Any?>(next,task,"snooze:$key",occurrence,event.getInt(event.getColumnIndexOrThrow("occurrence_revision")),event.getInt(event.getColumnIndexOrThrow("task_revision")),at,at+900000,"planned",event.getString(event.getColumnIndexOrThrow("title")),event.getInt(event.getColumnIndexOrThrow("priority")),now))
                         }
                         val data=JSONObject().put("taskId",task).put("occurrenceId",occurrence).put("action",action).put("at",now)
-                        db.execSQL("INSERT INTO extension_records(area,id,value,updated_ms) VALUES('native_actions',?,?,?)",arrayOf(UUID.randomUUID().toString(),data.toString(),now))
+                        db.execSQL("INSERT INTO extension_records(area,id,value,updated_ms) VALUES('native_actions',?,?,?)",arrayOf<Any?>(UUID.randomUUID().toString(),data.toString(),now))
                     }
                 }
                 db.setTransactionSuccessful()

@@ -122,26 +122,20 @@ class NotificationPreferences {
   }
 
   DateTime quietEndAfter(DateTime instant) {
-    final local = tz.TZDateTime.from(instant, timeLocation(timezoneId));
-    var end = tz.TZDateTime(
-      local.location,
-      local.year,
-      local.month,
-      local.day,
-      quietEnd ~/ 60,
-      quietEnd % 60,
+    if (!quietAt(instant)) return instant.toUtc();
+    // Walk real instants, rather than constructing an ambiguous/nonexistent wall
+    // time. A repeated 01:30 may still be ahead; a skipped 02:30 ends at 03:00.
+    var candidate = DateTime.fromMillisecondsSinceEpoch(
+      (instant.millisecondsSinceEpoch ~/ 60000 + 1) * 60000,
+      isUtc: true,
     );
-    if (!end.isAfter(local)) {
-      end = tz.TZDateTime(
-        local.location,
-        local.year,
-        local.month,
-        local.day + 1,
-        quietEnd ~/ 60,
-        quietEnd % 60,
-      );
+    for (var minute = 0; minute < 48 * 60; minute++) {
+      if (!quietAt(candidate)) return candidate;
+      candidate = candidate.add(const Duration(minutes: 1));
     }
-    return end.toUtc();
+    throw const ValidationException(
+      'Không tìm được thời điểm kết thúc giờ yên lặng trong múi giờ này.',
+    );
   }
 }
 

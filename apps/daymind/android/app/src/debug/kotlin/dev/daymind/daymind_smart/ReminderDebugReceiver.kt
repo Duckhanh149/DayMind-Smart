@@ -28,10 +28,10 @@ class ReminderDebugReceiver : BroadcastReceiver() {
                         settings.put("quietStart",minute).put("quietEnd",(minute+30)%1440)
                         db.beginTransaction()
                         try {
-                            db.execSQL("INSERT OR REPLACE INTO extension_records(area,id,value,updated_ms) VALUES('notifications','settings',?,?)",arrayOf(settings.toString(),now))
-                            db.execSQL("INSERT OR REPLACE INTO tasks(id,title,description,priority,status,created_at,updated_at,revision) VALUES(?,?,'',1,0,?,?,1)",arrayOf(key,"DayMind device smoke $fixture",now/1000,now/1000))
-                            db.execSQL("INSERT OR REPLACE INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,?,'default',1,?,?,'scheduled',0,?,1,?)",arrayOf(key,key,now+delay,now+900000,"DayMind device smoke $fixture",now))
-                            if(fixture=="edited")db.execSQL("UPDATE tasks SET revision=2 WHERE id=?",arrayOf(key))
+                            db.execSQL("INSERT OR REPLACE INTO extension_records(area,id,value,updated_ms) VALUES('notifications','settings',?,?)",arrayOf<Any?>(settings.toString(),now))
+                            db.execSQL("INSERT OR REPLACE INTO tasks(id,title,description,priority,status,created_at,updated_at,revision) VALUES(?,?,'',1,0,?,?,1)",arrayOf<Any?>(key,"DayMind device smoke $fixture",now/1000,now/1000))
+                            db.execSQL("INSERT OR REPLACE INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,?,'default',1,?,?,'scheduled',0,?,1,?)",arrayOf<Any?>(key,key,now+delay,now+900000,"DayMind device smoke $fixture",now))
+                            if(fixture=="edited")db.execSQL("UPDATE tasks SET revision=2 WHERE id=?",arrayOf<Any?>(key))
                             db.setTransactionSuccessful()
                         } finally { db.endTransaction() }
                         db.rawQuery("SELECT platform_id FROM reminder_events WHERE event_key=?",arrayOf(key)).use { it.moveToFirst();ReminderRuntime.arm(context,it.getInt(0),key,now+delay) }
