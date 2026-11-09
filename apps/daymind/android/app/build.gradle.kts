@@ -56,6 +56,14 @@ androidComponents {
     }
 }
 
+// AGP host-test packaging consumes the assets directory that Flutter augments.
+// Declare the producer explicitly so Gradle validates the task graph.
+tasks.configureEach {
+    val variant = Regex("^package(.+)UnitTestForUnitTest$").matchEntire(name)
+        ?.groupValues?.get(1)
+    if (variant != null) dependsOn("copyFlutterAssets$variant")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.core:core-ktx:1.17.0")
