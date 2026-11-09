@@ -1,6 +1,6 @@
 # DayMind SMART — Android & Windows
 
-Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Companion 2D tĩnh, Reminder Engine, lịch ngày/tuần/tháng và công việc lặp lại. Preview 0.4.0 bổ sung tài khoản và đồng bộ thử nghiệm bằng Firebase Emulator. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
+Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Companion 2D tĩnh, Reminder Engine, lịch ngày/tuần/tháng và công việc lặp lại. Preview0.5.0 có hồ sơ/lời thoại/biểu cảm Mầm tùy chỉnh, cache ảnh có giới hạn và tài khoản/đồng bộ Firebase Emulator. Giai đoạn0–6 đã qua cổng tự động; đang tiếp tục7. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
 
 ## Đã triển khai
 

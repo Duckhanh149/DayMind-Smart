@@ -1,6 +1,6 @@
 # DayMind SMART
 
-Ứng dụng **Android và Windows 10/11** nằm tại [apps/daymind](apps/daymind/README.md). Preview native 0.4.0 có lịch lặp, Reminder Engine, Mầm, trợ lý/thống kê và tài khoản/đồng bộ Firebase Emulator. Giai đoạn 0–5 đã qua CI Android/Windows và Firebase Emulator; giai đoạn 6 đang được hoàn thiện. Xem bằng chứng và phần còn thiếu tại [tiến độ](apps/daymind/docs/PHASE_STATUS.md). Website hiện có được giữ ở root bên dưới.
+Ứng dụng **Android và Windows 10/11** nằm tại [apps/daymind](apps/daymind/README.md). Preview native0.5.0 có lịch lặp, Reminder Engine, Mầm, trợ lý/thống kê và tài khoản/đồng bộ Firebase Emulator. Giai đoạn0–6 đã qua CI Android/Windows và Firebase Emulator; đang tiếp tục giai đoạn7. Xem bằng chứng và phần còn thiếu tại [tiến độ](apps/daymind/docs/PHASE_STATUS.md). Website hiện có được giữ ở root bên dưới.
 
 ## DayMind SMART · Web
 

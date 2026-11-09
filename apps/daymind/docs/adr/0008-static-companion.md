@@ -1,6 +1,6 @@
 # ADR 0008 — Companion tĩnh và hồ sơ có thể chỉnh sửa
 
-Trạng thái: đã triển khai giai đoạn 6; chờ cổng native trên source mới trước giai đoạn 7.
+Trạng thái: giai đoạn6 đạt cổng native Android/Windows và Emulator tại67c4a43 / CI42716570760,42716570825. Kết quả định lượng xem ../qa/PHASE6_RESOURCES.json.
 
 Mầm có bốn nét mặt vector gốc. PNG/WebP do người dùng nhập được xem trước sau kiểm tra rồi mới cài vào thư viện. Tính cách không phụ thuộc ảnh: hồ sơ chứa tên, ba giọng điệu, tối đa 18 mẫu lời thoại và ánh xạ sáu sự kiện sang biểu cảm. Chỉ chấp nhận biến `{name}`, `{task}`, `{summary}`; thay một lượt để giữ nguyên dấu ngoặc trong tên công việc. Tên tối đa 60 ký tự; mỗi mẫu tối đa 500 ký tự. Editor giữ bản nháp khi lỗi và kiểm tra hồ sơ gốc trong transaction để không ghi đè thay đổi đến từ đồng bộ.
 
@@ -19,3 +19,5 @@ Tinh chỉnh probe: PNG indexed gốc được tạo offline để tránh cộng
 Tối ưu sau số đo native: nguồn giữ nguyên byte/hash; mọi Image UI dùng derivative PNG≤256px trong `.previews`, low-resource giải mã tiếp128px/chân dung hoặc64px/thumbnail. Quota32MiB tính cả derivative; cache cũ tái tạo một lượt tuần tự, xóa ảnh dọn cả nguồn và cache. Không tải ảnh gốc lớn trong menu lựa chọn. Thư viện cuộn ngang với ListView.builder để chỉ dựng vùng nhìn thấy; có hồi quy128 ảnh/chữ200%. Lời chào chỉ chạy sau khi ReminderCoordinator đã xác định múi giờ để không dùngUTC sai với quiet hours của thiết bị.
 
 Foreground delivery xét vùng lời thoại có thực sự nằm trong viewport hay bị cuộn khuất, thay vì chỉ dựa tên trang/companionEnabled. Khi không thấy lời thoại, dùng SnackBar có đường mở Notification Center; giữ nguyên một nhánh OS-or-in-app của Reminder Engine. Hai ca hồi quy tắt nhân vật và cuộn khuất (gồm chữ200%) kiểm tra cue vẫn nhìn thấy.
+
+Cổng cuối tại67c4a43:150 tests Android/Linux,149 +1 skip Windows;16 Emulator +7 AOT. Cả native jobs đạt; ba ca foreground UI kiểm tra tắt/cuộn khuất và không hiện trùng khi dialogue thực sự thấy được.

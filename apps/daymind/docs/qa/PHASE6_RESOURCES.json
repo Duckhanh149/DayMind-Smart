@@ -1,0 +1,38 @@
+{
+  "source": "67c4a433b76c62a7cdae36b2760a29c5a896a2e1",
+  "nativeRun": 42716570760,
+  "emulatorRun": 42716570825,
+  "mode": "debug CI runner/emulator; not release or low-end hardware acceptance",
+  "fixtures": {
+    "count": 4,
+    "sourceSize": "2048x2048",
+    "selections": 24,
+    "portraitDecodePixels": 128,
+    "fixtureGeneration": "offline original indexed PNGs; no synthetic GPU fixture surfaces"
+  },
+  "windows": {
+    "job": 129499547254,
+    "rssBefore": 453828608,
+    "rssAfterImport": 574255104,
+    "rssSamplePeak": 585482240,
+    "rssAfterCleanup": 461877248,
+    "imageCacheSamplePeak": 131072,
+    "importElapsedMs": 240,
+    "selectionScriptElapsedMs": 15269
+  },
+  "android": {
+    "job": 129499547665,
+    "rssBefore": 547864576,
+    "rssAfterImport": 548474880,
+    "rssSamplePeak": 565100544,
+    "rssAfterCleanup": 528637952,
+    "imageCacheSamplePeak": 131072,
+    "importElapsedMs": 213,
+    "selectionScriptElapsedMs": 13698
+  },
+  "notes": [
+    "Elapsed selection time includes integration-test frame settling, not a UI latency or FPS benchmark.",
+    "Frame presence, dimensions <=128px and visible bounds are asserted directly.",
+    "Cache tracking is separate from widget-owned frame lifetime."
+  ]
+}

@@ -4,21 +4,16 @@ Cập nhật 09/11/2026 (UTC). Nguồn native tại apps/daymind; web root độ
 
 ## Checkpoint hiện tại
 
-Preview 0.4.0 / **giai đoạn 5 đã đạt cổng tự động** ở `c1e61c2187ebdb78c503b027416d66b4eec30257`, [Native CI42683631256](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42683631256) và [Emulator CI42683630803](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42683630803).
+Preview **0.5.0 / giai đoạn0–6 đã qua cổng tự động** tại `67c4a433b76c62a7cdae36b2760a29c5a896a2e1`, [Native CI42716570760](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42716570760) và [Emulator CI42716570825](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42716570825).
 
-- 121 Flutter tests và phân tích mã sạch trên Linux/Windows; 14 ca Emulator thật và bảy ca Auth/payload AOT đạt.
-- Android: APK release, 25 receiver cases, native Keystore, OS cold-process/digest và real Auth/Firestore/profile/primary/logout/relogin/delete đạt. Driver xác nhận đủ native markers; start debug session mới giữ nguyên SQLite sau bài cold-process.
-- Windows: DPAPI, native SQLite/recurrence, real Auth/Firestore/profile/primary/logout/relogin/delete, close→tray/Mở/Thoát và installer đạt; không auto-start.
-- Artifact Android `13705550456`, Windows `13703957427` thuộc đúng source `c1e61c2`. Chưa có Firebase production, khóa ký sản xuất hoặc nghiệm thu phần cứng Android OEM/Doze/Windows 10/11.
+- Phân tích mã sạch; 150 Flutter tests Android/Linux. Windows149 đạt, một ca tạo symlink cần quyền host được skip (đã chạy trên Linux).
+- Android: APK release ARM64,25 receiver/recovery cases, Keystore, OS notification sau cold close/digest, frame Companion thật và real account sync đều đạt.
+- Windows: DPAPI, SQLite/recurrence/account, renderer/resource probe, close→tray/Mở/Thoát, không autostart và installer đều đạt.
+- Emulator:16 cases thật +7 Auth/payload AOT đạt trên cùng source.
+- Kiểm tra gói tải từ đúng run: CRC ZIP/APK, PE x64/runtimes/OFL, minSdk24/target36/ARM64 và APK signature v2 đạt. Version0.5.0, Android versionCode2005. APK vẫn ký Android Debug, Windows chưa ký sản xuất; chưa xác minh đường cập nhật cùng chứng thư.
+- Android artifact13719286315; Windows13719600362. Hash/package metadata tại [PHASE6_PACKAGES.json](qa/PHASE6_PACKAGES.json); số đo debug tại [PHASE6_RESOURCES.json](qa/PHASE6_RESOURCES.json). Cache đỉnh131072bytes hai nền tảng; Windows sau dọn461877248bytes so453828608 trước, Android528637952 so547864576 trước.
 
-Giai đoạn 6 preview0.5.0: 150/150 Flutter tests và 16/16 Emulator cases đạt local; analyze sạch, Kotlin main/debug compile đạt. Đang kiểm chứng native: editor/personality/expressions/placement/low-resource, metadata sync và import quota. Integration mới đo RSS/cache khi đổi24 lượt qua bốn ảnh2048² trên cả hai nền tảng; chưa gán kết quả CI của c1e61c2 cho source mới.
-
-Giai đoạn 6 được triển khai sau checkpoint này. Các mục chờ CI ở nhật ký phía dưới là trạng thái lịch sử, không phải kết quả hiện tại.
-
-- Giai đoạn 2: `428cbe75`, [CI 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt Android/Windows, 55 Flutter tests và 12 receiver cases.
-- Giai đoạn 3: `740c8bf`, [CI 42608475322](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42608475322) đạt Android/Windows, 82 Flutter tests và 16 receiver cases.
-- Ảnh trong `docs/ui/` là Flutter renderer headless đã xem lại, không phải ảnh thiết bị thật.
-- Android OEM/Doze/reboot và Windows 10/11 phần cứng thật, khóa/chứng thư phát hành sản xuất và nghiệm thu giai đoạn 6–9 vẫn còn thiếu.
+Giai đoạn7 bắt đầu sau checkpoint này; animation/floating/Live2D chưa có trong0.5.0. Production Firebase/signing, backup/restore và kiểm chứng phần cứng Android OEM/Doze/Windows10/11 còn trong cổng cuối. Số đo runner/emulator debug và ảnh headless không thay cho máy cấu hình thấp thật. Các đoạn “chờ CI” trong nhật ký phía dưới là lịch sử, không phải trạng thái hiện tại.
 
 ## Bằng chứng preview 0.1.0 trước đây
 

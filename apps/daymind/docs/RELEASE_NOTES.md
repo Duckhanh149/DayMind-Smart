@@ -1,4 +1,4 @@
-# Preview 0.5.0 — đang qua cổng native giai đoạn 6
+# Preview 0.5.0 — giai đoạn6 qua cổng tự động
 
 - Đổi tên/tính cách, sửa lời thoại theo sự kiện, xem trước và ánh xạ bốn biểu cảm.
 - Vị trí/kích thước an toàn, chế độ ít tài nguyên và ảnh biểu cảm lưu riêng trên từng máy.
