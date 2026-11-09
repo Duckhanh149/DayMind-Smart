@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/controller.dart';
 import '../../companion/domain/companion.dart';
 import '../../companion/presentation/companion_card.dart';
+import '../../reminders/presentation/notification_pages.dart';
 import '../domain/task.dart';
 import 'task_editor.dart';
 
@@ -22,6 +23,7 @@ const pageLabels = {
   'trash': 'Thùng rác',
   'companion': 'Companion',
   'settings': 'Cài đặt',
+  'notifications': 'Thông báo',
 };
 const pageIcons = {
   'today': Icons.wb_sunny_outlined,
@@ -32,6 +34,7 @@ const pageIcons = {
   'trash': Icons.delete_outline,
   'companion': Icons.eco_outlined,
   'settings': Icons.settings_outlined,
+  'notifications': Icons.notifications_outlined,
 };
 
 class WorkspaceScreen extends ConsumerStatefulWidget {
@@ -211,6 +214,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   'inbox',
                   'upcoming',
                   'completed',
+                  'notifications',
                 ])
                   ListTile(
                     dense: true,
@@ -1078,6 +1082,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
       ),
       const SizedBox(height: 20),
+      if (controller.reminders != null)
+        NotificationSettingsSection(reminders: controller.reminders!),
+      const SizedBox(height: 20),
       OutlinedButton(
         onPressed: () => showLicensePage(
           context: context,
@@ -1093,11 +1100,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   Widget build(BuildContext context) {
     final controller = ref.watch(workspaceProvider);
     final wide = MediaQuery.sizeOf(context).width >= 1000;
-    final special = ['companion', 'settings'].contains(widget.page);
+    final special = [
+      'companion',
+      'settings',
+      'notifications',
+    ].contains(widget.page);
     final content = widget.page == 'companion'
         ? companionContent(controller)
         : widget.page == 'settings'
         ? settingsContent(controller)
+        : widget.page == 'notifications'
+        ? NotificationCenterPage(controller: controller)
         : taskContent(controller);
     final scaffold = Scaffold(
       appBar: wide
@@ -1108,6 +1121,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               actions: [
+                IconButton(
+                  onPressed: () => navigate('notifications'),
+                  icon: Badge(
+                    isLabelVisible:
+                        controller.reminders?.events.any(
+                          (e) => e.state == 'unknown' && !e.read,
+                        ) ??
+                        false,
+                    child: const Icon(Icons.notifications_outlined),
+                  ),
+                  tooltip: 'Thông báo',
+                ),
                 IconButton(
                   onPressed: () => navigate('settings'),
                   icon: const Icon(Icons.tune_rounded),

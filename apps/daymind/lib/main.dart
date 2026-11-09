@@ -13,6 +13,9 @@ import 'app/app.dart';
 import 'app/controller.dart';
 import 'features/tasks/data/database.dart';
 import 'features/companion/data/asset_importer.dart';
+import 'features/reminders/application/reminder_engine.dart';
+import 'features/reminders/application/reminder_coordinator.dart';
+import 'platform/notification_scheduler.dart';
 
 bool _fontLicenseRegistered = false;
 Future<void> main() async {
@@ -38,6 +41,20 @@ Future<void> main() async {
       StaticAssetImporter(Directory(p.join(support.path, 'characters'))),
     );
     await controller.load();
+    final scheduler = PlatformNotificationScheduler();
+    final zone = await scheduler.initialize(
+      p.join(support.path, 'daymind.sqlite'),
+    );
+    final reminders = ReminderCoordinator(
+      ReminderEngine(database, scheduler),
+      controller.repository.list,
+      onNativeChange: controller.refreshFromNative,
+      onInApp: (title) {
+        controller.dialogue = 'Đến giờ: $title';
+      },
+    );
+    controller.attachReminders(reminders);
+    await reminders.start(zone);
     runApp(
       ProviderScope(
         overrides: [workspaceProvider.overrideWith((ref) => controller)],

@@ -1306,12 +1306,1447 @@ class PreferencesCompanion extends UpdateCompanion<Preference> {
   }
 }
 
+class $ExtensionRecordsTable extends ExtensionRecords
+    with TableInfo<$ExtensionRecordsTable, ExtensionRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExtensionRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _areaMeta = const VerificationMeta('area');
+  @override
+  late final GeneratedColumn<String> area = GeneratedColumn<String>(
+    'area',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedMsMeta = const VerificationMeta(
+    'updatedMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedMs = GeneratedColumn<int>(
+    'updated_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [area, id, value, updatedMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'extension_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExtensionRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('area')) {
+      context.handle(
+        _areaMeta,
+        area.isAcceptableOrUnknown(data['area']!, _areaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_areaMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('updated_ms')) {
+      context.handle(
+        _updatedMsMeta,
+        updatedMs.isAcceptableOrUnknown(data['updated_ms']!, _updatedMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {area, id};
+  @override
+  ExtensionRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExtensionRecord(
+      area: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}area'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+      updatedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ExtensionRecordsTable createAlias(String alias) {
+    return $ExtensionRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ExtensionRecord extends DataClass implements Insertable<ExtensionRecord> {
+  final String area;
+  final String id;
+  final String value;
+  final int updatedMs;
+  const ExtensionRecord({
+    required this.area,
+    required this.id,
+    required this.value,
+    required this.updatedMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['area'] = Variable<String>(area);
+    map['id'] = Variable<String>(id);
+    map['value'] = Variable<String>(value);
+    map['updated_ms'] = Variable<int>(updatedMs);
+    return map;
+  }
+
+  ExtensionRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ExtensionRecordsCompanion(
+      area: Value(area),
+      id: Value(id),
+      value: Value(value),
+      updatedMs: Value(updatedMs),
+    );
+  }
+
+  factory ExtensionRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExtensionRecord(
+      area: serializer.fromJson<String>(json['area']),
+      id: serializer.fromJson<String>(json['id']),
+      value: serializer.fromJson<String>(json['value']),
+      updatedMs: serializer.fromJson<int>(json['updatedMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'area': serializer.toJson<String>(area),
+      'id': serializer.toJson<String>(id),
+      'value': serializer.toJson<String>(value),
+      'updatedMs': serializer.toJson<int>(updatedMs),
+    };
+  }
+
+  ExtensionRecord copyWith({
+    String? area,
+    String? id,
+    String? value,
+    int? updatedMs,
+  }) => ExtensionRecord(
+    area: area ?? this.area,
+    id: id ?? this.id,
+    value: value ?? this.value,
+    updatedMs: updatedMs ?? this.updatedMs,
+  );
+  ExtensionRecord copyWithCompanion(ExtensionRecordsCompanion data) {
+    return ExtensionRecord(
+      area: data.area.present ? data.area.value : this.area,
+      id: data.id.present ? data.id.value : this.id,
+      value: data.value.present ? data.value.value : this.value,
+      updatedMs: data.updatedMs.present ? data.updatedMs.value : this.updatedMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExtensionRecord(')
+          ..write('area: $area, ')
+          ..write('id: $id, ')
+          ..write('value: $value, ')
+          ..write('updatedMs: $updatedMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(area, id, value, updatedMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExtensionRecord &&
+          other.area == this.area &&
+          other.id == this.id &&
+          other.value == this.value &&
+          other.updatedMs == this.updatedMs);
+}
+
+class ExtensionRecordsCompanion extends UpdateCompanion<ExtensionRecord> {
+  final Value<String> area;
+  final Value<String> id;
+  final Value<String> value;
+  final Value<int> updatedMs;
+  final Value<int> rowid;
+  const ExtensionRecordsCompanion({
+    this.area = const Value.absent(),
+    this.id = const Value.absent(),
+    this.value = const Value.absent(),
+    this.updatedMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExtensionRecordsCompanion.insert({
+    required String area,
+    required String id,
+    required String value,
+    required int updatedMs,
+    this.rowid = const Value.absent(),
+  }) : area = Value(area),
+       id = Value(id),
+       value = Value(value),
+       updatedMs = Value(updatedMs);
+  static Insertable<ExtensionRecord> custom({
+    Expression<String>? area,
+    Expression<String>? id,
+    Expression<String>? value,
+    Expression<int>? updatedMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (area != null) 'area': area,
+      if (id != null) 'id': id,
+      if (value != null) 'value': value,
+      if (updatedMs != null) 'updated_ms': updatedMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExtensionRecordsCompanion copyWith({
+    Value<String>? area,
+    Value<String>? id,
+    Value<String>? value,
+    Value<int>? updatedMs,
+    Value<int>? rowid,
+  }) {
+    return ExtensionRecordsCompanion(
+      area: area ?? this.area,
+      id: id ?? this.id,
+      value: value ?? this.value,
+      updatedMs: updatedMs ?? this.updatedMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (area.present) {
+      map['area'] = Variable<String>(area.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (updatedMs.present) {
+      map['updated_ms'] = Variable<int>(updatedMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExtensionRecordsCompanion(')
+          ..write('area: $area, ')
+          ..write('id: $id, ')
+          ..write('value: $value, ')
+          ..write('updatedMs: $updatedMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReminderEventsTable extends ReminderEvents
+    with TableInfo<$ReminderEventsTable, ReminderEventRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReminderEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _eventKeyMeta = const VerificationMeta(
+    'eventKey',
+  );
+  @override
+  late final GeneratedColumn<String> eventKey = GeneratedColumn<String>(
+    'event_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+    'task_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ruleIdMeta = const VerificationMeta('ruleId');
+  @override
+  late final GeneratedColumn<String> ruleId = GeneratedColumn<String>(
+    'rule_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _occurrenceIdMeta = const VerificationMeta(
+    'occurrenceId',
+  );
+  @override
+  late final GeneratedColumn<String> occurrenceId = GeneratedColumn<String>(
+    'occurrence_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _occurrenceRevisionMeta =
+      const VerificationMeta('occurrenceRevision');
+  @override
+  late final GeneratedColumn<int> occurrenceRevision = GeneratedColumn<int>(
+    'occurrence_revision',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _taskRevisionMeta = const VerificationMeta(
+    'taskRevision',
+  );
+  @override
+  late final GeneratedColumn<int> taskRevision = GeneratedColumn<int>(
+    'task_revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scheduledMsMeta = const VerificationMeta(
+    'scheduledMs',
+  );
+  @override
+  late final GeneratedColumn<int> scheduledMs = GeneratedColumn<int>(
+    'scheduled_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiresMsMeta = const VerificationMeta(
+    'expiresMs',
+  );
+  @override
+  late final GeneratedColumn<int> expiresMs = GeneratedColumn<int>(
+    'expires_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _platformIdMeta = const VerificationMeta(
+    'platformId',
+  );
+  @override
+  late final GeneratedColumn<int> platformId = GeneratedColumn<int>(
+    'platform_id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _readMeta = const VerificationMeta('read');
+  @override
+  late final GeneratedColumn<bool> read = GeneratedColumn<bool>(
+    'read',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("read" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedMsMeta = const VerificationMeta(
+    'updatedMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedMs = GeneratedColumn<int>(
+    'updated_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    eventKey,
+    taskId,
+    ruleId,
+    occurrenceId,
+    occurrenceRevision,
+    taskRevision,
+    scheduledMs,
+    expiresMs,
+    state,
+    platformId,
+    read,
+    title,
+    priority,
+    updatedMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reminder_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReminderEventRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('event_key')) {
+      context.handle(
+        _eventKeyMeta,
+        eventKey.isAcceptableOrUnknown(data['event_key']!, _eventKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventKeyMeta);
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_taskIdMeta);
+    }
+    if (data.containsKey('rule_id')) {
+      context.handle(
+        _ruleIdMeta,
+        ruleId.isAcceptableOrUnknown(data['rule_id']!, _ruleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleIdMeta);
+    }
+    if (data.containsKey('occurrence_id')) {
+      context.handle(
+        _occurrenceIdMeta,
+        occurrenceId.isAcceptableOrUnknown(
+          data['occurrence_id']!,
+          _occurrenceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('occurrence_revision')) {
+      context.handle(
+        _occurrenceRevisionMeta,
+        occurrenceRevision.isAcceptableOrUnknown(
+          data['occurrence_revision']!,
+          _occurrenceRevisionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('task_revision')) {
+      context.handle(
+        _taskRevisionMeta,
+        taskRevision.isAcceptableOrUnknown(
+          data['task_revision']!,
+          _taskRevisionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_taskRevisionMeta);
+    }
+    if (data.containsKey('scheduled_ms')) {
+      context.handle(
+        _scheduledMsMeta,
+        scheduledMs.isAcceptableOrUnknown(
+          data['scheduled_ms']!,
+          _scheduledMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledMsMeta);
+    }
+    if (data.containsKey('expires_ms')) {
+      context.handle(
+        _expiresMsMeta,
+        expiresMs.isAcceptableOrUnknown(data['expires_ms']!, _expiresMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresMsMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('platform_id')) {
+      context.handle(
+        _platformIdMeta,
+        platformId.isAcceptableOrUnknown(data['platform_id']!, _platformIdMeta),
+      );
+    }
+    if (data.containsKey('read')) {
+      context.handle(
+        _readMeta,
+        read.isAcceptableOrUnknown(data['read']!, _readMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_priorityMeta);
+    }
+    if (data.containsKey('updated_ms')) {
+      context.handle(
+        _updatedMsMeta,
+        updatedMs.isAcceptableOrUnknown(data['updated_ms']!, _updatedMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {platformId};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {eventKey},
+  ];
+  @override
+  ReminderEventRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReminderEventRecord(
+      eventKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_key'],
+      )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_id'],
+      )!,
+      ruleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_id'],
+      )!,
+      occurrenceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}occurrence_id'],
+      ),
+      occurrenceRevision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}occurrence_revision'],
+      ),
+      taskRevision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}task_revision'],
+      )!,
+      scheduledMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}scheduled_ms'],
+      )!,
+      expiresMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expires_ms'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      platformId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}platform_id'],
+      )!,
+      read: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}read'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      )!,
+      updatedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ReminderEventsTable createAlias(String alias) {
+    return $ReminderEventsTable(attachedDatabase, alias);
+  }
+}
+
+class ReminderEventRecord extends DataClass
+    implements Insertable<ReminderEventRecord> {
+  final String eventKey;
+  final String taskId;
+  final String ruleId;
+  final String? occurrenceId;
+  final int? occurrenceRevision;
+  final int taskRevision;
+  final int scheduledMs;
+  final int expiresMs;
+  final String state;
+  final int platformId;
+  final bool read;
+  final String title;
+  final int priority;
+  final int updatedMs;
+  const ReminderEventRecord({
+    required this.eventKey,
+    required this.taskId,
+    required this.ruleId,
+    this.occurrenceId,
+    this.occurrenceRevision,
+    required this.taskRevision,
+    required this.scheduledMs,
+    required this.expiresMs,
+    required this.state,
+    required this.platformId,
+    required this.read,
+    required this.title,
+    required this.priority,
+    required this.updatedMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['event_key'] = Variable<String>(eventKey);
+    map['task_id'] = Variable<String>(taskId);
+    map['rule_id'] = Variable<String>(ruleId);
+    if (!nullToAbsent || occurrenceId != null) {
+      map['occurrence_id'] = Variable<String>(occurrenceId);
+    }
+    if (!nullToAbsent || occurrenceRevision != null) {
+      map['occurrence_revision'] = Variable<int>(occurrenceRevision);
+    }
+    map['task_revision'] = Variable<int>(taskRevision);
+    map['scheduled_ms'] = Variable<int>(scheduledMs);
+    map['expires_ms'] = Variable<int>(expiresMs);
+    map['state'] = Variable<String>(state);
+    map['platform_id'] = Variable<int>(platformId);
+    map['read'] = Variable<bool>(read);
+    map['title'] = Variable<String>(title);
+    map['priority'] = Variable<int>(priority);
+    map['updated_ms'] = Variable<int>(updatedMs);
+    return map;
+  }
+
+  ReminderEventsCompanion toCompanion(bool nullToAbsent) {
+    return ReminderEventsCompanion(
+      eventKey: Value(eventKey),
+      taskId: Value(taskId),
+      ruleId: Value(ruleId),
+      occurrenceId: occurrenceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(occurrenceId),
+      occurrenceRevision: occurrenceRevision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(occurrenceRevision),
+      taskRevision: Value(taskRevision),
+      scheduledMs: Value(scheduledMs),
+      expiresMs: Value(expiresMs),
+      state: Value(state),
+      platformId: Value(platformId),
+      read: Value(read),
+      title: Value(title),
+      priority: Value(priority),
+      updatedMs: Value(updatedMs),
+    );
+  }
+
+  factory ReminderEventRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReminderEventRecord(
+      eventKey: serializer.fromJson<String>(json['eventKey']),
+      taskId: serializer.fromJson<String>(json['taskId']),
+      ruleId: serializer.fromJson<String>(json['ruleId']),
+      occurrenceId: serializer.fromJson<String?>(json['occurrenceId']),
+      occurrenceRevision: serializer.fromJson<int?>(json['occurrenceRevision']),
+      taskRevision: serializer.fromJson<int>(json['taskRevision']),
+      scheduledMs: serializer.fromJson<int>(json['scheduledMs']),
+      expiresMs: serializer.fromJson<int>(json['expiresMs']),
+      state: serializer.fromJson<String>(json['state']),
+      platformId: serializer.fromJson<int>(json['platformId']),
+      read: serializer.fromJson<bool>(json['read']),
+      title: serializer.fromJson<String>(json['title']),
+      priority: serializer.fromJson<int>(json['priority']),
+      updatedMs: serializer.fromJson<int>(json['updatedMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'eventKey': serializer.toJson<String>(eventKey),
+      'taskId': serializer.toJson<String>(taskId),
+      'ruleId': serializer.toJson<String>(ruleId),
+      'occurrenceId': serializer.toJson<String?>(occurrenceId),
+      'occurrenceRevision': serializer.toJson<int?>(occurrenceRevision),
+      'taskRevision': serializer.toJson<int>(taskRevision),
+      'scheduledMs': serializer.toJson<int>(scheduledMs),
+      'expiresMs': serializer.toJson<int>(expiresMs),
+      'state': serializer.toJson<String>(state),
+      'platformId': serializer.toJson<int>(platformId),
+      'read': serializer.toJson<bool>(read),
+      'title': serializer.toJson<String>(title),
+      'priority': serializer.toJson<int>(priority),
+      'updatedMs': serializer.toJson<int>(updatedMs),
+    };
+  }
+
+  ReminderEventRecord copyWith({
+    String? eventKey,
+    String? taskId,
+    String? ruleId,
+    Value<String?> occurrenceId = const Value.absent(),
+    Value<int?> occurrenceRevision = const Value.absent(),
+    int? taskRevision,
+    int? scheduledMs,
+    int? expiresMs,
+    String? state,
+    int? platformId,
+    bool? read,
+    String? title,
+    int? priority,
+    int? updatedMs,
+  }) => ReminderEventRecord(
+    eventKey: eventKey ?? this.eventKey,
+    taskId: taskId ?? this.taskId,
+    ruleId: ruleId ?? this.ruleId,
+    occurrenceId: occurrenceId.present ? occurrenceId.value : this.occurrenceId,
+    occurrenceRevision: occurrenceRevision.present
+        ? occurrenceRevision.value
+        : this.occurrenceRevision,
+    taskRevision: taskRevision ?? this.taskRevision,
+    scheduledMs: scheduledMs ?? this.scheduledMs,
+    expiresMs: expiresMs ?? this.expiresMs,
+    state: state ?? this.state,
+    platformId: platformId ?? this.platformId,
+    read: read ?? this.read,
+    title: title ?? this.title,
+    priority: priority ?? this.priority,
+    updatedMs: updatedMs ?? this.updatedMs,
+  );
+  ReminderEventRecord copyWithCompanion(ReminderEventsCompanion data) {
+    return ReminderEventRecord(
+      eventKey: data.eventKey.present ? data.eventKey.value : this.eventKey,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
+      occurrenceId: data.occurrenceId.present
+          ? data.occurrenceId.value
+          : this.occurrenceId,
+      occurrenceRevision: data.occurrenceRevision.present
+          ? data.occurrenceRevision.value
+          : this.occurrenceRevision,
+      taskRevision: data.taskRevision.present
+          ? data.taskRevision.value
+          : this.taskRevision,
+      scheduledMs: data.scheduledMs.present
+          ? data.scheduledMs.value
+          : this.scheduledMs,
+      expiresMs: data.expiresMs.present ? data.expiresMs.value : this.expiresMs,
+      state: data.state.present ? data.state.value : this.state,
+      platformId: data.platformId.present
+          ? data.platformId.value
+          : this.platformId,
+      read: data.read.present ? data.read.value : this.read,
+      title: data.title.present ? data.title.value : this.title,
+      priority: data.priority.present ? data.priority.value : this.priority,
+      updatedMs: data.updatedMs.present ? data.updatedMs.value : this.updatedMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReminderEventRecord(')
+          ..write('eventKey: $eventKey, ')
+          ..write('taskId: $taskId, ')
+          ..write('ruleId: $ruleId, ')
+          ..write('occurrenceId: $occurrenceId, ')
+          ..write('occurrenceRevision: $occurrenceRevision, ')
+          ..write('taskRevision: $taskRevision, ')
+          ..write('scheduledMs: $scheduledMs, ')
+          ..write('expiresMs: $expiresMs, ')
+          ..write('state: $state, ')
+          ..write('platformId: $platformId, ')
+          ..write('read: $read, ')
+          ..write('title: $title, ')
+          ..write('priority: $priority, ')
+          ..write('updatedMs: $updatedMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    eventKey,
+    taskId,
+    ruleId,
+    occurrenceId,
+    occurrenceRevision,
+    taskRevision,
+    scheduledMs,
+    expiresMs,
+    state,
+    platformId,
+    read,
+    title,
+    priority,
+    updatedMs,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReminderEventRecord &&
+          other.eventKey == this.eventKey &&
+          other.taskId == this.taskId &&
+          other.ruleId == this.ruleId &&
+          other.occurrenceId == this.occurrenceId &&
+          other.occurrenceRevision == this.occurrenceRevision &&
+          other.taskRevision == this.taskRevision &&
+          other.scheduledMs == this.scheduledMs &&
+          other.expiresMs == this.expiresMs &&
+          other.state == this.state &&
+          other.platformId == this.platformId &&
+          other.read == this.read &&
+          other.title == this.title &&
+          other.priority == this.priority &&
+          other.updatedMs == this.updatedMs);
+}
+
+class ReminderEventsCompanion extends UpdateCompanion<ReminderEventRecord> {
+  final Value<String> eventKey;
+  final Value<String> taskId;
+  final Value<String> ruleId;
+  final Value<String?> occurrenceId;
+  final Value<int?> occurrenceRevision;
+  final Value<int> taskRevision;
+  final Value<int> scheduledMs;
+  final Value<int> expiresMs;
+  final Value<String> state;
+  final Value<int> platformId;
+  final Value<bool> read;
+  final Value<String> title;
+  final Value<int> priority;
+  final Value<int> updatedMs;
+  const ReminderEventsCompanion({
+    this.eventKey = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.ruleId = const Value.absent(),
+    this.occurrenceId = const Value.absent(),
+    this.occurrenceRevision = const Value.absent(),
+    this.taskRevision = const Value.absent(),
+    this.scheduledMs = const Value.absent(),
+    this.expiresMs = const Value.absent(),
+    this.state = const Value.absent(),
+    this.platformId = const Value.absent(),
+    this.read = const Value.absent(),
+    this.title = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.updatedMs = const Value.absent(),
+  });
+  ReminderEventsCompanion.insert({
+    required String eventKey,
+    required String taskId,
+    required String ruleId,
+    this.occurrenceId = const Value.absent(),
+    this.occurrenceRevision = const Value.absent(),
+    required int taskRevision,
+    required int scheduledMs,
+    required int expiresMs,
+    required String state,
+    this.platformId = const Value.absent(),
+    this.read = const Value.absent(),
+    required String title,
+    required int priority,
+    required int updatedMs,
+  }) : eventKey = Value(eventKey),
+       taskId = Value(taskId),
+       ruleId = Value(ruleId),
+       taskRevision = Value(taskRevision),
+       scheduledMs = Value(scheduledMs),
+       expiresMs = Value(expiresMs),
+       state = Value(state),
+       title = Value(title),
+       priority = Value(priority),
+       updatedMs = Value(updatedMs);
+  static Insertable<ReminderEventRecord> custom({
+    Expression<String>? eventKey,
+    Expression<String>? taskId,
+    Expression<String>? ruleId,
+    Expression<String>? occurrenceId,
+    Expression<int>? occurrenceRevision,
+    Expression<int>? taskRevision,
+    Expression<int>? scheduledMs,
+    Expression<int>? expiresMs,
+    Expression<String>? state,
+    Expression<int>? platformId,
+    Expression<bool>? read,
+    Expression<String>? title,
+    Expression<int>? priority,
+    Expression<int>? updatedMs,
+  }) {
+    return RawValuesInsertable({
+      if (eventKey != null) 'event_key': eventKey,
+      if (taskId != null) 'task_id': taskId,
+      if (ruleId != null) 'rule_id': ruleId,
+      if (occurrenceId != null) 'occurrence_id': occurrenceId,
+      if (occurrenceRevision != null) 'occurrence_revision': occurrenceRevision,
+      if (taskRevision != null) 'task_revision': taskRevision,
+      if (scheduledMs != null) 'scheduled_ms': scheduledMs,
+      if (expiresMs != null) 'expires_ms': expiresMs,
+      if (state != null) 'state': state,
+      if (platformId != null) 'platform_id': platformId,
+      if (read != null) 'read': read,
+      if (title != null) 'title': title,
+      if (priority != null) 'priority': priority,
+      if (updatedMs != null) 'updated_ms': updatedMs,
+    });
+  }
+
+  ReminderEventsCompanion copyWith({
+    Value<String>? eventKey,
+    Value<String>? taskId,
+    Value<String>? ruleId,
+    Value<String?>? occurrenceId,
+    Value<int?>? occurrenceRevision,
+    Value<int>? taskRevision,
+    Value<int>? scheduledMs,
+    Value<int>? expiresMs,
+    Value<String>? state,
+    Value<int>? platformId,
+    Value<bool>? read,
+    Value<String>? title,
+    Value<int>? priority,
+    Value<int>? updatedMs,
+  }) {
+    return ReminderEventsCompanion(
+      eventKey: eventKey ?? this.eventKey,
+      taskId: taskId ?? this.taskId,
+      ruleId: ruleId ?? this.ruleId,
+      occurrenceId: occurrenceId ?? this.occurrenceId,
+      occurrenceRevision: occurrenceRevision ?? this.occurrenceRevision,
+      taskRevision: taskRevision ?? this.taskRevision,
+      scheduledMs: scheduledMs ?? this.scheduledMs,
+      expiresMs: expiresMs ?? this.expiresMs,
+      state: state ?? this.state,
+      platformId: platformId ?? this.platformId,
+      read: read ?? this.read,
+      title: title ?? this.title,
+      priority: priority ?? this.priority,
+      updatedMs: updatedMs ?? this.updatedMs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (eventKey.present) {
+      map['event_key'] = Variable<String>(eventKey.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (ruleId.present) {
+      map['rule_id'] = Variable<String>(ruleId.value);
+    }
+    if (occurrenceId.present) {
+      map['occurrence_id'] = Variable<String>(occurrenceId.value);
+    }
+    if (occurrenceRevision.present) {
+      map['occurrence_revision'] = Variable<int>(occurrenceRevision.value);
+    }
+    if (taskRevision.present) {
+      map['task_revision'] = Variable<int>(taskRevision.value);
+    }
+    if (scheduledMs.present) {
+      map['scheduled_ms'] = Variable<int>(scheduledMs.value);
+    }
+    if (expiresMs.present) {
+      map['expires_ms'] = Variable<int>(expiresMs.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (platformId.present) {
+      map['platform_id'] = Variable<int>(platformId.value);
+    }
+    if (read.present) {
+      map['read'] = Variable<bool>(read.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
+    if (updatedMs.present) {
+      map['updated_ms'] = Variable<int>(updatedMs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReminderEventsCompanion(')
+          ..write('eventKey: $eventKey, ')
+          ..write('taskId: $taskId, ')
+          ..write('ruleId: $ruleId, ')
+          ..write('occurrenceId: $occurrenceId, ')
+          ..write('occurrenceRevision: $occurrenceRevision, ')
+          ..write('taskRevision: $taskRevision, ')
+          ..write('scheduledMs: $scheduledMs, ')
+          ..write('expiresMs: $expiresMs, ')
+          ..write('state: $state, ')
+          ..write('platformId: $platformId, ')
+          ..write('read: $read, ')
+          ..write('title: $title, ')
+          ..write('priority: $priority, ')
+          ..write('updatedMs: $updatedMs')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DeliveryLogsTable extends DeliveryLogs
+    with TableInfo<$DeliveryLogsTable, DeliveryLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeliveryLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventKeyMeta = const VerificationMeta(
+    'eventKey',
+  );
+  @override
+  late final GeneratedColumn<String> eventKey = GeneratedColumn<String>(
+    'event_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outcomeMeta = const VerificationMeta(
+    'outcome',
+  );
+  @override
+  late final GeneratedColumn<String> outcome = GeneratedColumn<String>(
+    'outcome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _atMsMeta = const VerificationMeta('atMs');
+  @override
+  late final GeneratedColumn<int> atMs = GeneratedColumn<int>(
+    'at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, eventKey, outcome, atMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'delivery_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeliveryLog> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('event_key')) {
+      context.handle(
+        _eventKeyMeta,
+        eventKey.isAcceptableOrUnknown(data['event_key']!, _eventKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventKeyMeta);
+    }
+    if (data.containsKey('outcome')) {
+      context.handle(
+        _outcomeMeta,
+        outcome.isAcceptableOrUnknown(data['outcome']!, _outcomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_outcomeMeta);
+    }
+    if (data.containsKey('at_ms')) {
+      context.handle(
+        _atMsMeta,
+        atMs.isAcceptableOrUnknown(data['at_ms']!, _atMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_atMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DeliveryLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeliveryLog(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      eventKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_key'],
+      )!,
+      outcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outcome'],
+      )!,
+      atMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $DeliveryLogsTable createAlias(String alias) {
+    return $DeliveryLogsTable(attachedDatabase, alias);
+  }
+}
+
+class DeliveryLog extends DataClass implements Insertable<DeliveryLog> {
+  final String id;
+  final String eventKey;
+  final String outcome;
+  final int atMs;
+  const DeliveryLog({
+    required this.id,
+    required this.eventKey,
+    required this.outcome,
+    required this.atMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['event_key'] = Variable<String>(eventKey);
+    map['outcome'] = Variable<String>(outcome);
+    map['at_ms'] = Variable<int>(atMs);
+    return map;
+  }
+
+  DeliveryLogsCompanion toCompanion(bool nullToAbsent) {
+    return DeliveryLogsCompanion(
+      id: Value(id),
+      eventKey: Value(eventKey),
+      outcome: Value(outcome),
+      atMs: Value(atMs),
+    );
+  }
+
+  factory DeliveryLog.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeliveryLog(
+      id: serializer.fromJson<String>(json['id']),
+      eventKey: serializer.fromJson<String>(json['eventKey']),
+      outcome: serializer.fromJson<String>(json['outcome']),
+      atMs: serializer.fromJson<int>(json['atMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'eventKey': serializer.toJson<String>(eventKey),
+      'outcome': serializer.toJson<String>(outcome),
+      'atMs': serializer.toJson<int>(atMs),
+    };
+  }
+
+  DeliveryLog copyWith({
+    String? id,
+    String? eventKey,
+    String? outcome,
+    int? atMs,
+  }) => DeliveryLog(
+    id: id ?? this.id,
+    eventKey: eventKey ?? this.eventKey,
+    outcome: outcome ?? this.outcome,
+    atMs: atMs ?? this.atMs,
+  );
+  DeliveryLog copyWithCompanion(DeliveryLogsCompanion data) {
+    return DeliveryLog(
+      id: data.id.present ? data.id.value : this.id,
+      eventKey: data.eventKey.present ? data.eventKey.value : this.eventKey,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      atMs: data.atMs.present ? data.atMs.value : this.atMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryLog(')
+          ..write('id: $id, ')
+          ..write('eventKey: $eventKey, ')
+          ..write('outcome: $outcome, ')
+          ..write('atMs: $atMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, eventKey, outcome, atMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeliveryLog &&
+          other.id == this.id &&
+          other.eventKey == this.eventKey &&
+          other.outcome == this.outcome &&
+          other.atMs == this.atMs);
+}
+
+class DeliveryLogsCompanion extends UpdateCompanion<DeliveryLog> {
+  final Value<String> id;
+  final Value<String> eventKey;
+  final Value<String> outcome;
+  final Value<int> atMs;
+  final Value<int> rowid;
+  const DeliveryLogsCompanion({
+    this.id = const Value.absent(),
+    this.eventKey = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.atMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeliveryLogsCompanion.insert({
+    required String id,
+    required String eventKey,
+    required String outcome,
+    required int atMs,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       eventKey = Value(eventKey),
+       outcome = Value(outcome),
+       atMs = Value(atMs);
+  static Insertable<DeliveryLog> custom({
+    Expression<String>? id,
+    Expression<String>? eventKey,
+    Expression<String>? outcome,
+    Expression<int>? atMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (eventKey != null) 'event_key': eventKey,
+      if (outcome != null) 'outcome': outcome,
+      if (atMs != null) 'at_ms': atMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeliveryLogsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? eventKey,
+    Value<String>? outcome,
+    Value<int>? atMs,
+    Value<int>? rowid,
+  }) {
+    return DeliveryLogsCompanion(
+      id: id ?? this.id,
+      eventKey: eventKey ?? this.eventKey,
+      outcome: outcome ?? this.outcome,
+      atMs: atMs ?? this.atMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (eventKey.present) {
+      map['event_key'] = Variable<String>(eventKey.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(outcome.value);
+    }
+    if (atMs.present) {
+      map['at_ms'] = Variable<int>(atMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('eventKey: $eventKey, ')
+          ..write('outcome: $outcome, ')
+          ..write('atMs: $atMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$DaymindDatabase extends GeneratedDatabase {
   _$DaymindDatabase(QueryExecutor e) : super(e);
   $DaymindDatabaseManager get managers => $DaymindDatabaseManager(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final $PreferencesTable preferences = $PreferencesTable(this);
+  late final $ExtensionRecordsTable extensionRecords = $ExtensionRecordsTable(
+    this,
+  );
+  late final $ReminderEventsTable reminderEvents = $ReminderEventsTable(this);
+  late final $DeliveryLogsTable deliveryLogs = $DeliveryLogsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1320,6 +2755,9 @@ abstract class _$DaymindDatabase extends GeneratedDatabase {
     categories,
     tasks,
     preferences,
+    extensionRecords,
+    reminderEvents,
+    deliveryLogs,
   ];
 }
 
@@ -2222,6 +3660,792 @@ typedef $$PreferencesTableProcessedTableManager =
       Preference,
       PrefetchHooks Function()
     >;
+typedef $$ExtensionRecordsTableCreateCompanionBuilder =
+    ExtensionRecordsCompanion Function({
+      required String area,
+      required String id,
+      required String value,
+      required int updatedMs,
+      Value<int> rowid,
+    });
+typedef $$ExtensionRecordsTableUpdateCompanionBuilder =
+    ExtensionRecordsCompanion Function({
+      Value<String> area,
+      Value<String> id,
+      Value<String> value,
+      Value<int> updatedMs,
+      Value<int> rowid,
+    });
+
+class $$ExtensionRecordsTableFilterComposer
+    extends Composer<_$DaymindDatabase, $ExtensionRecordsTable> {
+  $$ExtensionRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get area => $composableBuilder(
+    column: $table.area,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedMs => $composableBuilder(
+    column: $table.updatedMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExtensionRecordsTableOrderingComposer
+    extends Composer<_$DaymindDatabase, $ExtensionRecordsTable> {
+  $$ExtensionRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get area => $composableBuilder(
+    column: $table.area,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedMs => $composableBuilder(
+    column: $table.updatedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExtensionRecordsTableAnnotationComposer
+    extends Composer<_$DaymindDatabase, $ExtensionRecordsTable> {
+  $$ExtensionRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get area =>
+      $composableBuilder(column: $table.area, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedMs =>
+      $composableBuilder(column: $table.updatedMs, builder: (column) => column);
+}
+
+class $$ExtensionRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$DaymindDatabase,
+          $ExtensionRecordsTable,
+          ExtensionRecord,
+          $$ExtensionRecordsTableFilterComposer,
+          $$ExtensionRecordsTableOrderingComposer,
+          $$ExtensionRecordsTableAnnotationComposer,
+          $$ExtensionRecordsTableCreateCompanionBuilder,
+          $$ExtensionRecordsTableUpdateCompanionBuilder,
+          (
+            ExtensionRecord,
+            BaseReferences<
+              _$DaymindDatabase,
+              $ExtensionRecordsTable,
+              ExtensionRecord
+            >,
+          ),
+          ExtensionRecord,
+          PrefetchHooks Function()
+        > {
+  $$ExtensionRecordsTableTableManager(
+    _$DaymindDatabase db,
+    $ExtensionRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExtensionRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExtensionRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExtensionRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> area = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<int> updatedMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExtensionRecordsCompanion(
+                area: area,
+                id: id,
+                value: value,
+                updatedMs: updatedMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String area,
+                required String id,
+                required String value,
+                required int updatedMs,
+                Value<int> rowid = const Value.absent(),
+              }) => ExtensionRecordsCompanion.insert(
+                area: area,
+                id: id,
+                value: value,
+                updatedMs: updatedMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ExtensionRecordsTable, ExtensionRecord>(table),
+                  BaseReferences<
+                    _$DaymindDatabase,
+                    $ExtensionRecordsTable,
+                    ExtensionRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExtensionRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DaymindDatabase,
+      $ExtensionRecordsTable,
+      ExtensionRecord,
+      $$ExtensionRecordsTableFilterComposer,
+      $$ExtensionRecordsTableOrderingComposer,
+      $$ExtensionRecordsTableAnnotationComposer,
+      $$ExtensionRecordsTableCreateCompanionBuilder,
+      $$ExtensionRecordsTableUpdateCompanionBuilder,
+      (
+        ExtensionRecord,
+        BaseReferences<
+          _$DaymindDatabase,
+          $ExtensionRecordsTable,
+          ExtensionRecord
+        >,
+      ),
+      ExtensionRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$ReminderEventsTableCreateCompanionBuilder =
+    ReminderEventsCompanion Function({
+      required String eventKey,
+      required String taskId,
+      required String ruleId,
+      Value<String?> occurrenceId,
+      Value<int?> occurrenceRevision,
+      required int taskRevision,
+      required int scheduledMs,
+      required int expiresMs,
+      required String state,
+      Value<int> platformId,
+      Value<bool> read,
+      required String title,
+      required int priority,
+      required int updatedMs,
+    });
+typedef $$ReminderEventsTableUpdateCompanionBuilder =
+    ReminderEventsCompanion Function({
+      Value<String> eventKey,
+      Value<String> taskId,
+      Value<String> ruleId,
+      Value<String?> occurrenceId,
+      Value<int?> occurrenceRevision,
+      Value<int> taskRevision,
+      Value<int> scheduledMs,
+      Value<int> expiresMs,
+      Value<String> state,
+      Value<int> platformId,
+      Value<bool> read,
+      Value<String> title,
+      Value<int> priority,
+      Value<int> updatedMs,
+    });
+
+class $$ReminderEventsTableFilterComposer
+    extends Composer<_$DaymindDatabase, $ReminderEventsTable> {
+  $$ReminderEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get eventKey => $composableBuilder(
+    column: $table.eventKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get occurrenceId => $composableBuilder(
+    column: $table.occurrenceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get occurrenceRevision => $composableBuilder(
+    column: $table.occurrenceRevision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get taskRevision => $composableBuilder(
+    column: $table.taskRevision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get scheduledMs => $composableBuilder(
+    column: $table.scheduledMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expiresMs => $composableBuilder(
+    column: $table.expiresMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get platformId => $composableBuilder(
+    column: $table.platformId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get read => $composableBuilder(
+    column: $table.read,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedMs => $composableBuilder(
+    column: $table.updatedMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReminderEventsTableOrderingComposer
+    extends Composer<_$DaymindDatabase, $ReminderEventsTable> {
+  $$ReminderEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get eventKey => $composableBuilder(
+    column: $table.eventKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get occurrenceId => $composableBuilder(
+    column: $table.occurrenceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get occurrenceRevision => $composableBuilder(
+    column: $table.occurrenceRevision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get taskRevision => $composableBuilder(
+    column: $table.taskRevision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get scheduledMs => $composableBuilder(
+    column: $table.scheduledMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expiresMs => $composableBuilder(
+    column: $table.expiresMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get platformId => $composableBuilder(
+    column: $table.platformId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get read => $composableBuilder(
+    column: $table.read,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedMs => $composableBuilder(
+    column: $table.updatedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReminderEventsTableAnnotationComposer
+    extends Composer<_$DaymindDatabase, $ReminderEventsTable> {
+  $$ReminderEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get eventKey =>
+      $composableBuilder(column: $table.eventKey, builder: (column) => column);
+
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
+  GeneratedColumn<String> get ruleId =>
+      $composableBuilder(column: $table.ruleId, builder: (column) => column);
+
+  GeneratedColumn<String> get occurrenceId => $composableBuilder(
+    column: $table.occurrenceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get occurrenceRevision => $composableBuilder(
+    column: $table.occurrenceRevision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get taskRevision => $composableBuilder(
+    column: $table.taskRevision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get scheduledMs => $composableBuilder(
+    column: $table.scheduledMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get expiresMs =>
+      $composableBuilder(column: $table.expiresMs, builder: (column) => column);
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<int> get platformId => $composableBuilder(
+    column: $table.platformId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get read =>
+      $composableBuilder(column: $table.read, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedMs =>
+      $composableBuilder(column: $table.updatedMs, builder: (column) => column);
+}
+
+class $$ReminderEventsTableTableManager
+    extends
+        RootTableManager<
+          _$DaymindDatabase,
+          $ReminderEventsTable,
+          ReminderEventRecord,
+          $$ReminderEventsTableFilterComposer,
+          $$ReminderEventsTableOrderingComposer,
+          $$ReminderEventsTableAnnotationComposer,
+          $$ReminderEventsTableCreateCompanionBuilder,
+          $$ReminderEventsTableUpdateCompanionBuilder,
+          (
+            ReminderEventRecord,
+            BaseReferences<
+              _$DaymindDatabase,
+              $ReminderEventsTable,
+              ReminderEventRecord
+            >,
+          ),
+          ReminderEventRecord,
+          PrefetchHooks Function()
+        > {
+  $$ReminderEventsTableTableManager(
+    _$DaymindDatabase db,
+    $ReminderEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReminderEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReminderEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReminderEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> eventKey = const Value.absent(),
+                Value<String> taskId = const Value.absent(),
+                Value<String> ruleId = const Value.absent(),
+                Value<String?> occurrenceId = const Value.absent(),
+                Value<int?> occurrenceRevision = const Value.absent(),
+                Value<int> taskRevision = const Value.absent(),
+                Value<int> scheduledMs = const Value.absent(),
+                Value<int> expiresMs = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<int> platformId = const Value.absent(),
+                Value<bool> read = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<int> updatedMs = const Value.absent(),
+              }) => ReminderEventsCompanion(
+                eventKey: eventKey,
+                taskId: taskId,
+                ruleId: ruleId,
+                occurrenceId: occurrenceId,
+                occurrenceRevision: occurrenceRevision,
+                taskRevision: taskRevision,
+                scheduledMs: scheduledMs,
+                expiresMs: expiresMs,
+                state: state,
+                platformId: platformId,
+                read: read,
+                title: title,
+                priority: priority,
+                updatedMs: updatedMs,
+              ),
+          createCompanionCallback:
+              ({
+                required String eventKey,
+                required String taskId,
+                required String ruleId,
+                Value<String?> occurrenceId = const Value.absent(),
+                Value<int?> occurrenceRevision = const Value.absent(),
+                required int taskRevision,
+                required int scheduledMs,
+                required int expiresMs,
+                required String state,
+                Value<int> platformId = const Value.absent(),
+                Value<bool> read = const Value.absent(),
+                required String title,
+                required int priority,
+                required int updatedMs,
+              }) => ReminderEventsCompanion.insert(
+                eventKey: eventKey,
+                taskId: taskId,
+                ruleId: ruleId,
+                occurrenceId: occurrenceId,
+                occurrenceRevision: occurrenceRevision,
+                taskRevision: taskRevision,
+                scheduledMs: scheduledMs,
+                expiresMs: expiresMs,
+                state: state,
+                platformId: platformId,
+                read: read,
+                title: title,
+                priority: priority,
+                updatedMs: updatedMs,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReminderEventsTable, ReminderEventRecord>(table),
+                  BaseReferences<
+                    _$DaymindDatabase,
+                    $ReminderEventsTable,
+                    ReminderEventRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReminderEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DaymindDatabase,
+      $ReminderEventsTable,
+      ReminderEventRecord,
+      $$ReminderEventsTableFilterComposer,
+      $$ReminderEventsTableOrderingComposer,
+      $$ReminderEventsTableAnnotationComposer,
+      $$ReminderEventsTableCreateCompanionBuilder,
+      $$ReminderEventsTableUpdateCompanionBuilder,
+      (
+        ReminderEventRecord,
+        BaseReferences<
+          _$DaymindDatabase,
+          $ReminderEventsTable,
+          ReminderEventRecord
+        >,
+      ),
+      ReminderEventRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$DeliveryLogsTableCreateCompanionBuilder =
+    DeliveryLogsCompanion Function({
+      required String id,
+      required String eventKey,
+      required String outcome,
+      required int atMs,
+      Value<int> rowid,
+    });
+typedef $$DeliveryLogsTableUpdateCompanionBuilder =
+    DeliveryLogsCompanion Function({
+      Value<String> id,
+      Value<String> eventKey,
+      Value<String> outcome,
+      Value<int> atMs,
+      Value<int> rowid,
+    });
+
+class $$DeliveryLogsTableFilterComposer
+    extends Composer<_$DaymindDatabase, $DeliveryLogsTable> {
+  $$DeliveryLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventKey => $composableBuilder(
+    column: $table.eventKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get atMs => $composableBuilder(
+    column: $table.atMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DeliveryLogsTableOrderingComposer
+    extends Composer<_$DaymindDatabase, $DeliveryLogsTable> {
+  $$DeliveryLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventKey => $composableBuilder(
+    column: $table.eventKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get atMs => $composableBuilder(
+    column: $table.atMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DeliveryLogsTableAnnotationComposer
+    extends Composer<_$DaymindDatabase, $DeliveryLogsTable> {
+  $$DeliveryLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get eventKey =>
+      $composableBuilder(column: $table.eventKey, builder: (column) => column);
+
+  GeneratedColumn<String> get outcome =>
+      $composableBuilder(column: $table.outcome, builder: (column) => column);
+
+  GeneratedColumn<int> get atMs =>
+      $composableBuilder(column: $table.atMs, builder: (column) => column);
+}
+
+class $$DeliveryLogsTableTableManager
+    extends
+        RootTableManager<
+          _$DaymindDatabase,
+          $DeliveryLogsTable,
+          DeliveryLog,
+          $$DeliveryLogsTableFilterComposer,
+          $$DeliveryLogsTableOrderingComposer,
+          $$DeliveryLogsTableAnnotationComposer,
+          $$DeliveryLogsTableCreateCompanionBuilder,
+          $$DeliveryLogsTableUpdateCompanionBuilder,
+          (
+            DeliveryLog,
+            BaseReferences<_$DaymindDatabase, $DeliveryLogsTable, DeliveryLog>,
+          ),
+          DeliveryLog,
+          PrefetchHooks Function()
+        > {
+  $$DeliveryLogsTableTableManager(
+    _$DaymindDatabase db,
+    $DeliveryLogsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeliveryLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeliveryLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeliveryLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> eventKey = const Value.absent(),
+                Value<String> outcome = const Value.absent(),
+                Value<int> atMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeliveryLogsCompanion(
+                id: id,
+                eventKey: eventKey,
+                outcome: outcome,
+                atMs: atMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String eventKey,
+                required String outcome,
+                required int atMs,
+                Value<int> rowid = const Value.absent(),
+              }) => DeliveryLogsCompanion.insert(
+                id: id,
+                eventKey: eventKey,
+                outcome: outcome,
+                atMs: atMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DeliveryLogsTable, DeliveryLog>(table),
+                  BaseReferences<
+                    _$DaymindDatabase,
+                    $DeliveryLogsTable,
+                    DeliveryLog
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DeliveryLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DaymindDatabase,
+      $DeliveryLogsTable,
+      DeliveryLog,
+      $$DeliveryLogsTableFilterComposer,
+      $$DeliveryLogsTableOrderingComposer,
+      $$DeliveryLogsTableAnnotationComposer,
+      $$DeliveryLogsTableCreateCompanionBuilder,
+      $$DeliveryLogsTableUpdateCompanionBuilder,
+      (
+        DeliveryLog,
+        BaseReferences<_$DaymindDatabase, $DeliveryLogsTable, DeliveryLog>,
+      ),
+      DeliveryLog,
+      PrefetchHooks Function()
+    >;
 
 class $DaymindDatabaseManager {
   final _$DaymindDatabase _db;
@@ -2232,4 +4456,10 @@ class $DaymindDatabaseManager {
       $$TasksTableTableManager(_db, _db.tasks);
   $$PreferencesTableTableManager get preferences =>
       $$PreferencesTableTableManager(_db, _db.preferences);
+  $$ExtensionRecordsTableTableManager get extensionRecords =>
+      $$ExtensionRecordsTableTableManager(_db, _db.extensionRecords);
+  $$ReminderEventsTableTableManager get reminderEvents =>
+      $$ReminderEventsTableTableManager(_db, _db.reminderEvents);
+  $$DeliveryLogsTableTableManager get deliveryLogs =>
+      $$DeliveryLogsTableTableManager(_db, _db.deliveryLogs);
 }

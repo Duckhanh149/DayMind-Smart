@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/controller.dart';
+import '../../reminders/domain/reminder.dart';
+import '../../reminders/presentation/reminder_editor.dart';
 import '../domain/task.dart';
 
 const priorityLabels = ['Thấp', 'Vừa', 'Cao'];
@@ -41,6 +43,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
       end = widget.task?.scheduledEndAt;
   bool saving = false;
   String? error;
+  TaskReminderConfig? reminderConfig;
   @override
   void dispose() {
     title.dispose();
@@ -92,6 +95,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
               scheduledEndAt: end,
             ),
             existing: widget.task,
+            notifications: reminderConfig,
           );
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -194,7 +198,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                       const Padding(
                         padding: EdgeInsets.only(bottom: 12),
                         child: Text(
-                          'Không bắt buộc đặt hạn. Phiên bản này chưa bật nhắc việc tự động.',
+                          'Không bắt buộc đặt hạn. Bạn có thể tùy chỉnh hoặc tắt nhắc cho từng việc.',
                           style: TextStyle(fontSize: 12),
                         ),
                       ),
@@ -282,6 +286,22 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                               style: TextStyle(fontSize: 12),
                             ),
                           ),
+                          if (controller.reminders != null)
+                            ReminderEditor(
+                              engine: controller.reminders!.engine,
+                              task: Task(
+                                id: widget.task?.id ?? 'new',
+                                title: title.text,
+                                priority: priority,
+                                status: status,
+                                dueAt: due,
+                                scheduledStartAt: start,
+                                scheduledEndAt: end,
+                                createdAt: DateTime.now(),
+                                updatedAt: DateTime.now(),
+                              ),
+                              onChanged: (value) => reminderConfig = value,
+                            ),
                         ],
                       ),
                       if (warning != null)

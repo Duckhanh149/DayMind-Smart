@@ -11,10 +11,18 @@ import 'package:daymind_smart/features/tasks/domain/task.dart';
 import 'package:daymind_smart/features/tasks/data/database.dart';
 import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/companion/presentation/companion_card.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:daymind_smart/features/reminders/application/reminder_engine.dart';
+import 'package:daymind_smart/features/reminders/application/reminder_coordinator.dart';
+import 'package:daymind_smart/features/reminders/presentation/notification_pages.dart';
+import 'package:daymind_smart/features/reminders/presentation/reminder_editor.dart';
+
+import 'reminder_engine_test.dart' show FakeScheduler;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
+    tzdata.initializeTimeZones();
     final loader = FontLoader('BeVietnamPro');
     for (final weight in [400, 500, 600, 700]) {
       loader.addFont(
@@ -31,6 +39,7 @@ void main() {
     Size size, {
     bool seed = false,
     double scale = 1,
+    bool notifications = false,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -70,6 +79,14 @@ void main() {
       clock: () => now,
     );
     await controller.load();
+    if (notifications) {
+      final coordinator = ReminderCoordinator(
+        ReminderEngine(db, FakeScheduler(), clock: () => now),
+        repo.list,
+      );
+      controller.attachReminders(coordinator);
+      await coordinator.refresh();
+    }
     await tester.pumpWidget(
       ProviderScope(
         overrides: [workspaceProvider.overrideWith((ref) => controller)],
@@ -86,6 +103,40 @@ void main() {
       tester.platformDispatcher.clearTextScaleFactorTestValue();
     });
     return (db, controller);
+  }
+
+  for (final scale in [1.0, 2.0]) {
+    testWidgets(
+      'notification center and advanced reminder form at text scale $scale',
+      (tester) async {
+        await mount(
+          tester,
+          const Size(360, 800),
+          scale: scale,
+          notifications: true,
+        );
+        await tester.tap(find.byTooltip('Thông báo'));
+        await tester.pumpAndSettle();
+        expect(find.byType(NotificationCenterPage), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('Hiện một thông báo thử im lặng'),
+          250,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('Công việc').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add-task')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Chi tiết & lên lịch'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(ReminderEditor),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   for (final (name, size, scale) in [

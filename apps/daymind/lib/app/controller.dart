@@ -5,6 +5,8 @@ import '../features/tasks/domain/task.dart';
 import '../features/tasks/data/database.dart' show SqliteTaskRepository;
 import '../features/companion/domain/companion.dart';
 import '../features/companion/data/asset_importer.dart';
+import '../features/reminders/application/reminder_coordinator.dart';
+import '../features/reminders/domain/reminder.dart';
 
 final workspaceProvider = ChangeNotifierProvider<WorkspaceController>(
   (ref) => throw UnimplementedError(),
@@ -28,6 +30,17 @@ class WorkspaceController extends ChangeNotifier {
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
   bool busy = false;
+  ReminderCoordinator? reminders;
+  void attachReminders(ReminderCoordinator coordinator) {
+    reminders = coordinator;
+    coordinator.addListener(notifyListeners);
+  }
+
+  Future<void> refreshFromNative() async {
+    tasks = await repository.list();
+    notifyListeners();
+  }
+
   Future<void> load() async {
     tasks = await repository.list();
     categories = await repository.categories();
@@ -46,6 +59,7 @@ class WorkspaceController extends ChangeNotifier {
         final result = await action();
         tasks = await repository.list();
         categories = await repository.categories();
+        await reminders?.refresh();
         notifyListeners();
         return result;
       } finally {
@@ -57,12 +71,26 @@ class WorkspaceController extends ChangeNotifier {
     return operation;
   }
 
-  Future<String> save(TaskDraft draft, {Task? existing}) => _write(
-    () => repository.save(
-      draft,
-      id: existing?.id,
-      expectedRevision: existing?.revision,
-    ),
+  Future<String> save(
+    TaskDraft draft, {
+    Task? existing,
+    TaskReminderConfig? notifications,
+  }) => _write(
+    () => repository.db.transaction(() async {
+      final id = await repository.save(
+        draft,
+        id: existing?.id,
+        expectedRevision: existing?.revision,
+      );
+      if (notifications != null && reminders != null) {
+        await reminders!.engine.configureTask(
+          id,
+          notifications.mode,
+          notifications.forTask(id),
+        );
+      }
+      return id;
+    }),
   );
   Future<void> toggle(Task task) => _write(() async {
     await repository.save(
@@ -102,4 +130,10 @@ class WorkspaceController extends ChangeNotifier {
         await repository.writePreferences(next.toJson());
         preferences = next;
       });
+  @override
+  void dispose() {
+    reminders?.removeListener(notifyListeners);
+    reminders?.dispose();
+    super.dispose();
+  }
 }

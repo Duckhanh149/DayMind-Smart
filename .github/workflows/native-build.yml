@@ -69,6 +69,10 @@ jobs:
       - name: Build Android APK
         if: runner.os == 'Linux'
         run: flutter build apk --release --target-platform android-arm64 --split-per-abi
+      - name: Android receiver and recovery tests
+        if: runner.os == 'Linux'
+        working-directory: apps/daymind/android
+        run: ./gradlew :app:testReleaseUnitTest --no-daemon
       - name: Build Windows application
         if: runner.os == 'Windows'
         run: flutter build windows --release
