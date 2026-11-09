@@ -50,6 +50,12 @@ flutter {
     source = "../.."
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { variant ->
+        variant.enableUnitTest = true
+    }
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.core:core-ktx:1.17.0")

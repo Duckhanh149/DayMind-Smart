@@ -58,6 +58,16 @@ jobs:
       - run: flutter config --no-analytics
       - run: flutter --version
       - run: flutter pub get --enforce-lockfile
+      - name: Restore Android build dependencies
+        if: runner.os == 'Linux'
+        id: gradle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: daymind-gradle-linux-${{ hashFiles('apps/daymind/pubspec.lock', 'apps/daymind/android/**/*.gradle.kts', 'apps/daymind/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: daymind-gradle-linux-
       - name: Precache verified upstream SQLite native assets
         run: python tool/precache_sqlite.py
       - name: Precache verified upstream Kotlin compiler
@@ -80,8 +90,7 @@ jobs:
         run: python tool/retry_native_assets.py flutter build apk --release --target-platform android-arm64 --split-per-abi
       - name: Android receiver and recovery tests
         if: runner.os == 'Linux'
-        working-directory: apps/daymind/android
-        run: ./gradlew :app:testReleaseUnitTest --no-daemon
+        run: python tool/android_receiver_tests.py
       - name: Build Android emulator debug fixture
         if: runner.os == 'Linux'
         run: python tool/retry_native_assets.py flutter build apk --debug --target-platform android-x64
@@ -135,6 +144,14 @@ jobs:
           if (!(Test-Path $iscc)) { choco install innosetup --yes --no-progress }
           & $iscc windows/installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
+      - name: Cache verified Android build dependencies
+        if: always() && !cancelled() && runner.os == 'Linux' && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Linux'
         with:
