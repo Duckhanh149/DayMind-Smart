@@ -9,6 +9,7 @@ on:
       - apps/daymind/assets/**
       - apps/daymind/test/**
       - apps/daymind/integration_test/**
+      - apps/daymind/tool/**
       - apps/daymind/pubspec.*
       - apps/daymind/analysis_options.yaml
       - .github/workflows/native-build.yml
@@ -63,33 +64,42 @@ jobs:
           packages: platform-tools
       - name: Install Android platform dependencies
         if: runner.os == 'Linux'
-        run: sdkmanager "platforms;android-35" "platforms;android-36" "platforms;android-37" "build-tools;36.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
+        run: sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
       - run: flutter analyze
-      - run: flutter test
+      - run: python tool/retry_native_assets.py flutter test
       - name: Build Android APK
         if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -o pipefail
-          for attempt in 1 2; do
-            if flutter build apk --release --target-platform android-arm64 --split-per-abi 2>&1 | tee "$RUNNER_TEMP/daymind-android-build.log"; then
-              exit 0
-            fi
-            if ! rg -q 'Unexpected response code: (502|503|504)' "$RUNNER_TEMP/daymind-android-build.log"; then
-              exit 1
-            fi
-          done
-          exit 1
+        run: python tool/retry_native_assets.py flutter build apk --release --target-platform android-arm64 --split-per-abi
       - name: Android receiver and recovery tests
         if: runner.os == 'Linux'
         working-directory: apps/daymind/android
         run: ./gradlew :app:testReleaseUnitTest --no-daemon
+      - name: Build Android emulator debug fixture
+        if: runner.os == 'Linux'
+        run: python tool/retry_native_assets.py flutter build apk --debug --target-platform android-x64
+      - name: Enable KVM for Android emulator
+        if: runner.os == 'Linux'
+        working-directory: .
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android cold-process reminder smoke
+        if: runner.os == 'Linux'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: apps/daymind
+          script: python3 tool/android_reminder_smoke.py
       - name: Build Windows application
         if: runner.os == 'Windows'
-        run: flutter build windows --release
+        run: python tool/retry_native_assets.py flutter build windows --release
       - name: Windows native integration smoke test
         if: runner.os == 'Windows'
-        run: flutter test integration_test/app_smoke_test.dart -d windows
+        run: python tool/retry_native_assets.py flutter test integration_test/app_smoke_test.dart -d windows
       - name: Bundle Visual C++ runtime
         if: runner.os == 'Windows'
         shell: pwsh

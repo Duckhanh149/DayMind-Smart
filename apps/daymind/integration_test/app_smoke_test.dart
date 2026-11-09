@@ -22,6 +22,14 @@ void main() {
     final controller = ProviderScope.containerOf(
       tester.element(find.byType(WorkspaceScreen)),
     ).read(workspaceProvider);
+    final reminders = controller.reminders;
+    expect(reminders, isNotNull);
+    debugPrint(
+      'NOTIFICATION_POC: permission/initialization=${reminders!.granted}; closed-app adapter=${reminders.engine.scheduler.supportsClosedApp}',
+    );
+    if (reminders.granted) {
+      await reminders.test();
+    }
     final tasks = await controller.repository.list();
     expect(
       tasks.any((task) => task.title == title && task.dueAt == null),

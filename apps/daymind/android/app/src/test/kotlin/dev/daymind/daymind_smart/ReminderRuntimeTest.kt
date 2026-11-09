@@ -117,7 +117,7 @@ class ReminderRuntimeTest {
         assertEquals(0,notifications.size())
     }
     @Test @Config(sdk=[33]) fun deniedAndroid13PermissionNeverDisplays(){
-        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        shadowOf(RuntimeEnvironment.getApplication<android.app.Application>()).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
         event();ReminderRuntime.fire(context,"event");assertFalse(ReminderRuntime.granted(context))
         assertEquals("suppressed",state());assertEquals(0,notifications.size())
     }
