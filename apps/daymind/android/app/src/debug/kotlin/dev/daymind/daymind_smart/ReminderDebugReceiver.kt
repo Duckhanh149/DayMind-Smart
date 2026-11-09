@@ -21,6 +21,27 @@ class ReminderDebugReceiver : BroadcastReceiver() {
                 ReminderRuntime.database(context)?.use { db ->
                     answer.put("ready",true)
                     val command=intent.getStringExtra("command") ?: "ready"
+                    if(command=="secure") {
+                        val store=SecureStore(context)
+                        var output:Any?=null
+                        val reply=object:io.flutter.plugin.common.MethodChannel.Result {
+                            override fun success(value:Any?) { output=value }
+                            override fun error(code:String,message:String?,details:Any?) { throw IllegalStateException(code) }
+                            override fun notImplemented() { throw IllegalStateException("method") }
+                        }
+                        fun call(method:String,value:String?=null) {
+                            val args=mutableMapOf<String,Any?>("key" to "test_probe")
+                            if(value!=null)args["value"]=value
+                            store.handle(io.flutter.plugin.common.MethodCall(method,args),reply)
+                        }
+                        val probe="DayMind native credential probe ă"
+                        call("write",probe);call("read");check(output==probe)
+                        val encrypted=context.getSharedPreferences("daymind_secure_v1",Context.MODE_PRIVATE).getString("test_probe",null)!!
+                        check(!encrypted.contains(probe))
+                        call("write",probe+" updated");call("read");check(output==probe+" updated")
+                        call("delete");call("read");check(output==null)
+                        answer.put("securePassed",true)
+                    }
                     val fixture=intent.getStringExtra("fixture") ?: "cold"
                     require(fixture in listOf("cold","edited","quiet","past","digest"))
                     val now=System.currentTimeMillis();val digestAt=(now/60000+1)*60000
@@ -52,7 +73,7 @@ class ReminderDebugReceiver : BroadcastReceiver() {
                         ReminderRuntime.recover(context,false)
                     } else if(command=="recover") {
                         ReminderRuntime.recover(context,true)
-                    } else require(command in listOf("ready","status"))
+                    } else require(command in listOf("ready","status","secure"))
                     db.rawQuery("SELECT state FROM reminder_events WHERE event_key=?",arrayOf(key)).use { if(it.moveToFirst())answer.put("state",it.getString(0)) }
                     val notices=context.getSystemService(NotificationManager::class.java).activeNotifications
                     answer.put("notifications",notices.size)

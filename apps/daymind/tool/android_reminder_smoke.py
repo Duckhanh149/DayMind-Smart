@@ -52,6 +52,8 @@ adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
 adb('shell', 'pm', 'grant', PACKAGE, 'android.permission.POST_NOTIFICATIONS')
 adb('shell', 'am', 'start', '-n', f'{PACKAGE}/.MainActivity')
 until(lambda: fixture('ready').get('ready'), 90, 'Flutter opens SQLite and initializes native path')
+assert fixture('secure')['securePassed'] is True
+print('PASS: Android Keystore encrypted write/read/replace/delete on the actual emulator.')
 fixture('seed')
 cold_close()
 # The process was absent at the scheduled time. Read-only adb dumps do not start it.

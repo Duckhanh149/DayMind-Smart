@@ -214,6 +214,7 @@ class TaskOccurrence {
     this.deleted = false,
     this.skipped = false,
     this.retired = false,
+    this.detached = false,
     this.overrides = const {},
   });
   final String id, taskId, ruleId, date;
@@ -221,7 +222,7 @@ class TaskOccurrence {
   final DateTime updatedAt;
   final int revision;
   final DateTime? completedAt;
-  final bool deleted, skipped, retired;
+  final bool deleted, skipped, retired, detached;
   final Map<String, dynamic> overrides;
   bool get terminal =>
       skipped ||
@@ -240,6 +241,7 @@ class TaskOccurrence {
     'deleted': deleted,
     'skipped': skipped,
     'retired': retired,
+    'detached': detached,
     'overrides': overrides,
   };
   factory TaskOccurrence.fromJson(Map<String, dynamic> j) {
@@ -260,6 +262,7 @@ class TaskOccurrence {
       deleted: j['deleted'] == true,
       skipped: j['skipped'] == true || j['status'] == 'skipped',
       retired: j['retired'] == true,
+      detached: j['detached'] == true,
       overrides: (j['overrides'] as Map? ?? {}).cast(),
     );
   }
@@ -269,6 +272,7 @@ class TaskOccurrence {
     bool clearCompletion = false,
     bool? deleted,
     bool? retired,
+    bool? detached,
     String? ruleId,
     Map<String, dynamic>? overrides,
     DateTime? at,
@@ -284,6 +288,7 @@ class TaskOccurrence {
     deleted: deleted ?? this.deleted,
     skipped: skipped,
     retired: retired ?? this.retired,
+    detached: detached ?? this.detached,
     overrides: overrides ?? this.overrides,
   );
   Task project(Task root, {int? ruleRevision}) => Task(
@@ -293,6 +298,7 @@ class TaskOccurrence {
     recurrenceRuleId: ruleId,
     recurrenceRevision: ruleRevision,
     seriesRevision: root.revision,
+    detached: detached,
     title: draft.title,
     description: draft.description,
     categoryId: draft.categoryId,

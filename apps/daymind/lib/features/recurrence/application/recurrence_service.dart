@@ -80,7 +80,7 @@ class RecurrenceService {
           }
           final generated = generator.occurrence(r, date, clock());
           final present = old[generated.id];
-          if (present?.terminal == true) continue;
+          if (present?.terminal == true || present?.detached == true) continue;
           if (present == null && terminalDates.contains('${r.taskId}|$date')) {
             continue;
           }
@@ -125,7 +125,9 @@ class RecurrenceService {
           }
         }
       }
-      for (final o in old.values.where((o) => !o.terminal && !o.deleted)) {
+      for (final o in old.values.where(
+        (o) => !o.terminal && !o.deleted && !o.detached,
+      )) {
         final r = rules.where((r) => r.id == o.ruleId).firstOrNull;
         final invalid =
             r == null ||
@@ -245,12 +247,23 @@ class RecurrenceService {
   Future<void> toggle(Task selected) => repository.db.transaction(() async {
     final value = await _current(selected);
     final completed = value.draft.status != TaskStatus.completed;
+    final source = rule(value.ruleId);
+    final outside =
+        source == null ||
+        !source.enabled ||
+        source.activeFrom != null &&
+            value.date.compareTo(source.activeFrom!) < 0 ||
+        source.cutoff != null && value.date.compareTo(source.cutoff!) > 0 ||
+        !generator
+            .dates(source.spec, value.date, value.date)
+            .contains(value.date);
     final draft = TaskDraft.fromJson({
       ...value.draft.toJson(),
       'status': completed ? 'completed' : 'todo',
     });
     final next = value.copy(
       draft: draft,
+      detached: value.detached || (!completed && outside),
       completedAt: completed ? clock() : null,
       clearCompletion: !completed,
       at: clock(),
@@ -297,7 +310,16 @@ class RecurrenceService {
       await records.put('occurrences', next.id, next.toJson());
       return;
     }
-    final template = TaskDraft.fromJson({...draft.toJson(), 'status': 'todo'});
+    final before = current.draft.toJson();
+    final changes = {
+      for (final e in draft.toJson().entries)
+        if (e.key != 'status' && e.value != before[e.key]) e.key: e.value,
+    };
+    TaskDraft templateFor(RecurrenceRule r) => TaskDraft.fromJson({
+      ...generator.occurrence(r, current.date, clock()).draft.toJson(),
+      ...changes,
+      'status': 'todo',
+    });
     if (scope == EditScope.future) {
       for (final r in rules.where((r) => r.taskId == current.taskId)) {
         if (r.activeFrom != null &&
@@ -320,7 +342,7 @@ class RecurrenceService {
           id: const Uuid().v4(),
           taskId: current.taskId,
           spec: change?.spec ?? source.spec,
-          template: template,
+          template: templateFor(source),
           templateDate: current.date,
           activeFrom: current.date,
         );
@@ -352,7 +374,7 @@ class RecurrenceService {
           r.id,
           r
               .change(
-                template: template,
+                template: templateFor(r),
                 templateDate: current.date,
                 spec: spec,
                 enabled: change?.enabled == false ? false : r.enabled,
@@ -361,25 +383,49 @@ class RecurrenceService {
         );
       }
     }
-    if (draft.status != current.draft.status) {
-      final statusOnly = TaskDraft.fromJson({
-        ...current.draft.toJson(),
-        'status': draft.status.name,
-      });
-      await records.put(
-        'occurrences',
-        current.id,
-        current
-            .copy(
-              draft: statusOnly,
-              completedAt: draft.status == TaskStatus.completed
-                  ? clock()
-                  : null,
-              clearCompletion: draft.status != TaskStatus.completed,
-              at: clock(),
-            )
-            .toJson(),
+    if (change?.enabled == false) {
+      final keep = current.copy(
+        draft: draft,
+        detached: true,
+        at: clock(),
+        completedAt: draft.status == TaskStatus.completed
+            ? (current.completedAt ?? clock())
+            : null,
+        clearCompletion: draft.status != TaskStatus.completed,
       );
+      await records.put('occurrences', keep.id, keep.toJson());
+    } else {
+      final overrides = {...current.overrides};
+      if (![
+        TaskStatus.completed,
+        TaskStatus.cancelled,
+      ].contains(draft.status)) {
+        for (final e in changes.entries) {
+          if (overrides.containsKey(e.key)) overrides[e.key] = e.value;
+        }
+      }
+      if (draft.status != current.draft.status ||
+          jsonEncode(overrides) != jsonEncode(current.overrides)) {
+        final statusOnly = TaskDraft.fromJson({
+          ...current.draft.toJson(),
+          'status': draft.status.name,
+        });
+        await records.put(
+          'occurrences',
+          current.id,
+          current
+              .copy(
+                draft: statusOnly,
+                overrides: overrides,
+                completedAt: draft.status == TaskStatus.completed
+                    ? (current.completedAt ?? clock())
+                    : null,
+                clearCompletion: draft.status != TaskStatus.completed,
+                at: clock(),
+              )
+              .toJson(),
+        );
+      }
     }
   });
   Future<void> remove(

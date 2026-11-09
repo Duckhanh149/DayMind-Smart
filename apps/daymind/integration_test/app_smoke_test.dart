@@ -11,7 +11,11 @@ import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
 import 'package:daymind_smart/features/recurrence/application/recurrence_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:daymind_smart/app/controller.dart';
+import 'package:daymind_smart/app/workspace_host.dart';
+import 'package:daymind_smart/features/account_sync/domain/sync_record.dart';
+import 'package:uuid/uuid.dart';
 import 'package:daymind_smart/features/tasks/presentation/workspace_screen.dart';
+import 'package:daymind_smart/platform/secure_session_store.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +23,17 @@ void main() {
     await app.main();
     await tester.pumpAndSettle();
     expect(find.byType(WorkspaceScreen), findsOneWidget);
+    final secure = NativeSessionStore();
+    const probe = 'DayMind native credential probe · ă';
+    await secure.set('test_probe', probe);
+    expect(await secure.get('test_probe'), probe);
+    await secure.set('test_probe', '$probe updated');
+    expect(await secure.get('test_probe'), '$probe updated');
+    await secure.remove('test_probe');
+    expect(await secure.get('test_probe'), isNull);
+    debugPrint(
+      'SECURE_STORAGE_POC: native encrypted write/read/replace/delete passed.',
+    );
     await tester.tap(find.byKey(const Key('add-task')));
     await tester.pumpAndSettle();
     final title = 'Native smoke ${DateTime.now().millisecondsSinceEpoch}';
@@ -114,5 +129,60 @@ void main() {
     final task = tasks.firstWhere((task) => task.title == title);
     await controller.delete(task);
     await tester.pumpAndSettle();
+    if (const bool.fromEnvironment('RUN_ACCOUNT_EMULATOR')) {
+      final host = ProviderScope.containerOf(
+        tester.element(find.byType(WorkspaceScreen)),
+      ).read(workspaceHostProvider)!;
+      final localIds = host.controller!.tasks.map((t) => t.id).toSet();
+      final email = '${const Uuid().v4()}@example.invalid',
+          secret = const Uuid().v4();
+      await host.signIn(email, secret, create: true, copyLocal: false);
+      await tester.pumpAndSettle();
+      final service = host.sync!;
+      await service.sync();
+      expect(service.message, isNull);
+      expect(host.controller!.tasks, isEmpty);
+      final owner = host.account!.uid;
+      expect((await secure.read())?.uid, owner);
+      final privateTitle = 'Native account ${const Uuid().v4()}';
+      final privateId = await host.controller!.save(
+        TaskDraft(
+          title: privateTitle,
+          dueAt: DateTime.now().add(const Duration(hours: 3)),
+        ),
+      );
+      await service.sync();
+      expect(service.pendingCount, 0);
+      expect(service.conflictCount, 0);
+      final remote = await host.gateway.fetchAll(await host.session());
+      expect(
+        remote.any(
+          (r) =>
+              r.record.kind == SyncKind.task &&
+              r.record.id == privateId &&
+              r.record.data['title'] == privateTitle,
+        ),
+        isTrue,
+      );
+      await host.notificationDevice(true);
+      expect(host.controller!.reminders!.preferences.primaryDevice, isTrue);
+      await host.signOut();
+      await tester.pumpAndSettle();
+      expect(await secure.read(), isNull);
+      expect(host.controller!.tasks.map((t) => t.id).toSet(), localIds);
+      expect(host.controller!.tasks.any((t) => t.id == privateId), isFalse);
+      await host.signIn(email, secret, create: false, copyLocal: false);
+      await tester.pumpAndSettle();
+      await host.sync!.sync();
+      expect(host.account!.uid, owner);
+      expect(host.controller!.tasks.any((t) => t.id == privateId), isTrue);
+      await host.deleteAccount(secret);
+      await tester.pumpAndSettle();
+      expect(host.account, isNull);
+      expect(host.controller!.tasks.map((t) => t.id).toSet(), localIds);
+      debugPrint(
+        'ACCOUNT_NATIVE_POC: real Auth/Firestore, encrypted session, isolated profile, primary device, logout/relogin and verified deletion passed.',
+      );
+    }
   });
 }

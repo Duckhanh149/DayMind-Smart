@@ -1,25 +1,20 @@
 import 'dart:io';
-import 'dart:async';
 
 import 'package:timezone/data/latest.dart' as tzdata;
 
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
     show LicenseRegistry, LicenseEntryWithLineBreaks;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'app/app.dart';
 import 'app/controller.dart';
-import 'features/tasks/data/database.dart';
-import 'features/companion/data/asset_importer.dart';
-import 'features/reminders/application/reminder_engine.dart';
-import 'features/reminders/application/reminder_coordinator.dart';
-import 'platform/notification_scheduler.dart';
-import 'platform/window_lifecycle.dart';
+import 'app/workspace_host.dart';
+import 'platform/secure_session_store.dart';
+import 'features/account_sync/data/firebase_rest.dart';
+import 'features/account_sync/data/firestore_gateway.dart';
 
 bool _fontLicenseRegistered = false;
 Future<void> main() async {
@@ -36,49 +31,23 @@ Future<void> main() async {
   try {
     final support = await getApplicationSupportDirectory();
     await support.create(recursive: true);
-    final database = DaymindDatabase(
-      NativeDatabase.createInBackground(
-        File(p.join(support.path, 'daymind.sqlite')),
-      ),
+    final http = JsonTransport();
+    const configuredHost = String.fromEnvironment('DAYMIND_EMULATOR_HOST');
+    final endpoints = FirebaseEndpoints(
+      host: configuredHost.isNotEmpty
+          ? configuredHost
+          : Platform.isAndroid
+          ? '10.0.2.2'
+          : '127.0.0.1',
     );
-    final controller = WorkspaceController(
-      SqliteTaskRepository(database),
-      StaticAssetImporter(Directory(p.join(support.path, 'characters'))),
+    final host = WorkspaceHost(
+      support,
+      NativeSessionStore(),
+      FirebaseRestAuth(endpoints, http),
+      FirestoreRestGateway(endpoints, http),
     );
-    await controller.load();
-    if (Platform.isWindows) {
-      final window = WindowLifecycle();
-      window.onVisibility = (visible) =>
-          controller.reminders?.setWindowVisible(visible);
-      controller.attachWindow(window);
-      await window.start(controller.preferences.windowsTrayEnabled);
-    }
-    final scheduler = PlatformNotificationScheduler();
-    scheduler.onOpen = () {
-      controller.openNotifications();
-      final window = controller.window;
-      if (window != null) unawaited(window.show());
-    };
-    final zone = await scheduler.initialize(
-      p.join(support.path, 'daymind.sqlite'),
-    );
-    final reminders = ReminderCoordinator(
-      ReminderEngine(database, scheduler),
-      controller.reminderTasks,
-      readTimezone: scheduler.localTimezone,
-      onNativeChange: controller.refreshFromNative,
-      onInApp: (title) {
-        controller.dialogue = title;
-      },
-    );
-    controller.attachReminders(reminders);
-    await reminders.start(zone);
-    runApp(
-      ProviderScope(
-        overrides: [workspaceProvider.overrideWith((ref) => controller)],
-        child: const DaymindApp(),
-      ),
-    );
+    await host.start();
+    runApp(WorkspaceApplication(host: host));
   } catch (error) {
     runApp(
       MaterialApp(
@@ -104,4 +73,50 @@ Future<void> main() async {
       ),
     );
   }
+}
+
+class WorkspaceApplication extends StatefulWidget {
+  const WorkspaceApplication({super.key, required this.host});
+  final WorkspaceHost host;
+  @override
+  State<WorkspaceApplication> createState() => _WorkspaceApplicationState();
+}
+
+class _WorkspaceApplicationState extends State<WorkspaceApplication> {
+  int? generation;
+  Widget? scope;
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.host,
+    builder: (context, _) {
+      final host = widget.host;
+      if (generation != host.generation) {
+        generation = host.generation;
+        final controller = host.controller!;
+        scope = ProviderScope(
+          key: ValueKey(generation),
+          overrides: [
+            workspaceProvider.overrideWith((ref) => controller),
+            workspaceHostProvider.overrideWithValue(host),
+          ],
+          child: const DaymindApp(),
+        );
+      }
+      return Stack(
+        textDirection: TextDirection.ltr,
+        children: [
+          scope!,
+          if (host.switching)
+            const Positioned.fill(
+              child: AbsorbPointer(
+                child: ColoredBox(
+                  color: Color(0xccf5f6f1),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
 }

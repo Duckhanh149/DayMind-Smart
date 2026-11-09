@@ -27,6 +27,8 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() { foreground = false; bridge = null; super.onDestroy() }
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
+        val secureStore = SecureStore(this)
+        MethodChannel(engine.dartExecutor.binaryMessenger, "daymind/secure").setMethodCallHandler(secureStore::handle)
         bridge = MethodChannel(engine.dartExecutor.binaryMessenger, "daymind/reminders")
         bridge?.setMethodCallHandler { call, result ->
             try {
@@ -39,6 +41,22 @@ class MainActivity : FlutterActivity() {
                         ReminderRuntime.channel(this); ReminderRuntime.recover(this); result.success(null)
                     }
                     "granted" -> result.success(ReminderRuntime.granted(this))
+                    "deactivate" -> {
+                        ReminderRuntime.executor.execute {
+                            try {
+                                ReminderRuntime.database(this)?.use { db ->
+                                    db.rawQuery("SELECT platform_id FROM reminder_events WHERE state='scheduled' LIMIT 256", null).use { rows ->
+                                        while(rows.moveToNext()) ReminderRuntime.cancel(this, rows.getInt(0))
+                                    }
+                                }
+                                check(getSharedPreferences("daymind_runtime", MODE_PRIVATE).edit().remove("database").commit())
+                                getSystemService(android.app.NotificationManager::class.java).cancelAll()
+                                runOnUiThread { result.success(null) }
+                            } catch (_:Exception) {
+                                runOnUiThread { result.error("PROFILE_CLOSE", "Chưa dừng được thông báo của không gian cũ.", null) }
+                            }
+                        }
+                    }
                     "requestPermission" -> {
                         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                             permissionResult = result

@@ -50,6 +50,17 @@ class WorkspaceController extends ChangeNotifier {
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
   bool busy = false;
+  bool _closed = false, _disposed = false;
+  void Function()? onLocalChange;
+  Future<void> drain() async {
+    _closed = true;
+    await _tail;
+  }
+
+  void resumeWrites() {
+    if (!_disposed) _closed = false;
+  }
+
   int notificationOpenRequest = 0;
   void openNotifications() {
     notificationOpenRequest++;
@@ -69,6 +80,7 @@ class WorkspaceController extends ChangeNotifier {
   }
 
   Future<void> refreshFromNative() => _write(() async {});
+  Future<void> refreshFromSync() => _write(() async {}, localChange: false);
 
   Future<void> load() async {
     tasks = await repository.list();
@@ -84,12 +96,14 @@ class WorkspaceController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<T> _write<T>(Future<T> Function() action) {
+  Future<T> _write<T>(Future<T> Function() action, {bool localChange = true}) {
+    if (_closed) return Future.error(StateError('Không gian đang được đóng.'));
     final operation = _tail.then((_) async {
       busy = true;
       notifyListeners();
       try {
         final result = await action();
+        if (localChange) onLocalChange?.call();
         tasks = await repository.list();
         await recurrence.materialize(tasks);
         categories = await repository.categories();
@@ -115,8 +129,8 @@ class WorkspaceController extends ChangeNotifier {
     () => repository.db.transaction(() async {
       if (existing?.occurrenceId != null) {
         if (scope != EditScope.one &&
-            notifications?.rules.any((r) => r.kind == ReminderKind.absolute) ==
-                true) {
+            notifications?.mode == 'custom' &&
+            notifications!.rules.any((r) => r.kind == ReminderKind.absolute)) {
           throw const ValidationException(
             'Ngày giờ nhắc riêng chỉ áp dụng cho một lần. Chuỗi dùng mốc tương đối.',
           );
@@ -148,8 +162,24 @@ class WorkspaceController extends ChangeNotifier {
         return existing.id;
       }
       if (repetition?.enabled == true &&
-          notifications?.rules.any((r) => r.kind == ReminderKind.absolute) ==
-              true) {
+          notifications == null &&
+          existing != null &&
+          reminders != null) {
+        final saved = await reminders!.engine.records.get(
+          'task_reminders',
+          existing.id,
+        );
+        if (saved?['mode'] == 'custom' &&
+            (await reminders!.engine.rules(existing.id))
+                .any((r) => r.kind == ReminderKind.absolute)) {
+          throw const ValidationException(
+            'Chuỗi lặp dùng mốc nhắc tương đối. Hãy đổi hoặc tắt mốc ngày giờ riêng trước khi bật lặp.',
+          );
+        }
+      }
+      if (repetition?.enabled == true &&
+          notifications?.mode == 'custom' &&
+          notifications!.rules.any((r) => r.kind == ReminderKind.absolute)) {
         throw const ValidationException(
           'Chuỗi lặp dùng mốc nhắc tương đối. Ngày giờ riêng chỉ áp dụng khi sửa một lần.',
         );
@@ -233,8 +263,10 @@ class WorkspaceController extends ChangeNotifier {
       });
   @override
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    _closed = true;
     window?.removeListener(notifyListeners);
-    window?.dispose();
     reminders?.removeListener(notifyListeners);
     reminders?.dispose();
     super.dispose();

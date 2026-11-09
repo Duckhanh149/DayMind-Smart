@@ -124,7 +124,16 @@ class ReminderEngine {
       effectiveByTask[task.id] = mode == 'off'
           ? []
           : mode == 'custom'
-          ? allRules.where((r) => r.taskId == configId && r.enabled).toList()
+          ? allRules
+                .where(
+                  (r) =>
+                      r.taskId == configId &&
+                      r.enabled &&
+                      (task.occurrenceId == null ||
+                          r.kind != ReminderKind.absolute ||
+                          configId == task.occurrenceId),
+                )
+                .toList()
           : fallback == null
           ? []
           : [fallback];

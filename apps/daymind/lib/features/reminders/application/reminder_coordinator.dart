@@ -24,6 +24,8 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   final Future<void> Function()? onNativeChange;
   final void Function(String)? onInApp;
   final Future<String> Function()? readTimezone;
+  Future<void> Function(bool)? onPrimaryRequest;
+  Completer<void>? _idle;
   NotificationPreferences preferences = const NotificationPreferences();
   List<ReminderEventRecord> events = [];
   bool granted = false, _foreground = true, _running = false, _disposed = false;
@@ -86,6 +88,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     _running = true;
+    _idle = Completer<void>();
     try {
       preferences = await engine.preferences();
       if (readTimezone != null) {
@@ -101,17 +104,21 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
       granted = await engine.scheduler.granted();
+      if (_disposed) return;
       final tasks = await getTasks();
+      if (_disposed) return;
       final day = localDay(engine.clock(), preferences.timezoneId);
       if (replan || _plannedDay != day) {
         await engine.reconcile(tasks);
         _plannedDay = day;
       }
+      if (_disposed) return;
       if (!Platform.isAndroid) {
         final due = await engine.claimDue(tasks);
         if (_disposed) return;
         final digests = due.where((e) => e.ruleId == 'digest').toList();
         for (final digest in digests) {
+          if (_disposed) return;
           if (_foreground && _windowVisible) {
             onInApp?.call(digest.title);
           } else {
@@ -159,6 +166,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       error = '$e';
     } finally {
       _running = false;
+      _idle?.complete();
       if (!_disposed) notifyListeners();
       if (_pendingReplan && !_disposed) {
         _pendingReplan = false;
@@ -168,6 +176,11 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> configure(Map<String, dynamic> changes) async {
+    if (changes.containsKey('primaryDevice') && onPrimaryRequest != null) {
+      await onPrimaryRequest!(changes['primaryDevice'] == true);
+      changes = {...changes}..remove('primaryDevice');
+      if (changes.isEmpty) return;
+    }
     final latest = await engine.preferences();
     final value = NotificationPreferences.fromJson({
       ...latest.toJson(),
@@ -175,6 +188,30 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     });
     await engine.configure(value);
     await refresh();
+  }
+
+  Future<void> applyPrimary(bool value) async {
+    final latest = await engine.preferences();
+    if (latest.primaryDevice == value) return;
+    await engine.configure(
+      NotificationPreferences.fromJson({
+        ...latest.toJson(),
+        'primaryDevice': value,
+      }),
+    );
+    await refresh();
+  }
+
+  Future<void> stop() async {
+    _disposed = true;
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    if (_running) await _idle?.future;
+  }
+
+  Future<void> resume(String zone) async {
+    _disposed = false;
+    await start(zone);
   }
 
   Future<void> requestPermission() async {

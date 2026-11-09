@@ -69,6 +69,133 @@ void main() {
   );
   TaskDraft renamed(Task t, String title) =>
       TaskDraft.fromJson({...TaskDraft.fromTask(t).toJson(), 'title': title});
+  test('legacy inherited absolute rules never multiply across occurrences; one-instance absolute stays valid', () async {
+    await engine.configureTask(rootId, 'custom', [
+      ReminderRule(
+        id: 'legacy-absolute',
+        taskId: rootId,
+        kind: ReminderKind.absolute,
+        absoluteAt: DateTime.utc(2026, 1, 5, 8),
+      ),
+    ]);
+    await controller.reminders!.refresh();
+    expect(
+      (await engine.events()).where((e) => e.state == 'scheduled'),
+      isEmpty,
+    );
+    final selected = at(6);
+    await engine.configureTask(selected.id, 'custom', [
+      ReminderRule(
+        id: 'own-absolute',
+        taskId: selected.id,
+        kind: ReminderKind.absolute,
+        absoluteAt: DateTime.utc(2026, 1, 6, 8),
+      ),
+    ]);
+    await controller.reminders!.refresh();
+    final events = (await engine.events())
+        .where((e) => e.state == 'scheduled')
+        .toList();
+    expect(events.length, 1);
+    expect(events.single.occurrenceId, selected.id);
+  });
+  test('saved absolute rule rejects conversion to a series without losing the one-off task', () async {
+    final id = await controller.save(
+      TaskDraft(title: 'Một lần', dueAt: DateTime.utc(2026, 1, 5, 12)),
+      notifications: TaskReminderConfig('custom', [
+        ReminderRule(
+          id: 'single-absolute',
+          taskId: 'new',
+          kind: ReminderKind.absolute,
+          absoluteAt: DateTime.utc(2026, 1, 5, 11),
+        ),
+      ]),
+    );
+    final t = controller.tasks.singleWhere((t) => t.id == id);
+    await expectLater(
+      controller.save(
+        TaskDraft.fromTask(t),
+        existing: t,
+        repetition: const RepeatChange(
+          enabled: true,
+          spec: RepeatSpec(
+            frequency: RepeatFrequency.daily,
+            firstDate: '2026-01-05',
+            zone: 'UTC',
+          ),
+        ),
+      ),
+      throwsA(isA<ValidationException>()),
+    );
+    await controller.load();
+    expect(controller.recurrence.rules.any((r) => r.taskId == id), isFalse);
+    expect(
+      controller.tasks.singleWhere((t) => t.id == id).revision,
+      t.revision,
+    );
+  });
+  test(
+    'stopping repetition keeps the selected edited task as a detached one-off',
+    () async {
+      final selected = at(6);
+      await controller.save(
+        renamed(selected, 'Việc cuối'),
+        existing: selected,
+        scope: EditScope.future,
+        repetition: const RepeatChange(enabled: false),
+      );
+      expect(at(6).title, 'Việc cuối');
+      expect(at(6).detached, isTrue);
+      expect(
+        controller.visibleTasks
+            .where((t) => t.deletedAt == null)
+            .map((t) => t.dueAt?.day)
+            .toSet(),
+        {5, 6},
+      );
+      await controller.load();
+      expect(at(6).title, 'Việc cuối');
+    },
+  );
+  test(
+    'reopening completed history outside a stopped series remains visible',
+    () async {
+      await controller.toggle(at(8));
+      await controller.delete(at(6), scope: EditScope.future);
+      expect(at(8).status, TaskStatus.completed);
+      await controller.toggle(at(8));
+      expect(at(8).status, TaskStatus.todo);
+      expect(at(8).detached, isTrue);
+      await controller.load();
+      expect(at(8).status, TaskStatus.todo);
+    },
+  );
+  test('priority-only series edit preserves a selected title exception and another segment template', () async {
+    await controller.save(
+      renamed(at(7), 'Nhánh sau'),
+      existing: at(7),
+      scope: EditScope.future,
+    );
+    await controller.save(renamed(at(6), 'Ngoại lệ'), existing: at(6));
+    final selected = at(6);
+    await controller.save(
+      TaskDraft.fromJson({
+        ...TaskDraft.fromTask(selected).toJson(),
+        'priority': 'high',
+      }),
+      existing: selected,
+      scope: EditScope.all,
+    );
+    expect(at(5).title, 'Chuỗi gốc');
+    expect(at(6).title, 'Ngoại lệ');
+    expect(at(7).title, 'Nhánh sau');
+    expect(at(8).title, 'Nhánh sau');
+    expect(
+      controller.visibleTasks.every((t) => t.priority == TaskPriority.high),
+      isTrue,
+    );
+    expect(at(7).dueAt?.hour, 10);
+  });
   test(
     'four separate reminder slots; complete one cancels only that occurrence',
     () async {

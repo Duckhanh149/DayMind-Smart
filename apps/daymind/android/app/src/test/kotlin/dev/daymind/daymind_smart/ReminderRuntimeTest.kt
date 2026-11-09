@@ -160,6 +160,20 @@ class ReminderRuntimeTest {
         db.execSQL("UPDATE reminder_events SET rule_id='custom-rule' WHERE event_key='custom'")
         ReminderRuntime.fire(context,"custom");assertEquals("unknown",state("custom"));assertEquals(1,notifications.size())
     }
+    @Test fun inheritedAbsoluteRuleIsRejectedButOwnOccurrenceAbsoluteIsAccepted() {
+        scopedEvent("inherited","o1")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','series-rule',?,?)",arrayOf<Any?>(JSONObject().put("mode","custom").toString(),now))
+        val rule=JSONObject().put("taskId","series-rule").put("kind","absolute").put("enabled",true)
+        db.execSQL("INSERT INTO extension_records VALUES('reminder_rules','absolute-rule',?,?)",arrayOf<Any?>(rule.toString(),now))
+        db.execSQL("UPDATE reminder_events SET rule_id='absolute-rule' WHERE event_key='inherited'")
+        ReminderRuntime.fire(context,"inherited");assertEquals("cancelled",state("inherited"));assertEquals(0,notifications.size())
+        scopedEvent("own","o2")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','o2',?,?)",arrayOf<Any?>(JSONObject().put("mode","custom").toString(),now))
+        rule.put("taskId","o2")
+        db.execSQL("UPDATE extension_records SET value=? WHERE area='reminder_rules' AND id='absolute-rule'",arrayOf<Any?>(rule.toString()))
+        db.execSQL("UPDATE reminder_events SET rule_id='absolute-rule' WHERE event_key='own'")
+        ReminderRuntime.fire(context,"own");assertEquals("unknown",state("own"));assertEquals(1,notifications.size())
+    }
 
     private fun digestKey(date:String)=MessageDigest.getInstance("SHA-256").digest("__digest__:local|$date".toByteArray()).joinToString(""){"%02x".format(it)}
     private fun digestEvent():String {

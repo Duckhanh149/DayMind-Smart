@@ -95,7 +95,7 @@ object ReminderRuntime {
         if(mode=="off")return false
         if(!ruleId.startsWith("snooze:")) {
             if(ruleId=="default" && (mode!="auto" || config(db).optString("preset","normal")=="minimal"))return false
-            if(ruleId!="default" && (mode!="custom" || !db.rawQuery("SELECT value FROM extension_records WHERE area='reminder_rules' AND id=?",arrayOf(ruleId)).use { if(!it.moveToFirst())false else JSONObject(it.getString(0)).let { rule -> rule.optBoolean("enabled",true) && rule.optString("taskId")==configId } }))return false
+            if(ruleId!="default" && (mode!="custom" || !db.rawQuery("SELECT value FROM extension_records WHERE area='reminder_rules' AND id=?",arrayOf(ruleId)).use { if(!it.moveToFirst())false else JSONObject(it.getString(0)).let { rule -> rule.optBoolean("enabled",true) && rule.optString("taskId")==configId && (occurrenceId==null || rule.optString("kind")!="absolute" || configId==occurrenceId) } }))return false
         }
         return db.rawQuery("SELECT * FROM tasks WHERE id=? AND deleted_at IS NULL AND status NOT IN (2,3)", arrayOf(taskId)).use { task ->
             if (!task.moveToFirst() || task.getInt(task.getColumnIndexOrThrow("revision")) != event.getInt(event.getColumnIndexOrThrow("task_revision"))) return@use false

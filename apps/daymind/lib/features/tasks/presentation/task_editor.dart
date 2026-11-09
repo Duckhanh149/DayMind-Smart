@@ -316,7 +316,9 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                             ),
                           ),
                           RecurrenceEditor(
-                            initial: initialRule?.spec,
+                            initial: widget.task?.detached == true
+                                ? null
+                                : initialRule?.spec,
                             date: tz.TZDateTime.from(
                               start ?? due ?? controller.now(),
                               zoneLocation(editorZone),

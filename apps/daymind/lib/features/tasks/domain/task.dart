@@ -23,6 +23,7 @@ class Task {
     this.recurrenceRuleId,
     this.recurrenceRevision,
     this.seriesRevision,
+    this.detached = false,
   });
   final String id, title, description;
   final TaskPriority priority;
@@ -37,6 +38,7 @@ class Task {
   final int revision;
   final String? seriesId, occurrenceId, recurrenceRuleId;
   final int? recurrenceRevision, seriesRevision;
+  final bool detached;
   String get reminderTaskId => seriesId ?? id;
   int get reminderRevision => seriesRevision ?? revision;
   bool get terminal =>

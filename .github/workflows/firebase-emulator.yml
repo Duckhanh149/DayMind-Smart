@@ -1,9 +1,12 @@
-name: Firebase Emulator POC
+name: Firebase Emulator integration
 on:
   push:
     branches: [main, native/flutter-app]
     paths:
       - apps/daymind/firebase/**
+      - apps/daymind/emulator_test/**
+      - apps/daymind/lib/**
+      - apps/daymind/pubspec.*
       - .github/workflows/firebase-emulator.yml
   workflow_dispatch:
 permissions:
@@ -11,7 +14,7 @@ permissions:
 jobs:
   emulator:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: apps/daymind/firebase
@@ -26,5 +29,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Install pinned Flutter
+        run: |
+          git init "$RUNNER_TEMP/daymind-flutter"
+          git -C "$RUNNER_TEMP/daymind-flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$RUNNER_TEMP/daymind-flutter" fetch --depth 1 origin refs/tags/3.47.9:refs/tags/3.47.9
+          git -C "$RUNNER_TEMP/daymind-flutter" checkout -B stable 3.47.9
+          test "$(git -C "$RUNNER_TEMP/daymind-flutter" rev-parse HEAD)" = c197ca5199e9ee5661e865596c9c07294dfab51c
+          echo "$RUNNER_TEMP/daymind-flutter/bin" >> "$GITHUB_PATH"
+      - run: flutter config --no-analytics
+      - run: flutter pub get --enforce-lockfile
+        working-directory: apps/daymind
+      - run: flutter pub get --enforce-lockfile
+        working-directory: apps/daymind/emulator_test
+      - run: python ../tool/precache_sqlite.py
+        working-directory: apps/daymind/emulator_test
       - run: npm ci --no-audit --no-fund
       - run: npm run test:emulator

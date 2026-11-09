@@ -5,6 +5,7 @@
 
 #include "flutter/generated_plugin_registrant.h"
 #include "resource.h"
+#include "secure_store.h"
 
 namespace {
 constexpr UINT kTrayCallback = WM_APP + 71;
@@ -33,6 +34,10 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  secure_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "daymind/secure",
+      &flutter::StandardMethodCodec::GetInstance());
+  secure_channel_->SetMethodCallHandler(HandleSecureCall);
   taskbar_created_ = RegisterWindowMessageW(L"TaskbarCreated");
   lifecycle_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       flutter_controller_->engine()->messenger(), "daymind/window",
@@ -71,6 +76,10 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  if (secure_channel_) {
+    secure_channel_->SetMethodCallHandler(nullptr);
+    secure_channel_ = nullptr;
+  }
   ConfigureTray(false);
   if (lifecycle_channel_) {
     lifecycle_channel_->SetMethodCallHandler(nullptr);

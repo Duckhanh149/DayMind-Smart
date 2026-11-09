@@ -112,6 +112,19 @@ class PlatformNotificationScheduler implements NotificationScheduler {
     if (Platform.isAndroid) await channel.invokeMethod<void>('openSettings');
   }
 
+  Future<void> deactivate() async {
+    onChanged = null;
+    onInApp = null;
+    onOpen = null;
+    if (Platform.isAndroid) {
+      await channel.invokeMethod<void>('deactivate');
+      channel.setMethodCallHandler(null);
+    } else if (Platform.isWindows && _ready) {
+      await plugin.cancelAll();
+    }
+    _ready = false;
+  }
+
   @override
   Future<void> schedule({
     required int id,

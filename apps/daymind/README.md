@@ -1,6 +1,6 @@
 # DayMind SMART — Android & Windows
 
-Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Companion 2D tĩnh, Reminder Engine, lịch ngày/tuần/tháng và công việc lặp lại. Preview 0.3.0 bổ sung trợ lý hằng ngày và thống kê. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
+Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Companion 2D tĩnh, Reminder Engine, lịch ngày/tuần/tháng và công việc lặp lại. Preview 0.4.0 bổ sung tài khoản và đồng bộ thử nghiệm bằng Firebase Emulator. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
 
 ## Đã triển khai
 
@@ -12,8 +12,10 @@
 - Nhắc việc: một nhắc theo ưu tiên hoặc tối đa 8 mốc tự đặt; xem giờ hiệu lực, giờ yên lặng, gộp, snooze, dismiss, hủy lịch cũ khi sửa/hoàn thành. Trung tâm thông báo có tất cả/chưa đọc/quá hạn. Không xin quyền tự động. Android có receiver và lịch inexact có guard; Windows đóng cửa sổ thu vào khay theo lựa chọn của người dùng để tiếp tục nhắc, có Mở/Thoát hẳn; phần native khay đã qua kiểm thử CI. Không tự khởi động cùng Windows.
 - Lịch ngày/tuần/tháng với múi giờ hiển thị; daily/weekly/monthly, khoảng lặp, thứ, số lần/ngày kết thúc, chọn rõ bỏ qua hay dùng cuối tháng thiếu ngày. Sửa một/từ lần này/toàn chuỗi, giữ lịch sử và ngoại lệ.
 - Trợ lý hằng ngày: tối đa ba gợi ý có lý do, không lặp nhiều lần của cùng chuỗi; tùy chỉnh các thẻ trang Hôm nay. Thống kê 7/30 ngày dùng ngày hoàn thành thật, hiển thị mẫu số và loại việc hủy/thùng rác.
-- Bản tóm tắt **mặc định tắt**, giờ gợi ý 07:00; một bản mỗi ngày địa phương khi bật. Đọc số liệu mới khi phát, không có nút hoàn thành/hoãn công việc. Đổi giờ/quyền không phát lại bản đã xử lý. Cần CI native của bản 0.3.0 để chốt phần mới.
-- Android tắt automatic app backup; không tự tải công việc/ảnh lên cloud. Firebase Emulator POC ở `firebase/` đã đạt local/CI; chưa có account/sync trong ứng dụng.
+- Bản tóm tắt **mặc định tắt**, giờ gợi ý 07:00; một bản mỗi ngày địa phương khi bật. Đọc số liệu mới khi phát, không có nút hoàn thành/hoãn công việc. Đổi giờ/quyền không phát lại bản đã xử lý. Phần này đã đạt CI Android/Windows ở checkpoint giai đoạn 4.
+- Tài khoản/đồng bộ tùy chọn qua Firebase Emulator: kho SQLite và thư viện riêng theo tài khoản; phiên đăng nhập được mã hóa bằng Android Keystore hoặc Windows DPAPI. Sao chép dữ liệu cục bộ cần chọn tường minh. Outbox bền vững, retry, CAS và giao diện giữ cả hai bản xung đột; đồng bộ chuỗi/cấu hình nhắc theo nhóm để chặn nhắc trùng.
+- Chọn một thiết bị nhận nhắc chính khi online; thiết bị chính cũ mất mạng có thể còn báo theo lịch đã lưu. Đăng xuất giữ thay đổi chưa gửi trong kho riêng, trở về dữ liệu cục bộ. Xóa tài khoản cần nhập lại mật khẩu, giữ dấu UID đã xóa để chặn thiết bị cũ tải lại. Không đồng bộ ảnh nhân vật hoặc lịch sử thông báo.
+- Android tắt automatic app backup. Chưa cấu hình Firebase production; xem [cách chạy Emulator](firebase/README.md). Phần native mới của giai đoạn 5 đang chờ CI, chưa được đánh dấu đạt.
 
 ## Chạy và build
 

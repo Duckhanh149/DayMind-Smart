@@ -1,7 +1,7 @@
 [Setup]
 AppId={{9E5EEAD6-DB82-48CC-A0C2-A3D0574DC18B}
 AppName=DayMind SMART
-AppVersion=0.3.0
+AppVersion=0.4.0
 AppPublisher=DayMind SMART
 DefaultDirName={localappdata}\Programs\DayMind SMART
 DefaultGroupName=DayMind SMART

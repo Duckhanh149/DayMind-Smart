@@ -35,5 +35,5 @@ for report in results.rglob('TEST-*ReminderRuntimeTest*.xml'):
     suite = ET.parse(report).getroot()
     assert int(suite.get('failures', 0)) == 0 and int(suite.get('errors', 0)) == 0
     count += int(suite.get('tests', 0)) - int(suite.get('skipped', 0))
-assert count >= 23, f'Expected >=23 receiver tests, observed {count}; no empty-suite pass.'
+assert count >= 24, f'Expected >=24 receiver tests, observed {count}; no empty-suite pass.'
 print(f'PASS: {count} Android receiver/recovery tests actually executed.', flush=True)

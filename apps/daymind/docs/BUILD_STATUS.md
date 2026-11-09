@@ -4,12 +4,14 @@ Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web ro
 
 ## Checkpoint hiện tại
 
-Preview 0.3.0 / giai đoạn 4: local **104/104 Flutter tests đạt**, analyze sạch, Kotlin main/debug compile đạt. Bảy native cases mới đưa tổng receiver tests lên 23; smoke Android bổ sung digest khi tiến trình đóng, không có task actions và không lặp khi đổi giờ/recovery. Những ca native mới đang chờ CI, không tính đạt từ kiểm thử Dart. Ảnh analytics/phone/desktop mới đã xem lại bằng Flutter renderer headless.
+Preview 0.4.0 / giai đoạn 5 đang chờ cổng CI native. Giai đoạn 4 đã đạt ở `94c39d5`, [workflow 42615017005](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42615017005): 104 Flutter tests trên Linux/Windows, 23 receiver/recovery/digest tests, Android OS cold-process digest và Windows SQLite/tray/installer đều đạt.
 
-- Giai đoạn 2: commit `428cbe75`, [workflow 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt cả Android và Windows: 55 Flutter tests; 12 receiver/recovery tests; emulator API35 phát một thông báo sau khi tiến trình app đóng, revision/quiet guards và không replay; Windows native integration + tiến trình close→tray/Mở/Thoát + installer đạt.
-- Giai đoạn 3 đang chuẩn bị build preview 0.2.0: local analyze không issues, **82/82 Flutter tests đạt**, 13 domain recurrence và 11 SQLite/controller/calendar/reminder integration mới, thêm kiểm thử UI thường/200%. Main/debug Kotlin compile đạt local. Bốn receiver occurrence tests mới phải được CI thực thi; chưa tính là đã đạt native.
-- Ảnh [calendar.png](ui/calendar.png) là render Flutter headless đã xem lại; không phải ảnh máy thật.
-- Chưa nghiệm thu Android OEM/Doze/reboot hoặc Windows 10/11 phần cứng thật. Không có chữ ký phát hành sản xuất.
+Bản nguồn giai đoạn 5 có account UI, kho riêng theo UID, native encrypted session store, outbox/CAS/conflict archive và primary-device policy. **14 ca Firebase Emulator thật đạt local**, analyze sạch; **119/119 Flutter tests đạt**, gồm hot-validator regression, credential rollback và retry xóa tài khoản khi mất phản hồi. Bảy ca Auth/payload cũng đạt khi biên dịch AOT. Native Keystore/DPAPI probes và receiver case thứ 24 cần CI mới trước khi coi giai đoạn 5 đạt.
+
+- Giai đoạn 2: `428cbe75`, [CI 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt Android/Windows, 55 Flutter tests và 12 receiver cases.
+- Giai đoạn 3: `740c8bf`, [CI 42608475322](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42608475322) đạt Android/Windows, 82 Flutter tests và 16 receiver cases.
+- Ảnh trong `docs/ui/` là Flutter renderer headless đã xem lại, không phải ảnh thiết bị thật.
+- Android OEM/Doze/reboot và Windows 10/11 phần cứng thật, khóa/chứng thư phát hành sản xuất và nghiệm thu giai đoạn 6–9 vẫn còn thiếu.
 
 ## Bằng chứng preview 0.1.0 trước đây
 
@@ -34,3 +36,5 @@ Giai đoạn 3 native checkpoint: [workflow 42606373902](https://github.com/Duck
 Hai ca QA lịch mới (chỉ có giờ kết thúc, chọn ngày tháng bên cạnh ngoài rolling horizon) đã sửa và toàn bộ **82 tests local đạt**, analyze sạch. Bản nguồn mới cần CI thực thi lại; không gán kết quả 80 tests cho source 82 tests.
 
 Checkpoint giai đoạn 3 cuối: `740c8bfee8fd7f3d9d3d815f17637e6b7e26acfd`, [workflow 42608475322](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42608475322) **đạt cả hai native jobs**: 82 Flutter tests trên Linux/Windows, analyze sạch, 16 Android receiver tests thực thi, build APK + cold-process emulator smoke; Windows build, SQLite recurrence integration, tray process và installer đạt. Chuyển giai đoạn 4 sau checkpoint này. Preview publish bị skip đúng thiết kế nhánh PR.
+
+Checkpoint giai đoạn 4 cuối: `94c39d579f5a438b32460e654a9599fc98415ed5`, [workflow 42615017005](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42615017005) **đạt cả hai native jobs**: 104 Flutter tests trên Linux/Windows, analyze sạch, 23 receiver/recovery/digest tests thực thi; Android OS phát một digest sau khi tiến trình đóng, không có task actions và đổi giờ/recovery không lặp; Windows build/native recurrence/tray/installer đạt. Chuyển giai đoạn 5 sau checkpoint này.

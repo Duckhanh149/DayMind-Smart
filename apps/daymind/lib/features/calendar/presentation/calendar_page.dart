@@ -134,9 +134,11 @@ class _CalendarPageState extends State<CalendarPage> {
                                     : 'Lịch thực hiện · ${clock(entry.at)}${entry.end == null ? '' : ' → ${clock(entry.end!)}${dateKey(tz.TZDateTime.from(entry.at, zoneLocation(zone))) == dateKey(tz.TZDateTime.from(entry.end!, zoneLocation(zone))) ? '' : ' (${dateKey(tz.TZDateTime.from(entry.end!, zoneLocation(zone)))})'}'}',
                               ),
                               if (entry.task.occurrenceId != null)
-                                const Text(
-                                  '↻ Một lần trong chuỗi',
-                                  style: TextStyle(fontSize: 12),
+                                Text(
+                                  entry.task.detached
+                                      ? '↻ Ngoại lệ được giữ riêng'
+                                      : '↻ Một lần trong chuỗi',
+                                  style: const TextStyle(fontSize: 12),
                                 ),
                               if (entry.kind == CalendarEntryKind.scheduled &&
                                   overlaps.contains(entry.task.id))

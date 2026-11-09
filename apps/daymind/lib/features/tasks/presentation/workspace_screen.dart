@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/controller.dart';
+import '../../../app/workspace_host.dart';
+import '../../account_sync/presentation/account_page.dart';
 import '../../companion/domain/companion.dart';
 import '../../companion/presentation/companion_card.dart';
 import '../../reminders/presentation/notification_pages.dart';
@@ -1069,6 +1071,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               Text('Giao diện', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: controller.preferences.theme,
                 decoration: const InputDecoration(labelText: 'Chế độ màu'),
                 items: const [
@@ -1121,6 +1124,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
       ),
       const SizedBox(height: 20),
+      if (ref.read(workspaceHostProvider) != null) ...[
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.sync_rounded),
+            title: const Text('Tài khoản & đồng bộ'),
+            subtitle: const Text('Tùy chọn · Firebase Emulator'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => navigate('account'),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
       const Card(
         child: Padding(
           padding: EdgeInsets.all(20),
@@ -1133,11 +1148,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               ),
               SizedBox(height: 12),
               Text(
-                'Công việc và nhân vật lưu trong thư mục ứng dụng trên thiết bị. Không cần tài khoản; chưa có đồng bộ đám mây.',
+                'Công việc và nhân vật lưu trên thiết bị. Tài khoản và đồng bộ là tùy chọn. Mỗi tài khoản có không gian riêng; ảnh nhân vật không tự tải lên máy chủ.',
               ),
               SizedBox(height: 10),
               Text(
-                'Gỡ ứng dụng hoặc xóa dữ liệu có thể làm mất công việc. Chưa có sao lưu bằng mật khẩu. Nhắc việc, lịch lặp lại và đồng bộ sẽ được làm trong các giai đoạn tiếp theo.',
+                'Gỡ ứng dụng hoặc xóa dữ liệu có thể làm mất công việc chưa đồng bộ. Sao lưu bằng mật khẩu sẽ được bổ sung ở giai đoạn đóng gói.',
               ),
             ],
           ),
@@ -1151,7 +1166,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.3.0',
+          applicationVersion: '0.4.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1167,8 +1182,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       'settings',
       'notifications',
       'analytics',
+      'account',
     ].contains(widget.page);
-    final content = widget.page == 'companion'
+    final content =
+        widget.page == 'account' && ref.read(workspaceHostProvider) != null
+        ? AccountPage(host: ref.read(workspaceHostProvider)!)
+        : widget.page == 'companion'
         ? companionContent(controller)
         : widget.page == 'settings'
         ? settingsContent(controller)

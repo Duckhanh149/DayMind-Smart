@@ -1,16 +1,38 @@
-# Firebase Emulator POC
+# Firebase Emulator và đồng bộ thử nghiệm
 
-Chỉ chạy local, project `demo-daymind`; không cần tài khoản Firebase, service key hoặc dự án cloud. Node 22+, JDK 21+.
+Dùng project `demo-daymind`, không cần tài khoản Firebase hoặc khóa dịch vụ. Chỉ dùng email/mật khẩu thử nghiệm. Cần Flutter 3.47.9, Python, Node 22+ và JDK 21 đầy đủ.
+
+Từ thư mục ứng dụng:
 
 ```sh
+flutter pub get --enforce-lockfile
+cd emulator_test
+flutter pub get --enforce-lockfile
+python ../tool/precache_sqlite.py
+cd ../firebase
 npm ci
 npm run test:emulator
 ```
 
-Auth `127.0.0.1:9199`, Firestore `127.0.0.1:8180`; UI tắt. Hai tài khoản ngẫu nhiên dùng `example.invalid`, tự xóa khi kiểm thử thành công. Emulator bị dừng sau script, không export dữ liệu. Không dùng mật khẩu thật. Có thể đặt `FIREBASE_EMULATORS_PATH` vào thư mục cache được phép ghi.
+Lệnh cuối khởi động Auth/Firestore, chạy Node security smoke và bộ Dart REST/hai SQLite thiết bị độc lập, sau đó dừng Emulator. Dữ liệu tài khoản ngẫu nhiên `example.invalid` được dọn sau kiểm thử. Không dùng VM flag, không retry lỗi assertion; helper chỉ retry lỗi tải SQLite HTTP502/503/504.
 
-Kiểm tra REST thật với emulator: Auth A/B, CRUD có token, từ chối anonymous/cross-user, CAS qua `documents:commit` với `currentDocument.updateTime`, từ chối ghi phiên bản cũ, dọn dữ liệu. Không dùng tham số dotted query cho precondition vì bản emulator này không xử lý đúng như commit JSON; đã kiểm chứng lỗi đó.
+Chạy máy chủ cho ứng dụng:
 
-Rules hiện chứng minh namespace theo UID; chưa là bộ rules phát hành cho schema đồng bộ. POC không bật sync hoặc gửi công việc trong ứng dụng lên emulator. Outbox, retry, conflict UI và account isolation SQLite thuộc giai đoạn 5, chưa được đánh dấu đạt bằng POC này.
+```sh
+npx firebase emulators:start --config firebase.json --project demo-daymind --only auth,firestore
+```
 
-Kết quả Linux 09/11/2026: firebase-tools 15.35.0 + JDK 21.0.13, script thoát 0. Log: `PASS: Auth A/B, authenticated Firestore CRUD, cross-user/anonymous denial, CAS stale-write rejection, cleanup. Emulator only.`
+Auth `127.0.0.1:9199`, Firestore `127.0.0.1:8180`, UI tắt. Windows truy cập loopback; Android Emulator truy cập `10.0.2.2`. Trong app mở Cài đặt → Tài khoản & đồng bộ. Chọn tường minh nếu muốn sao chép dữ liệu cục bộ; mặc định dùng kho tài khoản riêng. Điện thoại thật vẫn dùng local được; thử tài khoản qua USB cần build với `DAYMIND_EMULATOR_HOST=127.0.0.1` và `adb reverse tcp:9199 tcp:9199`, `adb reverse tcp:8180 tcp:8180`.
+
+Khi đã có máy chủ chạy, chạy riêng bộ integration:
+
+```sh
+cd ../emulator_test
+RUN_EMULATOR=true dart test --concurrency=1 --reporter expanded
+```
+
+Rules chỉ cho UID chủ sở hữu đọc/ghi. Task/ruleset/cấu hình nhắc dùng CAS `documents:commit.currentDocument.updateTime`; updateTime là chuỗi opaque giữ cả nanosecond. Không dùng dotted query precondition vì Emulator đã được kiểm chứng không xử lý nó như commit JSON. Payload sai schema/quan hệ, quá kích thước hoặc nén quá mức bị client chặn trước transaction.
+
+Đăng xuất giữ thay đổi chưa gửi trong kho riêng, trở về kho local. Xóa tài khoản cần nhập lại mật khẩu, đặt `active:false` trước khi dọn records/settings/devices/Auth và xóa cache tài khoản trên máy. Giữ dấu UID đã xóa không chứa email/nội dung để ngăn thiết bị cũ tải dữ liệu lên lại. Ảnh nhân vật, credential và lịch sử nhắc không được đồng bộ.
+
+Primary-device policy được xác minh khi online; máy chính cũ offline có thể còn phát theo lịch cache. Chưa kết nối Firebase production, chưa coi Emulator là nghiệm thu hai máy phần cứng thật. Chi tiết [ADR0007](../docs/adr/0007-account-sync.md).

@@ -9,6 +9,7 @@ on:
       - apps/daymind/assets/**
       - apps/daymind/test/**
       - apps/daymind/integration_test/**
+      - apps/daymind/firebase/**
       - apps/daymind/tool/**
       - apps/daymind/pubspec.*
       - apps/daymind/analysis_options.yaml
@@ -24,17 +25,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    timeout-minutes: 55
     defaults:
       run:
         working-directory: apps/daymind
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        if: runner.os == 'Linux'
         with:
           distribution: temurin
           java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/daymind/firebase/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: apps/daymind/firebase
       - name: Install pinned Flutter on Linux
         if: runner.os == 'Linux'
         shell: bash
@@ -110,7 +117,9 @@ jobs:
           target: google_apis
           disable-animations: true
           working-directory: apps/daymind
-          script: python3 tool/android_reminder_smoke.py
+          script: |
+            python3 tool/android_reminder_smoke.py
+            cd firebase && npx firebase emulators:exec --config firebase.json --project demo-daymind --only auth,firestore "node native_verify.mjs"
       - name: Build Windows application
         if: runner.os == 'Windows'
         run: python tool/retry_native_assets.py flutter build windows --release
@@ -123,7 +132,8 @@ jobs:
           if (!$shell) { Start-Process explorer.exe; Start-Sleep -Seconds 3 }
       - name: Windows native integration smoke test
         if: runner.os == 'Windows'
-        run: python tool/retry_native_assets.py flutter test integration_test/app_smoke_test.dart -d windows
+        working-directory: apps/daymind/firebase
+        run: npx firebase emulators:exec --config firebase.json --project demo-daymind --only auth,firestore "node native_verify.mjs"
       - name: Windows close, tray, restore and quit process test
         if: runner.os == 'Windows'
         shell: pwsh
