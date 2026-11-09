@@ -35,13 +35,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: apps/daymind/firebase/package-lock.json
-      - run: npm ci --no-audit --no-fund
-        working-directory: apps/daymind/firebase
       - name: Install pinned Flutter on Linux
         if: runner.os == 'Linux'
         shell: bash
@@ -65,6 +58,8 @@ jobs:
       - run: flutter config --no-analytics
       - run: flutter --version
       - run: flutter pub get --enforce-lockfile
+      - run: flutter pub get --enforce-lockfile
+        working-directory: apps/daymind/emulator_test
       - name: Restore Android build dependencies
         if: runner.os == 'Linux'
         id: gradle-cache
@@ -91,6 +86,13 @@ jobs:
         if: runner.os == 'Linux'
         run: sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
       - run: flutter analyze
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/daymind/firebase/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: apps/daymind/firebase
       - run: python tool/retry_native_assets.py flutter test
       - name: Build Android APK
         if: runner.os == 'Linux'
