@@ -13,7 +13,7 @@ class MainActivity : FlutterActivity() {
     companion object {
         @Volatile var foreground = false
         var bridge: MethodChannel? = null
-        fun changed(title: String? = null) { android.os.Handler(android.os.Looper.getMainLooper()).post { bridge?.invokeMethod("changed", title) } }
+        fun changed(title: String? = null, kind: String = "reminder") { android.os.Handler(android.os.Looper.getMainLooper()).post { bridge?.invokeMethod("changed", if(title == null) null else mapOf("title" to title,"kind" to kind)) } }
     }
     private var permissionResult: MethodChannel.Result? = null
     override fun onNewIntent(intent: Intent) {

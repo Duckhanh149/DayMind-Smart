@@ -6,6 +6,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 
 import '../features/reminders/domain/reminder.dart';
+import '../features/companion/domain/companion.dart';
 
 class PlatformNotificationScheduler implements NotificationScheduler {
   static const channel = MethodChannel('daymind/reminders');
@@ -14,6 +15,24 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   String? initializationError;
   void Function()? onChanged;
   void Function(String)? onInApp;
+  void Function(CompanionCue)? onForegroundCue;
+  static CompanionCue? foregroundCue(Object? data) {
+    final String? title = data is String
+        ? data
+        : data is Map && data['title'] is String
+        ? data['title'] as String
+        : null;
+    if (title == null || title.isEmpty || title.length > 1024) return null;
+    final digest = data is Map && data['kind'] == 'digest';
+    return digest
+        ? CompanionCue(CompanionEvent.dailyDigest, title, summary: title)
+        : CompanionCue(
+            CompanionEvent.reminderDue,
+            'Đến giờ: $title',
+            task: title,
+          );
+  }
+
   void Function()? onOpen;
   Future<String> localTimezone() async {
     final zone = (await FlutterTimezone.getLocalTimezone()).identifier;
@@ -40,8 +59,13 @@ class PlatformNotificationScheduler implements NotificationScheduler {
         channel.setMethodCallHandler((call) async {
           if (call.method == 'openNotifications') onOpen?.call();
           if (call.method == 'changed') {
-            if (call.arguments is String) {
-              onInApp?.call(call.arguments as String);
+            final cue = foregroundCue(call.arguments);
+            if (cue != null) {
+              if (onForegroundCue != null) {
+                onForegroundCue!(cue);
+              } else {
+                onInApp?.call(cue.task ?? cue.summary!);
+              }
             }
             onChanged?.call();
           }
@@ -115,6 +139,7 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   Future<void> deactivate() async {
     onChanged = null;
     onInApp = null;
+    onForegroundCue = null;
     onOpen = null;
     if (Platform.isAndroid) {
       await channel.invokeMethod<void>('deactivate');

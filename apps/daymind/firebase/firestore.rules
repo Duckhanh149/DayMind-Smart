@@ -20,7 +20,7 @@ service cloud.firestore {
           && recordKey.matches('^[a-f0-9]{64}$')
           && request.resource.data.keys().hasOnly(['schema', 'kind', 'recordId', 'payload', 'deleted'])
           && request.resource.data.schema == 1
-          && request.resource.data.kind in ['task', 'category', 'recurrence', 'occurrence', 'reminderConfig']
+          && request.resource.data.kind in ['task', 'category', 'recurrence', 'occurrence', 'reminderConfig', 'companionProfile']
           && request.resource.data.recordId is string && request.resource.data.recordId.size() <= 160
           && request.resource.data.payload is string && request.resource.data.payload.size() <= 131072
           && request.resource.data.deleted is bool;

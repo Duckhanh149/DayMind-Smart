@@ -33,6 +33,16 @@ class WorkspaceRecords {
         .map(TaskOccurrence.fromJson)
         .toList();
     final modes = await records.list('task_reminders');
+    final companion = await records.get('companion_profile', 'primary');
+    if (companion != null) {
+      add(
+        SyncRecord(
+          kind: SyncKind.companionProfile,
+          id: 'primary',
+          data: companion,
+        ),
+      );
+    }
     final reminderRules = (await records.list('reminder_rules'))
         .map(ReminderRule.fromJson)
         .toList();
@@ -334,6 +344,8 @@ class WorkspaceRecords {
         await records.put('occurrences', r.id, next.toJson());
       case SyncKind.reminderConfig:
         await _applyReminderConfig(r);
+      case SyncKind.companionProfile:
+        await records.put('companion_profile', 'primary', r.data);
     }
   }
 

@@ -320,7 +320,7 @@ class WorkspaceHost extends ChangeNotifier {
       c.reminderTasks,
       readTimezone: scheduler.localTimezone,
       onNativeChange: c.refreshFromNative,
-      onInApp: (text) => c.dialogue = text,
+      onCue: c.foregroundReminder,
     );
     c.attachReminders(reminders);
     reminders.onPrimaryRequest = notificationDevice;

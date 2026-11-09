@@ -41,6 +41,79 @@ void main() {
     expect(importer.installed(), [name]);
     await temp.delete(recursive: true);
   });
+  test('concurrent imports share count budget, deduplicate at capacity and recover after failure', () async {
+    final temp = await Directory.systemTemp.createTemp('daymind-count-');
+    addTearDown(() => temp.delete(recursive: true));
+    final importer = StaticAssetImporter(temp);
+    for (var i = 0; i < StaticAssetImporter.maxFiles - 1; i++) {
+      await File('${temp.path}/reserved-$i').writeAsBytes([0]);
+    }
+    final first = await png(8, 8), second = await png(9, 9);
+    final results = await Future.wait([
+      importer
+          .installBytes(first, 'first.png')
+          .then<Object>((v) => v, onError: (Object e) => e),
+      importer
+          .installBytes(second, 'second.png')
+          .then<Object>((v) => v, onError: (Object e) => e),
+    ]);
+    expect(results.whereType<String>(), hasLength(1));
+    expect(importer.installed(), hasLength(1));
+    expect(await importer.installBytes(first, 'duplicate.png'), results.first);
+    await importer.remove(results.first as String);
+    expect(await importer.installBytes(second, 'second.png'), isA<String>());
+    expect(
+      (await temp.list().toList()).any((f) => f.path.endsWith('.tmp')),
+      isFalse,
+    );
+  });
+  test(
+    'library symlinks cannot be selected, overwritten or followed on import',
+    () async {
+      final temp = await Directory.systemTemp.createTemp('daymind-links-');
+      addTearDown(() => temp.delete(recursive: true));
+      final library = Directory('${temp.path}/library');
+      final importer = StaticAssetImporter(library);
+      final bytes = await png(8, 8);
+      final name = await importer.installBytes(bytes, 'first.png');
+      await importer.remove(name);
+      final outside = await File('${temp.path}/outside.png')
+          .writeAsBytes(bytes);
+      await Link('${library.path}/$name').create(outside.path);
+      expect(importer.resolve(name), isNull);
+      expect(importer.installed(), isEmpty);
+      await expectLater(
+        importer.installBytes(bytes, 'again.png'),
+        throwsA(anything),
+      );
+      await expectLater(
+        importer.install(File('${library.path}/$name'), 'link.png'),
+        throwsA(anything),
+      );
+      expect(await outside.readAsBytes(), bytes);
+    },
+    skip: Platform.isWindows
+        ? 'Creating symlinks requires Windows host privileges; Linux gate exercises traversal rejection.'
+        : false,
+  );
+  test('preview validates without installing; static WebP works and animated WebP is rejected', () async {
+    final temp = await Directory.systemTemp.createTemp('daymind-preview-');
+    addTearDown(() => temp.delete(recursive: true));
+    final importer = StaticAssetImporter(Directory('${temp.path}/library'));
+    final preview = await importer.prepare(
+      File('test/fixtures/static.webp'),
+      'leaf.webp',
+    );
+    expect(importer.installed(), isEmpty);
+    expect(() => preview.bytes[0] = 0, throwsUnsupportedError);
+    final installed = await importer.installPrepared(preview);
+    expect(installed.endsWith('.webp'), isTrue);
+    await expectLater(
+      importer.prepare(File('test/fixtures/animated.webp'), 'animated.webp'),
+      throwsA(anything),
+    );
+    expect(importer.installed(), [installed]);
+  });
   test('reject ZIP, disguised files, oversized files and unsafe names', () {
     expect(
       () => StaticAssetImporter.validateSignature(

@@ -9,6 +9,7 @@ import '../../tasks/domain/task.dart' as domain;
 import '../../assistant/domain/daily_assistant.dart' show localDay;
 import '../../../platform/notification_scheduler.dart';
 import '../domain/reminder.dart';
+import '../../companion/domain/companion.dart';
 import 'reminder_engine.dart';
 
 class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
@@ -17,12 +18,22 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     this.getTasks, {
     this.onNativeChange,
     this.onInApp,
+    this.onCue,
     this.readTimezone,
   });
   final ReminderEngine engine;
   final Future<List<domain.Task>> Function() getTasks;
   final Future<void> Function()? onNativeChange;
   final void Function(String)? onInApp;
+  final void Function(CompanionCue)? onCue;
+  void _announce(CompanionCue cue) {
+    if (onCue != null) {
+      onCue!(cue);
+    } else {
+      onInApp?.call(cue.announcement);
+    }
+  }
+
   final Future<String> Function()? readTimezone;
   Future<void> Function(bool)? onPrimaryRequest;
   Completer<void>? _idle;
@@ -49,7 +60,16 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     });
     await engine.configure(preferences);
     if (engine.scheduler is PlatformNotificationScheduler) {
-      (engine.scheduler as PlatformNotificationScheduler).onInApp = onInApp;
+      (engine.scheduler as PlatformNotificationScheduler).onForegroundCue =
+          _announce;
+      (engine.scheduler as PlatformNotificationScheduler).onInApp = (text) =>
+          _announce(
+            CompanionCue(
+              CompanionEvent.reminderDue,
+              'Đến giờ: $text',
+              task: text,
+            ),
+          );
       (engine.scheduler as PlatformNotificationScheduler).onChanged = () {
         unawaited(reloadFromNative());
       };
@@ -120,7 +140,13 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         for (final digest in digests) {
           if (_disposed) return;
           if (_foreground && _windowVisible) {
-            onInApp?.call(digest.title);
+            _announce(
+              CompanionCue(
+                CompanionEvent.dailyDigest,
+                digest.title,
+                summary: digest.title,
+              ),
+            );
           } else {
             await engine.scheduler.show(
               id: 999999999,
@@ -134,7 +160,13 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
           ..sort((a, b) => b.priority.compareTo(a.priority));
         if (work.isNotEmpty && !_disposed) {
           if (_foreground && _windowVisible) {
-            onInApp?.call('Đến giờ: ${work.first.title}');
+            _announce(
+              CompanionCue(
+                CompanionEvent.reminderDue,
+                'Đến giờ: ${work.first.title}',
+                task: work.first.title,
+              ),
+            );
           } else {
             final window = preferences.groupingMinutes * 60000,
                 stamp = engine.clock().millisecondsSinceEpoch;
@@ -275,6 +307,8 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     if (engine.scheduler is PlatformNotificationScheduler) {
       (engine.scheduler as PlatformNotificationScheduler).onChanged = null;
       (engine.scheduler as PlatformNotificationScheduler).onInApp = null;
+      (engine.scheduler as PlatformNotificationScheduler).onForegroundCue =
+          null;
       (engine.scheduler as PlatformNotificationScheduler).onOpen = null;
     }
     _timer?.cancel();

@@ -237,11 +237,12 @@ object ReminderRuntime {
     }
     fun fire(context: Context, key: String) {
         database(context)?.use { db ->
-            val now = System.currentTimeMillis(); var title = ""; var config = JSONObject(); var allowed = false
+            val now = System.currentTimeMillis(); var title = ""; var config = JSONObject(); var allowed = false; var isDigest = false
             db.beginTransaction()
             try {
                 db.rawQuery("SELECT * FROM reminder_events WHERE event_key=? AND state='scheduled'",arrayOf(key)).use { event ->
                     if (event.moveToFirst()) {
+                        isDigest = event.getString(event.getColumnIndexOrThrow("rule_id")) == "digest"
                         config = ReminderRuntime.config(db)
                         val expires = event.getLong(event.getColumnIndexOrThrow("expires_ms"))
                         when {
@@ -283,7 +284,7 @@ object ReminderRuntime {
                 }
                 manager(context).notify(groupId,builder.build())
             }
-            MainActivity.changed(if(allowed && MainActivity.foreground) title else null)
+            MainActivity.changed(if(allowed && MainActivity.foreground) title else null, if(isDigest) "digest" else "reminder")
         }
     }
     fun action(context: Context, intent: Intent) {

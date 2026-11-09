@@ -10,8 +10,8 @@ import 'package:go_router/go_router.dart';
 import '../../../app/controller.dart';
 import '../../../app/workspace_host.dart';
 import '../../account_sync/presentation/account_page.dart';
-import '../../companion/domain/companion.dart';
 import '../../companion/presentation/companion_card.dart';
+import '../../companion/presentation/companion_settings.dart';
 import '../../reminders/presentation/notification_pages.dart';
 import '../domain/task.dart';
 import 'task_editor.dart';
@@ -60,14 +60,28 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   String? category;
   TaskPriority? priority;
   bool overdueOnly = false, importing = false;
-  double? companionSizePreview;
   late final Timer timer;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.page == 'today') {
+        act(ref.read(workspaceProvider).overdueVisible());
+      }
+    });
     timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
+  }
+
+  @override
+  void didUpdateWidget(WorkspaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.page != widget.page && widget.page == 'today') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) act(ref.read(workspaceProvider).overdueVisible());
+      });
+    }
   }
 
   @override
@@ -809,10 +823,50 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           'Không đọc được tệp đã chọn. Hãy chọn ảnh trên thiết bị.',
         );
       }
-      final name = await controller.importer.install(
+      final prepared = await controller.importer.prepare(
         File(picked.path!),
         picked.name,
       );
+      if (!mounted) return;
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Xem trước nhân vật'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 180,
+                  width: 220,
+                  child: Image.memory(
+                    prepared.bytes,
+                    cacheWidth: 256,
+                    cacheHeight: 256,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Ảnh chỉ lưu trên thiết bị này. Hãy dùng ảnh bạn sở hữu hoặc có quyền sử dụng.',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Nhập & sử dụng'),
+            ),
+          ],
+        ),
+      );
+      if (accepted != true || !mounted) return;
+      final name = await controller.importer.installPrepared(prepared);
       await controller.configure((prefs) => prefs.copyWith(assetName: name));
     } catch (error) {
       notice(error);
@@ -841,8 +895,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   child: Image(
                     image: ResizeImage(
                       FileImage(controller.importer.resolve(name)!),
-                      width: 128,
-                      height: 128,
+                      width: controller.companionLayout.lowResource ? 64 : 128,
+                      height: controller.companionLayout.lowResource ? 64 : 128,
                       policy: ResizeImagePolicy.fit,
                       allowUpscaling: false,
                     ),
@@ -879,12 +933,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                           ? null
                           : () async {
                               try {
-                                if (controller.preferences.assetName == name) {
-                                  await controller.configure(
-                                    (prefs) => prefs.copyWith(resetAsset: true),
-                                  );
-                                }
-                                await controller.importer.remove(name);
+                                await controller.removeCompanionAsset(name);
                                 if (mounted) setState(() {});
                               } catch (error) {
                                 notice(error);
@@ -920,90 +969,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             children: [
               CompanionCard(controller: controller),
               const SizedBox(height: 20),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Hiển thị Companion'),
-                        subtitle: const Text(
-                          'Chỉ trong ứng dụng. Không có âm thanh hoặc thông báo riêng.',
-                        ),
-                        value: controller.preferences.companionEnabled,
-                        onChanged: (value) => act(
-                          controller.configure(
-                            (prefs) => prefs.copyWith(companionEnabled: value),
-                          ),
-                        ),
-                      ),
-                      const Divider(),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<Personality>(
-                        initialValue: controller.preferences.personality,
-                        decoration: const InputDecoration(
-                          labelText: 'Tính cách',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: Personality.gentle,
-                            child: Text('Dịu dàng · Nhẹ nhàng động viên'),
-                          ),
-                          DropdownMenuItem(
-                            value: Personality.practical,
-                            child: Text('Thực tế · Ngắn gọn, rõ việc'),
-                          ),
-                          DropdownMenuItem(
-                            value: Personality.cheerful,
-                            child: Text('Vui vẻ · Ghi nhận bước tiến'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            act(
-                              controller.configure(
-                                (prefs) => prefs.copyWith(personality: value),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Kích thước trên máy tính: ${controller.preferences.companionSize.round()} dp',
-                      ),
-                      Slider(
-                        value:
-                            companionSizePreview ??
-                            controller.preferences.companionSize,
-                        min: 48,
-                        max: 112,
-                        divisions: 8,
-                        label:
-                            '${(companionSizePreview ?? controller.preferences.companionSize).round()} dp',
-                        onChanged: (value) =>
-                            setState(() => companionSizePreview = value),
-                        onChangeEnd: (value) async {
-                          await act(
-                            controller.configure(
-                              (prefs) => prefs.copyWith(companionSize: value),
-                            ),
-                          );
-                          if (mounted) {
-                            setState(() => companionSizePreview = null);
-                          }
-                        },
-                      ),
-                      const Text(
-                        'Trên màn hình nhỏ, Companion tự thu gọn còn 56 dp trong vùng riêng, nhường chỗ cho công việc.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              CompanionSettingsSection(controller: controller),
               const SizedBox(height: 20),
               Card(
                 child: Padding(
@@ -1166,7 +1132,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.4.0',
+          applicationVersion: '0.5.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1176,6 +1142,27 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(workspaceProvider);
+    ref.listen<int>(workspaceProvider.select((c) => c.inAppSequence), (
+      _,
+      next,
+    ) {
+      final c = ref.read(workspaceProvider);
+      if (!c.preferences.companionEnabled ||
+          !{'today', 'companion'}.contains(widget.page)) {
+        final message = c.inAppAnnouncement;
+        if (message != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              action: SnackBarAction(
+                label: 'Xem',
+                onPressed: () => navigate('notifications'),
+              ),
+            ),
+          );
+        }
+      }
+    });
     final wide = MediaQuery.sizeOf(context).width >= 1000;
     final special = [
       'companion',

@@ -4,9 +4,16 @@ Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web ro
 
 ## Checkpoint hiện tại
 
-Preview 0.4.0 / giai đoạn 5 đang chờ cổng CI native. Giai đoạn 4 đã đạt ở `94c39d5`, [workflow 42615017005](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42615017005): 104 Flutter tests trên Linux/Windows, 23 receiver/recovery/digest tests, Android OS cold-process digest và Windows SQLite/tray/installer đều đạt.
+Preview 0.4.0 / **giai đoạn 5 đã đạt cổng tự động** ở `c1e61c2187ebdb78c503b027416d66b4eec30257`, [Native CI42683631256](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42683631256) và [Emulator CI42683630803](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42683630803).
 
-Bản nguồn giai đoạn 5 có account UI, kho riêng theo UID, native encrypted session store, outbox/CAS/conflict archive và primary-device policy. **14 ca Firebase Emulator thật đạt local**, analyze sạch; **119/119 Flutter tests đạt**, gồm hot-validator regression, credential rollback và retry xóa tài khoản khi mất phản hồi. Bảy ca Auth/payload cũng đạt khi biên dịch AOT. Native Keystore/DPAPI probes và receiver case thứ 24 cần CI mới trước khi coi giai đoạn 5 đạt.
+- 121 Flutter tests và phân tích mã sạch trên Linux/Windows; 14 ca Emulator thật và bảy ca Auth/payload AOT đạt.
+- Android: APK release, 25 receiver cases, native Keystore, OS cold-process/digest và real Auth/Firestore/profile/primary/logout/relogin/delete đạt. Driver xác nhận đủ native markers; start debug session mới giữ nguyên SQLite sau bài cold-process.
+- Windows: DPAPI, native SQLite/recurrence, real Auth/Firestore/profile/primary/logout/relogin/delete, close→tray/Mở/Thoát và installer đạt; không auto-start.
+- Artifact Android `13705550456`, Windows `13703957427` thuộc đúng source `c1e61c2`. Chưa có Firebase production, khóa ký sản xuất hoặc nghiệm thu phần cứng Android OEM/Doze/Windows 10/11.
+
+Giai đoạn 6 preview0.5.0: 142/142 Flutter tests và 16/16 Emulator cases đạt local; analyze sạch, Kotlin main/debug compile đạt. Đang kiểm chứng native: editor/personality/expressions/placement/low-resource, metadata sync và import quota. Integration mới đo RSS/cache khi đổi24 lượt qua bốn ảnh2048² trên cả hai nền tảng; chưa gán kết quả CI của c1e61c2 cho source mới.
+
+Giai đoạn 6 được triển khai sau checkpoint này. Các mục chờ CI ở nhật ký phía dưới là trạng thái lịch sử, không phải kết quả hiện tại.
 
 - Giai đoạn 2: `428cbe75`, [CI 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt Android/Windows, 55 Flutter tests và 12 receiver cases.
 - Giai đoạn 3: `740c8bf`, [CI 42608475322](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42608475322) đạt Android/Windows, 82 Flutter tests và 16 receiver cases.

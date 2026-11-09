@@ -29,3 +29,7 @@ Chỉ đánh dấu PASS sau khi ghi thiết bị, OS, commit/source hash, phiên
 Bản ghi POC ban đầu (xem ADR0002/0003 và PHASE_STATUS cho trạng thái mới): SQLite + migration; Android thông báo khi app đóng; Windows build/package/activation; Auth + Firestore emulator; import sandbox; render tĩnh. Các bằng chứng còn thiếu vẫn là cổng nền tảng chưa đạt, dù mã tính năng local đã được bổ sung theo yêu cầu tiếp tục của người dùng. Không đánh dấu sản phẩm đủ 0–9 từ build hoặc emulator POC.
 
 CI Android debug fixture: `tool/android_reminder_smoke.py` cài APK debug x86_64 vào emulator, kiểm tra cold-process bằng dumpsys, revision/quiet guards và recovery không phát lại quá khứ. Debug receiver không nằm trong APK release. Đó không phải kiểm chứng OEM, Doze hoặc reboot vật lý.
+
+## Companion giai đoạn 6
+
+Thử ảnh2048² với thư viện gần128 ảnh trên điện thoại cấu hình thấp và Windows10/11 thật; ghi RSS/CPU/frame time, OS và phiên bản. Đổi ảnh/biểu cảm nhiều lần, bật/tắt low-resource, thu khay/mở lại và kiểm tra cache/ảnh cũ được thu hồi. So sánh lời thoại/cooldown/giờ yên lặng, gợi ý quá hạn sau restart, thẻ40/56/72/80/96/144dp và chữ200%; FAB, bàn phím, dialog/nút lưu vẫn thao tác được. Log CI `COMPANION_RESOURCE_POC` là số đo runner/emulator debug, không phải kết quả thiết bị này.

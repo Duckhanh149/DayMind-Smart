@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:daymind_smart/features/companion/domain/companion.dart';
 import 'package:timezone/data/latest.dart' as zones;
 import 'package:daymind_smart/features/account_sync/domain/account.dart';
 import 'package:daymind_smart/features/account_sync/domain/sync_record.dart';
@@ -29,6 +30,53 @@ void main() {
     }
     expect(latest.contentHash, sample.contentHash);
   });
+  test(
+    'companion sync rejects local paths, unknown ids and deletion envelopes',
+    () {
+      final profile = CompanionProfile().toJson();
+      for (final field in [
+        'assetName',
+        'layout',
+        'imageBytes',
+        'downloadUrl',
+      ]) {
+        expect(
+          () => SyncRecord(
+            kind: SyncKind.companionProfile,
+            id: 'primary',
+            data: {...profile, field: 'private'},
+          ),
+          throwsA(isA<AccountFailure>()),
+        );
+      }
+      expect(
+        () => SyncRecord(
+          kind: SyncKind.companionProfile,
+          id: 'other',
+          data: profile,
+        ),
+        throwsA(isA<AccountFailure>()),
+      );
+      expect(
+        () => SyncRecord(
+          kind: SyncKind.companionProfile,
+          id: 'primary',
+          data: profile,
+          deleted: true,
+        ),
+        throwsA(isA<AccountFailure>()),
+      );
+      final record = SyncRecord(
+        kind: SyncKind.companionProfile,
+        id: 'primary',
+        data: profile,
+      );
+      expect(
+        SyncRecord.fromJson(record.toJson()).contentHash,
+        record.contentHash,
+      );
+    },
+  );
   test('normalization is stable and a record cannot be mutated through source or nested references', () {
     final data = task(),
         r = SyncRecord(kind: SyncKind.task, id: 't', data: task());

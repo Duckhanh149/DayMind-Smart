@@ -1,3 +1,13 @@
+# Preview 0.5.0 — đang qua cổng native giai đoạn 6
+
+- Đổi tên/tính cách, sửa lời thoại theo sự kiện, xem trước và ánh xạ bốn biểu cảm.
+- Vị trí/kích thước an toàn, chế độ ít tài nguyên và ảnh biểu cảm lưu riêng trên từng máy.
+- Xem trước PNG/WebP trước khi nhập; giới hạn thư viện và chặn liên kết/tệp không hợp lệ.
+- Hồ sơ đồng bộ qua Emulator với phát hiện xung đột; ảnh không tự tải lên. Các máy cần bản0.5.0 để đồng bộ kiểu hồ sơ mới.
+- Gợi ý quá hạn không lặp khi restart cùng ngày; Companion tắt vẫn nhận nhắc trong ứng dụng.
+
+Chưa có animation/floating Windows hoặc Live2D. Chưa phải bản phát hành sản xuất; xem BUILD_STATUS.md trước khi dùng artifact.
+
 # DayMind SMART 0.1.0 Preview
 
 Bản app đầu tiên cho điện thoại Android ARM64 (Android 7.0/API 24 trở lên) và máy tính Windows 10/11 x64 (Windows 10 1809 trở lên). Chưa có iPhone/iOS hoặc Windows ARM64.

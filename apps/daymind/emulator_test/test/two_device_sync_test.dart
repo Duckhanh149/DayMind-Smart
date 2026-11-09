@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:daymind_smart/features/companion/domain/companion.dart';
+
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -153,6 +157,72 @@ void main() {
       isEmpty,
     );
   });
+  test('companion metadata converges while assets, layout and reminder history remain local', () async {
+    final profile = CompanionProfile(
+      name: 'Lá nhỏ',
+      personality: Personality.practical,
+      templates: {'practical:taskCompleted': '{name}: đã xong {task}.'},
+      expressions: {CompanionEvent.taskCompleted: CompanionExpression.happy},
+    );
+    await sa.records.put('companion_profile', 'primary', profile.toJson());
+    await sa.records.put('companion_local', 'expressions', {
+      'happy': 'private-device-file.png',
+    });
+    await sa.records.put('companion_local', 'layout', {
+      'placement': 'right',
+      'size': 144,
+    });
+    await a.writePreferences({'assetName': 'private-main-file.png'});
+    await synced(ca);
+    await synced(cb);
+    final loaded = CompanionProfile.fromJson(
+      (await sb.records.get('companion_profile', 'primary'))!,
+    );
+    expect(loaded.sameAs(profile), isTrue);
+    final remote = await cloud.fetchAll(user);
+    expect(
+      jsonEncode(remote.map((r) => r.record.toJson()).toList()),
+      isNot(contains('private-')),
+    );
+    expect(await sb.records.list('companion_local'), isEmpty);
+    expect(await dbB.select(dbB.reminderEvents).get(), isEmpty);
+    expect(await sa.capture(), 0);
+    expect(await sb.capture(), 0);
+  });
+  test('offline companion edits preserve both profiles and resolve without blocking tasks', () async {
+    final base = CompanionProfile();
+    await sa.records.put('companion_profile', 'primary', base.toJson());
+    await synced(ca);
+    await synced(cb);
+    final left = base.copy(name: 'Lá Windows'),
+        right = base.copy(name: 'Lá Android');
+    await sa.records.put('companion_profile', 'primary', left.toJson());
+    await sb.records.put('companion_profile', 'primary', right.toJson());
+    await synced(ca);
+    await cb.sync();
+    expect(cb.state, SyncState.attention);
+    final header = (await sb.conflicts()).single;
+    expect(header.kind, SyncKind.companionProfile);
+    final conflict = (await sb.conflict(header.id))!;
+    expect(conflict.local.data['name'], right.name);
+    expect(conflict.remote!.record.data['name'], left.name);
+    final task = await b.save(const TaskDraft(title: 'Công việc vẫn đồng bộ'));
+    await cb.sync();
+    await synced(ca);
+    expect((await a.list()).any((t) => t.id == task), isTrue);
+    await cb.resolve(header.id, keepLocal: true);
+    await synced(ca);
+    expect(
+      (await sa.records.get('companion_profile', 'primary'))!['name'],
+      right.name,
+    );
+    expect(
+      (await sb.conflict(header.id))!.remote!.record.data['name'],
+      left.name,
+    );
+    expect(await sb.conflicts(), isEmpty);
+  });
+
   test('divergent edits preserve both texts, block overwrite and resolve explicitly', () async {
     await seed();
     await rename(a, 'Giữ ở máy tính');

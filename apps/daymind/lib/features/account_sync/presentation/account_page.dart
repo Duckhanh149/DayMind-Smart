@@ -7,6 +7,7 @@ import '../application/sync_service.dart';
 import '../data/sync_store.dart';
 import '../domain/account.dart';
 import '../domain/sync_record.dart';
+import '../../companion/domain/companion.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key, required this.host});
@@ -276,6 +277,10 @@ class _AccountPageState extends State<AccountPage> {
                         child: Text(service!.message!),
                       ),
                     const SizedBox(height: 16),
+                    const Text(
+                      'Hồ sơ Companion đồng bộ tên, tính cách, lời thoại và biểu cảm. Ảnh, vị trí, kích thước và chế độ ít tài nguyên chỉ lưu trên từng thiết bị.',
+                    ),
+                    const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: busy || service == null
                           ? null
@@ -572,5 +577,22 @@ String describeRecord(
         final when = j['kind'] == 'absolute' ? time(j['absoluteAt']) : 'Trước ${j['kind'] == 'due' ? 'hạn' : 'giờ bắt đầu'} ${j['offsetMinutes']} phút';
         return '${j['enabled'] == true ? 'Bật' : 'Tắt'} · $when';
       }).join('\n')}',
+    SyncKind.companionProfile => _describeCompanion(d),
   };
+}
+
+String _describeCompanion(Map<String, dynamic> data) {
+  final profile = CompanionProfile.fromJson(data);
+  return [
+    profile.name,
+    'Tính cách: ${personalityLabels[profile.personality]}',
+    for (final event in CompanionEvent.values)
+      '${companionEventLabels[event]}: ${companionExpressionLabels[profile.expressionFor(event)]}',
+    for (final p in Personality.values)
+      for (final event in CompanionEvent.values)
+        if (profile.templates.containsKey(
+          CompanionProfile.templateKey(p, event),
+        ))
+          '${personalityLabels[p]} · ${companionEventLabels[event]}\n${profile.templateFor(event, tone: p)}',
+  ].join('\n\n');
 }

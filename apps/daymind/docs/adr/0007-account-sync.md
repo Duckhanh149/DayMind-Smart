@@ -1,6 +1,6 @@
 # ADR 0007 — Tài khoản tùy chọn và đồng bộ bảo toàn hai bản
 
-Trạng thái: triển khai giai đoạn 5; chờ cổng CI native. Người dùng chọn Firebase Emulator trước, chưa có dự án Firebase thật.
+Trạng thái: đạt cổng giai đoạn 5 ở `c1e61c2`, CI42683631256 (Android/Windows) và42683630803 (Emulator). Người dùng chọn Firebase Emulator trước, chưa có dự án Firebase thật.
 
 - Auth/Firestore qua REST thật tới `demo-daymind`, Auth 9199, Firestore 8180. Không có service key trong app. Windows dùng loopback; Android Emulator dùng 10.0.2.2. Không kết nối production ngầm.
 - Mỗi UID có SQLite và thư viện riêng trong thư mục hash UID. Kho cục bộ giữ nguyên. Đăng nhập có lựa chọn sao chép công việc/danh mục/lịch lặp/cấu hình; mặc định không sao chép. Bản sao dùng mã mới để giữ nguyên công việc tài khoản hiện có. Không sao chép ảnh, tùy chọn riêng, credential hoặc lịch sử nhắc.

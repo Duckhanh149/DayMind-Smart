@@ -12,6 +12,7 @@ Future<void> copyWorkspace(
   List<SyncRecord> source,
   WorkspaceRecords target,
 ) async {
+  source = source.where((r) => r.kind != SyncKind.companionProfile).toList();
   final current = await target.read();
   final ids = <String, String>{};
   for (final record in source) {
@@ -48,6 +49,7 @@ Future<void> copyWorkspace(
       ..sort((a, b) => _order(a.kind).compareTo(_order(b.kind)));
     for (final r in sorted) {
       final data = switch (r.kind) {
+        SyncKind.companionProfile => r.data,
         SyncKind.category => r.data,
         SyncKind.task => draft(r.data),
         SyncKind.recurrence => {
@@ -109,4 +111,5 @@ int _order(SyncKind kind) => switch (kind) {
   SyncKind.recurrence => 2,
   SyncKind.occurrence => 3,
   SyncKind.reminderConfig => 4,
+  SyncKind.companionProfile => 5,
 };

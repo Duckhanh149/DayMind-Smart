@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'dart:io';
+import 'dart:convert';
+import 'dart:ui' as ui;
+
+import 'package:go_router/go_router.dart';
+import 'package:daymind_smart/features/companion/domain/companion.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -132,6 +137,91 @@ void main() {
     final task = tasks.firstWhere((task) => task.title == title);
     await controller.delete(task);
     await tester.pumpAndSettle();
+    // Exercise real platform decoding/rendering, not a mocked image provider.
+    final originalProfile = controller.companion;
+    await controller.saveCompanion(
+      originalProfile.copy(
+        name: 'Mầm native',
+        templates: {'gentle:taskCompleted': '{name}: xong {task}.'},
+        expressions: {CompanionEvent.taskCompleted: CompanionExpression.happy},
+      ),
+    );
+    await controller.configure((p) => p.copyWith(companionEnabled: true));
+    await controller.updateCompanionLayout((v) => v.copy(lowResource: true));
+    GoRouter.of(tester.element(find.byType(WorkspaceScreen))).go('/companion');
+    await tester.pumpAndSettle();
+    final rssBefore = ProcessInfo.currentRss;
+    final timer = Stopwatch()..start();
+    var peakRss = rssBefore, peakCache = 0;
+    final images = <String>[];
+    for (var i = 0; i < 4; i++) {
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawRect(
+        const Rect.fromLTWH(0, 0, 2048, 2048),
+        ui.Paint()..color = ui.Color(0xff658b40 + i * 0x112211),
+      );
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(2048, 2048);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      picture.dispose();
+      images.add(
+        await controller.importer.installBytes(
+          bytes!.buffer.asUint8List(),
+          'probe.png',
+        ),
+      );
+    }
+    for (var i = 0; i < 24; i++) {
+      await controller.mapExpression(
+        CompanionExpression.neutral,
+        images[i % images.length],
+      );
+      await controller.configure(
+        (p) => p.copyWith(assetName: images[i % images.length]),
+      );
+      await tester.pumpAndSettle();
+      await precacheImage(
+        ResizeImage(
+          FileImage(controller.importer.resolve(images[i % images.length])!),
+          width: 128,
+          height: 128,
+          policy: ResizeImagePolicy.fit,
+          allowUpscaling: false,
+        ),
+        tester.element(find.byType(WorkspaceScreen)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        PaintingBinding.instance.imageCache.liveImageCount,
+        greaterThan(0),
+      );
+      peakRss = peakRss < ProcessInfo.currentRss
+          ? ProcessInfo.currentRss
+          : peakRss;
+      peakCache =
+          peakCache < PaintingBinding.instance.imageCache.currentSizeBytes
+          ? PaintingBinding.instance.imageCache.currentSizeBytes
+          : peakCache;
+      expect(
+        PaintingBinding.instance.imageCache.currentSizeBytes,
+        lessThanOrEqualTo(4 * 1024 * 1024),
+      );
+    }
+    timer.stop();
+    expect(controller.companion.name, 'Mầm native');
+    expect(controller.companionLayout.lowResource, isTrue);
+    for (final name in images) {
+      await controller.removeCompanionAsset(name);
+    }
+    await controller.saveCompanion(originalProfile);
+    await controller.updateCompanionLayout((v) => v.copy(lowResource: false));
+    await tester.pumpAndSettle();
+    debugPrint(
+      'COMPANION_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'sourcePixels': '2048x2048', 'images': 4, 'selections': 24, 'lowResourceDecode': 128, 'rssBefore': rssBefore, 'rssSamplePeak': peakRss, 'imageCacheSamplePeak': peakCache, 'elapsedMs': timer.elapsedMilliseconds})}',
+    );
+    GoRouter.of(tester.element(find.byType(WorkspaceScreen))).go('/today');
+    await tester.pumpAndSettle();
     if (const bool.fromEnvironment('RUN_ACCOUNT_EMULATOR')) {
       final host = ProviderScope.containerOf(
         tester.element(find.byType(WorkspaceScreen)),
@@ -156,6 +246,12 @@ void main() {
           dueAt: DateTime.now().add(const Duration(hours: 3)),
         ),
       );
+      await host.controller!.saveCompanion(
+        CompanionProfile(
+          name: 'Mầm tài khoản',
+          templates: {'gentle:taskCompleted': '{name} mừng bạn xong {task}.'},
+        ),
+      );
       await service.sync();
       expect(service.pendingCount, 0);
       expect(service.conflictCount, 0);
@@ -166,6 +262,14 @@ void main() {
               r.record.kind == SyncKind.task &&
               r.record.id == privateId &&
               r.record.data['title'] == privateTitle,
+        ),
+        isTrue,
+      );
+      expect(
+        remote.any(
+          (r) =>
+              r.record.kind == SyncKind.companionProfile &&
+              r.record.data['name'] == 'Mầm tài khoản',
         ),
         isTrue,
       );
@@ -183,6 +287,7 @@ void main() {
       await tester.pumpAndSettle();
       await host.sync!.sync();
       expect(host.account!.uid, owner);
+      expect(host.controller!.companion.name, 'Mầm tài khoản');
       expect(host.controller!.tasks.any((t) => t.id == privateId), isTrue);
       await host.deleteAccount(secret);
       debugPrint('ACCOUNT_NATIVE_STAGE: verified deletion completed.');

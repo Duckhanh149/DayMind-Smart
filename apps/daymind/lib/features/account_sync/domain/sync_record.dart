@@ -5,9 +5,17 @@ import 'package:crypto/crypto.dart';
 import '../../tasks/domain/task.dart';
 import '../../recurrence/domain/recurrence.dart';
 import '../../reminders/domain/reminder.dart';
+import '../../companion/domain/companion.dart';
 import 'account.dart';
 
-enum SyncKind { task, category, recurrence, occurrence, reminderConfig }
+enum SyncKind {
+  task,
+  category,
+  recurrence,
+  occurrence,
+  reminderConfig,
+  companionProfile,
+}
 
 Object? canonicalValue(Object? value) {
   if (value is Map<String, dynamic>) {
@@ -213,6 +221,8 @@ class SyncRecord {
         };
       case SyncKind.category:
         return data;
+      case SyncKind.companionProfile:
+        return CompanionProfile.fromJson(data).toJson();
     }
   }
 
@@ -273,7 +283,8 @@ class SyncRecord {
       if (deleted) {
         if (kind == SyncKind.task ||
             kind == SyncKind.category ||
-            kind == SyncKind.recurrence) {
+            kind == SyncKind.recurrence ||
+            kind == SyncKind.companionProfile) {
           throw const AccountFailure(
             'invalid_record',
             'Công việc và chuỗi dùng xóa mềm để giữ lịch sử.',
@@ -309,6 +320,14 @@ class SyncRecord {
           _validateOccurrence();
         case SyncKind.reminderConfig:
           _validateReminderConfig();
+        case SyncKind.companionProfile:
+          if (id != 'primary') {
+            throw const AccountFailure(
+              'invalid_record',
+              'Mã hồ sơ Companion không hợp lệ.',
+            );
+          }
+          CompanionProfile.fromJson(data);
       }
     } on AccountFailure {
       rethrow;

@@ -8,20 +8,21 @@ Người dùng muốn tiếp tục sau khi phải chờ giới hạn. Tác vụ 
 
 ## Nguồn và kiểm chứng gần nhất
 
-- Nhánh: `native/flutter-app`, PR [#1](https://github.com/Duckhanh149/DayMind-Smart/pull/1). Không cập nhật `main` khi cổng hợp nhất chưa được chấp thuận.
-- Source checkpoint: `4c8ceb8dff81ae2a87c701734ac7a533f24d07e9`.
-- Giai đoạn 0–4 đã qua cổng tự động; chi tiết trong [PHASE_STATUS.md](PHASE_STATUS.md).
-- Giai đoạn 5: 121 kiểm thử Flutter và phân tích mã sạch tại local; Kotlin main/debug biên dịch đạt. Tám ca account/profile/UI bao gồm chọn bản xung đột với chữ 200%.
-- [Emulator CI 42665407030](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42665407030) đã đạt 14 ca dữ liệu/Auth thật và bảy ca Auth/payload AOT trên checkpoint này.
-- [Native CI 42665407040](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42665407040): Windows đã đạt 121 tests, DPAPI/Auth/Firestore/profile/primary/logout/relogin/delete, tray và installer. Android đã build release, đạt 25 receiver cases và Keystore/cold-process/digest. Lượt native account treo sau khi cài APK kiểm thử và bị hủy khi job hết thời gian; chưa tính ca này đạt. Driver mới giới hạn 10 phút, khởi động debug process mới và thu log chẩn đoán đã che dữ liệu nhạy cảm. Cần chạy lại CI sau thay đổi driver.
+- Nhánh `native/flutter-app`, PR [#1](https://github.com/Duckhanh149/DayMind-Smart/pull/1). Không tự hợp nhất `main`.
+- Source `c1e61c2187ebdb78c503b027416d66b4eec30257`: **giai đoạn 0–5 đã qua cổng tự động**.
+- [Native CI42683631256](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42683631256): 121 Flutter tests; Android25 receiver/Keystore/cold-process/digest/native account; Windows DPAPI/native account/tray/installer đều đạt.
+- [Emulator CI42683630803](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42683630803): 14 ca dữ liệu/Auth thật và bảy ca Auth/payload AOT đạt.
+- Lượt Android trước treo sau cài APK kiểm thử; driver mới khởi động debug process mới, deadline10 phút, required markers và sanitized diagnostics đã chạy đạt. Không bỏ điều kiện validate hoặc tắt tối ưu SDK.
 
-## Việc kế tiếp
+## Việc đang tiếp tục
 
-1. Xử lý mọi lỗi còn lại của cổng giai đoạn 5, cập nhật bằng chứng theo đúng commit.
-2. Hoàn thiện giai đoạn 6: personality/dialogue editor, expression mapping, placement an toàn, low-resource và đo tài nguyên. Hiện Mầm mới có bản tĩnh cùng thư viện PNG/WebP, ba tính cách và cooldown.
-3. Giai đoạn 7: animation/package import an toàn và cửa sổ Companion nổi Windows.
-4. Giai đoạn 8: kiểm chứng kỹ thuật và giấy phép Live2D; không gọi ảnh tĩnh là Live2D hoặc bật tính năng khi chưa qua cổng.
-5. Giai đoạn 9: sao lưu/khôi phục có mật khẩu, tối ưu, kiểm thử cuối và đóng gói. Firebase production, khóa ký phát hành và nghiệm thu phần cứng thật chưa có.
+Giai đoạn 6 đã triển khai editor hồ sơ/tính cách/lời thoại, biểu cảm vector và ánh xạ PNG/WebP, preview nhập, vị trí auto/manual, low-resource, metadata sync/CAS. Regression mới kiểm tra count/concurrent quota, symlink, WebP động bị từ chối, draft/stale editor, phone360/390/desktop1440 và chữ200%. Hai ca Emulator bổ sung profile convergence/conflict đã chạy đạt (tổng16). Native integration thêm RSS/cache benchmark `COMPANION_RESOURCE_POC`, cần CI source mới trước khi qua cổng6.
+
+Kiểm chứng local cuối: 142 Flutter tests, analyze sạch, 16 Emulator cases, Kotlin main/debug compile đạt; bốn ca editor/preview/save chữ100/200% đạt. Ảnh headless đã xem. Native CI chưa chạy cho source6 mới; không được triển khai giai đoạn7 trước khi qua cổng.
+
+Bằng chứng chi tiết tại `/workspace/work/evidence/phase6-*`; giữ thay đổi chưa commit. Không chạy lại emulator trên cổng đang dùng: Auth9199, Firestore8180; nếu CLI đã dừng, kiểm tra process/cổng rồi phục hồi test service, không suy diễn Java orphan là toàn bộ suite đang chạy. Cập nhật checkpoint/PR bằng commit và kết quả thật sau vòng native CI.
+
+Giữ mọi thay đổi chưa commit khi phiên dừng; kiểm tra source/CI mới nhất trước khi nối tiếp. Không gọi PNG là Live2D, không coi runner Server/emulator là phần cứng Windows10/11 hoặc Android OEM thật.
 
 ## Chạy kiểm tra
 

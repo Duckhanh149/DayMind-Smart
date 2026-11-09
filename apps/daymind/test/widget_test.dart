@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:go_router/go_router.dart';
+import 'package:daymind_smart/features/companion/domain/companion.dart';
+
 import 'package:daymind_smart/features/recurrence/application/recurrence_service.dart';
 import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
 import 'package:daymind_smart/features/calendar/presentation/calendar_page.dart';
@@ -108,6 +111,104 @@ void main() {
       tester.platformDispatcher.clearTextScaleFactorTestValue();
     });
     return (db, controller);
+  }
+
+  for (final scenario in [
+    (const Size(360, 800), 1.0),
+    (const Size(390, 844), 2.0),
+    (const Size(1440, 960), 1.0),
+    (const Size(1440, 960), 2.0),
+  ]) {
+    testWidgets(
+      'companion editor preview, validation and save at ${scenario.$1.width}px / ${scenario.$2} text',
+      (tester) async {
+        final (_, c) = await mount(tester, scenario.$1, scale: scenario.$2);
+        await c.updateCompanionLayout(
+          (v) => v.copy(placement: CompanionPlacement.right, size: 144),
+        );
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .go('/companion');
+        await tester.pumpAndSettle();
+        final portrait = find.byKey(const Key('companion-portrait'));
+        expect(
+          tester.getSize(portrait).width,
+          scenario.$1.width < 600 ? (scenario.$2 == 2 ? 56 : 96) : 144,
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const Key('edit-companion-profile')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('edit-companion-profile')));
+        await tester.pumpAndSettle();
+        var saves = 0;
+        c.onLocalChange = () => saves++;
+        await tester.enterText(
+          find.byKey(const Key('companion-name')),
+          'Lá nhỏ',
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('companion-template')));
+        await tester.enterText(
+          find.byKey(const Key('companion-template')),
+          '{unknown}',
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const Key('preview-companion-reply')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('preview-companion-reply')));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Chỉ dùng {name}'), findsOneWidget);
+        expect(c.companion.name, 'Mầm');
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('companion-template')));
+        await tester.enterText(
+          find.byKey(const Key('companion-template')),
+          '{name} sẵn sàng cùng bạn.',
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const Key('preview-companion-reply')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('preview-companion-reply')));
+        await tester.pumpAndSettle();
+        expect(find.text('Lá nhỏ sẵn sàng cùng bạn.'), findsOneWidget);
+        expect(saves, 0);
+        expect(
+          await c.recurrence.records.get('companion_profile', 'primary'),
+          isNull,
+        );
+        expect(
+          find.byKey(const Key('save-companion-profile')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('GENERATE_COMPANION_GOLDENS') &&
+            scenario.$2 == 1) {
+          await tester.ensureVisible(find.text('Lá nhỏ sẵn sàng cùng bạn.'));
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(DaymindApp),
+            matchesGoldenFile(
+              'previews/companion-editor-${scenario.$1.width.toInt()}.png',
+            ),
+          );
+        }
+        await tester.tap(find.byKey(const Key('save-companion-profile')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('save-companion-profile')), findsNothing);
+        expect(c.companion.name, 'Lá nhỏ');
+        expect(
+          c.companion.messageFor(CompanionEvent.appOpen),
+          'Lá nhỏ sẵn sàng cùng bạn.',
+        );
+        expect(saves, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   testWidgets(

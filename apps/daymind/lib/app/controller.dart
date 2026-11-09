@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' hide Category;
+import 'package:flutter/painting.dart' show PaintingBinding;
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../features/tasks/domain/task.dart';
@@ -22,7 +23,7 @@ class WorkspaceController extends ChangeNotifier {
     this.importer, {
     CompanionBehavior? behavior,
     DateTime Function()? clock,
-  }) : behavior = behavior ?? CompanionBehavior(),
+  }) : behavior = behavior ?? CompanionBehavior(clock: clock),
        now = clock ?? DateTime.now;
   final SqliteTaskRepository repository;
   final StaticAssetImporter importer;
@@ -46,6 +47,188 @@ class WorkspaceController extends ChangeNotifier {
   });
   List<Category> categories = [];
   AppPreferences preferences = const AppPreferences();
+  CompanionProfile companion = CompanionProfile();
+  CompanionLayout companionLayout = const CompanionLayout();
+  CompanionExpression expression = CompanionExpression.neutral;
+  Map<CompanionExpression, String> expressionAssets = {};
+  String? companionError;
+  int inAppSequence = 0;
+  String? inAppAnnouncement;
+
+  String? get companionAssetName =>
+      expressionAssets[expression] ?? preferences.assetName;
+  Future<void> _loadCompanion() async {
+    companionError = null;
+    try {
+      final data = await recurrence.records.get('companion_profile', 'primary');
+      companion = data == null
+          ? CompanionProfile(personality: preferences.personality)
+          : CompanionProfile.fromJson(data);
+      companionLayout = CompanionLayout.fromJson(
+        await recurrence.records.get('companion_local', 'layout'),
+      );
+      final art =
+          await recurrence.records.get('companion_local', 'expressions') ?? {};
+      expressionAssets = {
+        for (final e in CompanionExpression.values)
+          if (art[e.name] is String &&
+              RegExp(r'^[a-f0-9]{64}\.(png|webp)$')
+                  .hasMatch(art[e.name] as String))
+            e: art[e.name] as String,
+      };
+      PaintingBinding.instance.imageCache.maximumSizeBytes =
+          (companionLayout.lowResource ? 4 : 16) * 1024 * 1024;
+    } catch (_) {
+      companion = CompanionProfile(personality: preferences.personality);
+      companionLayout = const CompanionLayout();
+      expressionAssets = {};
+      companionError = 'Chưa đọc được hồ sơ Companion. Mầm dùng cấu hình mặc định; công việc vẫn được giữ.';
+    }
+  }
+
+  void reactCompanion(CompanionEvent event, {String? task, String? summary}) {
+    if (!preferences.companionEnabled) return;
+    final settings = reminders?.preferences ?? const NotificationPreferences();
+    final reply = behavior.react(
+      event,
+      companion,
+      quiet: settings.quietAt(now()),
+      task: task,
+      summary: summary,
+      day: localDay(now(), settings.timezoneId),
+    );
+    expression = reply.expression;
+    if (reply.text != null) dialogue = reply.text!;
+  }
+
+  void foregroundReminder(CompanionCue cue) {
+    inAppAnnouncement = cue.announcement;
+    inAppSequence++;
+    if (preferences.companionEnabled) {
+      reactCompanion(cue.event, task: cue.task, summary: cue.summary);
+    }
+    notifyListeners();
+  }
+
+  Future<void> overdueVisible() async {
+    if (!preferences.companionEnabled ||
+        !visibleTasks.any(
+          (t) =>
+              t.deletedAt == null &&
+              !t.terminal &&
+              t.dueAt != null &&
+              t.dueAt!.isBefore(now()),
+        )) {
+      return;
+    }
+    await _write(() async {
+      final settings =
+          reminders?.preferences ?? const NotificationPreferences();
+      final day = localDay(now(), settings.timezoneId);
+      if ((await recurrence.records.get(
+            'companion_local',
+            'overdue',
+          ))?['day'] ==
+          day) {
+        return;
+      }
+      final reply = behavior.react(
+        CompanionEvent.taskOverdueVisible,
+        companion,
+        quiet: settings.quietAt(now()),
+        day: day,
+      );
+      if (reply.text == null) return;
+      dialogue = reply.text!;
+      expression = reply.expression;
+      await recurrence.records.put('companion_local', 'overdue', {'day': day});
+    }, localChange: false);
+  }
+
+  Future<void> saveCompanion(
+    CompanionProfile value, {
+    CompanionProfile? expected,
+  }) => _write(() async {
+    value.validate();
+    await repository.db.transaction(() async {
+      if (expected != null) {
+        final stored = await recurrence.records.get(
+          'companion_profile',
+          'primary',
+        );
+        final fresh = stored == null
+            ? CompanionProfile(
+                personality: AppPreferences.fromJson(
+                  await repository.readPreferences(),
+                ).personality,
+              )
+            : CompanionProfile.fromJson(stored);
+        if (!fresh.sameAs(expected)) {
+          throw const CompanionValidation(
+            'Hồ sơ đã thay đổi trên thiết bị khác. Bản đang nhập được giữ; hãy mở lại để so sánh trước khi lưu.',
+          );
+        }
+      }
+      await recurrence.records.put(
+        'companion_profile',
+        'primary',
+        value.toJson(),
+      );
+      preferences = preferences.copyWith(personality: value.personality);
+      await repository.writePreferences(preferences.toJson());
+    });
+    dialogue = value.messageFor(CompanionEvent.appOpen);
+    expression = value.expressionFor(CompanionEvent.appOpen);
+  });
+  Future<void> configureCompanionLayout(CompanionLayout value) => _write(
+    () async {
+      value.validate();
+      await recurrence.records.put('companion_local', 'layout', value.toJson());
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    },
+    localChange: false,
+  );
+  Future<void> updateCompanionLayout(
+    CompanionLayout Function(CompanionLayout) update,
+  ) => _write(() async {
+    final value = update(companionLayout);
+    value.validate();
+    await recurrence.records.put('companion_local', 'layout', value.toJson());
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  }, localChange: false);
+  Future<void> removeCompanionAsset(String name) => _write(() async {
+    await importer.remove(name);
+    if (preferences.assetName == name) {
+      preferences = preferences.copyWith(resetAsset: true);
+      await repository.writePreferences(preferences.toJson());
+    }
+    await recurrence.records.put('companion_local', 'expressions', {
+      for (final e in expressionAssets.entries)
+        if (e.value != name) e.key.name: e.value,
+    });
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  }, localChange: false);
+  Future<void> mapExpression(CompanionExpression selected, String? name) =>
+      _write(() async {
+        if (name != null && importer.resolve(name)?.existsSync() != true) {
+          throw const CompanionValidation(
+            'Hãy chọn một ảnh trong thư viện trên thiết bị này.',
+          );
+        }
+        final next = {...expressionAssets};
+        if (name == null) {
+          next.remove(selected);
+        } else {
+          next[selected] = name;
+        }
+        await recurrence.records.put('companion_local', 'expressions', {
+          for (final e in next.entries) e.key.name: e.value,
+        });
+        PaintingBinding.instance.imageCache.clear();
+      }, localChange: false);
   DashboardPreferences dashboard = const DashboardPreferences();
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
@@ -87,12 +270,18 @@ class WorkspaceController extends ChangeNotifier {
     await recurrence.materialize(tasks);
     categories = await repository.categories();
     preferences = AppPreferences.fromJson(await repository.readPreferences());
+    await _loadCompanion();
     dashboard = DashboardPreferences.fromJson(
       await recurrence.records.get('assistant', 'dashboard'),
     );
-    dialogue =
-        behavior.respond(CompanionEvent.appOpen, preferences.personality) ??
-        dialogue;
+    final reply = behavior.react(
+      CompanionEvent.appOpen,
+      companion,
+      quiet: (reminders?.preferences ?? const NotificationPreferences())
+          .quietAt(now()),
+    );
+    dialogue = reply.text ?? 'Mầm đang nghỉ ngơi.';
+    expression = reply.expression;
     notifyListeners();
   }
 
@@ -107,6 +296,7 @@ class WorkspaceController extends ChangeNotifier {
         tasks = await repository.list();
         await recurrence.materialize(tasks);
         categories = await repository.categories();
+        await _loadCompanion();
         await reminders?.refresh();
         notifyListeners();
         return result;
@@ -222,12 +412,7 @@ class WorkspaceController extends ChangeNotifier {
       );
     }
     if (task.status != TaskStatus.completed) {
-      dialogue =
-          behavior.respond(
-            CompanionEvent.taskCompleted,
-            preferences.personality,
-          ) ??
-          dialogue;
+      reactCompanion(CompanionEvent.taskCompleted, task: task.title);
     }
   });
   Future<void> delete(Task task, {EditScope scope = EditScope.one}) => _write(
@@ -257,6 +442,13 @@ class WorkspaceController extends ChangeNotifier {
   Future<void> configure(AppPreferences Function(AppPreferences) update) =>
       _write(() async {
         final next = update(preferences);
+        if (next.personality != preferences.personality) {
+          await recurrence.records.put(
+            'companion_profile',
+            'primary',
+            companion.copy(personality: next.personality).toJson(),
+          );
+        }
         await repository.writePreferences(next.toJson());
         preferences = next;
         await window?.configure(next.windowsTrayEnabled);

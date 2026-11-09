@@ -79,9 +79,10 @@ class SyncStore {
     SyncKind.recurrence => 2,
     SyncKind.occurrence => 3,
     SyncKind.reminderConfig => 4,
+    SyncKind.companionProfile => 5,
   };
   static String? parentOf(SyncRecord r) => switch (r.kind) {
-    SyncKind.category => null,
+    SyncKind.category || SyncKind.companionProfile => null,
     SyncKind.task || SyncKind.recurrence => r.id,
     _ => r.data['taskId'] as String,
   };
@@ -219,6 +220,7 @@ class SyncStore {
     SyncKind.recurrence => 'Lịch của chuỗi',
     SyncKind.occurrence => 'Lần thực hiện ${r.data['date']}',
     SyncKind.reminderConfig => 'Cấu hình nhắc việc',
+    SyncKind.companionProfile => 'Hồ sơ ${r.data['name']}',
   };
   Future<void> _archive(
     SyncRecord local,
@@ -266,7 +268,9 @@ class SyncStore {
 
   bool _blocked(SyncRecord record, List<ConflictHeader> active) {
     if (active.any((h) => h.key == record.key)) return true;
-    if (record.kind == SyncKind.task || record.kind == SyncKind.category) {
+    if (record.kind == SyncKind.task ||
+        record.kind == SyncKind.category ||
+        record.kind == SyncKind.companionProfile) {
       return false;
     }
     final parent = parentOf(record);
