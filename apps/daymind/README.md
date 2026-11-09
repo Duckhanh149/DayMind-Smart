@@ -32,7 +32,7 @@ flutter build windows --release
 flutter test integration_test/app_smoke_test.dart -d windows
 ```
 
-`.github/workflows/native-build.yml` build/test trên Linux và Windows, xuất APK, bộ ứng dụng Windows kèm runtime VC++ và bộ cài Inno Setup. Tải bản cài tại **Releases → DayMind SMART 0.1.0 Preview**; artifacts của từng lần build vẫn nằm trong mục Actions. Quy trình chỉ tạo preview khi cả Android và Windows thành công, kèm SHA256SUMS. Build thành công không thay thế kiểm thử thiết bị thật.
+`.github/workflows/native-build.yml` build/test trên Linux và Windows, xuất APK, bộ ứng dụng Windows kèm runtime VC++ và bộ cài Inno Setup. Bản cài đã kiểm chứng hiện ở [Actions run 42560998276](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42560998276): tải artifact Android hoặc Windows và giải nén. [PR #1](https://github.com/Duckhanh149/DayMind-Smart/pull/1) chờ chấp thuận hợp nhất; sau khi merge, workflow sẽ tạo **Releases → DayMind SMART 0.1.0 Preview** cùng SHA256SUMS khi cả hai nền tảng đạt. Chưa có GitHub Release ở thời điểm báo cáo này. Build thành công không thay thế kiểm thử thiết bị thật.
 
 APK phân phối ở mục Releases được build tối ưu ARM64 nhưng vẫn ký bằng khóa phát triển cho bản preview; lệnh debug bên trên dành cho phát triển. Bộ cài Windows chưa ký mã phát hành. Chưa có bản iPhone/iOS, Windows ARM64, Play Store hoặc Microsoft Store. Không cần cấp quyền báo thức, thông báo, overlay hoặc chạy lúc khởi động cho bản hiện tại.
 
