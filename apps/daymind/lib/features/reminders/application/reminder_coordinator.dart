@@ -26,6 +26,12 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   bool granted = false, _foreground = true, _running = false, _disposed = false;
   String? error;
   Timer? _timer;
+  bool _windowVisible = true;
+  void setWindowVisible(bool visible) {
+    _windowVisible = visible;
+    if (visible) unawaited(reloadFromNative());
+  }
+
   Future<void> start(String zone) async {
     final stored = await engine.records.get('notifications', 'settings');
     if (zone.isEmpty) {
@@ -83,7 +89,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         if (due.isNotEmpty) {
           final sorted = [...due]
             ..sort((a, b) => b.priority.compareTo(a.priority));
-          if (_foreground) {
+          if (_foreground && _windowVisible) {
             onInApp?.call(sorted.first.title);
           } else {
             final id =

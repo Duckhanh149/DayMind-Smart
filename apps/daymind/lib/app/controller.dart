@@ -7,6 +7,7 @@ import '../features/companion/domain/companion.dart';
 import '../features/companion/data/asset_importer.dart';
 import '../features/reminders/application/reminder_coordinator.dart';
 import '../features/reminders/domain/reminder.dart';
+import '../platform/window_lifecycle.dart';
 
 final workspaceProvider = ChangeNotifierProvider<WorkspaceController>(
   (ref) => throw UnimplementedError(),
@@ -37,6 +38,12 @@ class WorkspaceController extends ChangeNotifier {
   }
 
   ReminderCoordinator? reminders;
+  WindowLifecycle? window;
+  void attachWindow(WindowLifecycle value) {
+    window = value;
+    value.addListener(notifyListeners);
+  }
+
   void attachReminders(ReminderCoordinator coordinator) {
     reminders = coordinator;
     coordinator.addListener(notifyListeners);
@@ -135,9 +142,12 @@ class WorkspaceController extends ChangeNotifier {
         final next = update(preferences);
         await repository.writePreferences(next.toJson());
         preferences = next;
+        await window?.configure(next.windowsTrayEnabled);
       });
   @override
   void dispose() {
+    window?.removeListener(notifyListeners);
+    window?.dispose();
     reminders?.removeListener(notifyListeners);
     reminders?.dispose();
     super.dispose();

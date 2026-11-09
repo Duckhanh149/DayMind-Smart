@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -29,6 +32,23 @@ void main() {
     );
     if (reminders.granted) {
       await reminders.test();
+    }
+    if (Platform.isWindows) {
+      final window = controller.window!;
+      await window.refresh();
+      expect(window.iconReady, isTrue, reason: window.error);
+      await window.hide();
+      await tester.pump(const Duration(milliseconds: 200));
+      await window.refresh();
+      expect(window.visible, isFalse);
+      expect(window.trayEnabled, isTrue);
+      await window.show();
+      await tester.pump(const Duration(milliseconds: 200));
+      await window.refresh();
+      expect(window.visible, isTrue);
+      debugPrint(
+        'TRAY_POC: WM_CLOSE hides, process stays active, restore succeeds.',
+      );
     }
     final tasks = await controller.repository.list();
     expect(

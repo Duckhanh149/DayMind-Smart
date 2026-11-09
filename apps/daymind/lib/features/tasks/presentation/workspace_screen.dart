@@ -1047,6 +1047,25 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 },
               ),
               const SizedBox(height: 20),
+              if (Platform.isWindows)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: controller.preferences.windowsTrayEnabled,
+                  title: const Text('Thu vào khay khi đóng cửa sổ'),
+                  subtitle: const Text(
+                    'DayMind tiếp tục nhắc trong khay. Menu khay có Mở DayMind và Thoát hẳn. Không tự khởi động cùng Windows.',
+                  ),
+                  onChanged: (value) => act(
+                    controller.configure(
+                      (prefs) => prefs.copyWith(windowsTrayEnabled: value),
+                    ),
+                  ),
+                ),
+              if (controller.window?.error != null)
+                Text(
+                  controller.window!.error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.eco_outlined),

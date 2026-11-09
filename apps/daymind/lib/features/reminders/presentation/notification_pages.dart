@@ -181,7 +181,7 @@ class NotificationSettingsSection extends StatelessWidget {
             Text(
               reminders.engine.scheduler.supportsClosedApp
                   ? 'Android dùng lịch nhắc không chính xác tuyệt đối; hệ điều hành có thể trì hoãn. Không yêu cầu quyền báo thức chính xác hoặc bỏ qua tiết kiệm pin.'
-                  : 'Trên Windows hiện chỉ nhắc khi tiến trình ứng dụng đang chạy. Khi thoát hoàn toàn, lịch nền chưa được bảo đảm; phần kiểm chứng này vẫn chưa đạt.',
+                  : 'Windows tiếp tục nhắc khi DayMind còn chạy trong khay. Chọn Thoát hẳn sẽ dừng nhắc; DayMind không tự khởi động cùng Windows.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),

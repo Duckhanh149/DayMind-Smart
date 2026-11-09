@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'features/companion/data/asset_importer.dart';
 import 'features/reminders/application/reminder_engine.dart';
 import 'features/reminders/application/reminder_coordinator.dart';
 import 'platform/notification_scheduler.dart';
+import 'platform/window_lifecycle.dart';
 
 bool _fontLicenseRegistered = false;
 Future<void> main() async {
@@ -41,8 +43,19 @@ Future<void> main() async {
       StaticAssetImporter(Directory(p.join(support.path, 'characters'))),
     );
     await controller.load();
+    if (Platform.isWindows) {
+      final window = WindowLifecycle();
+      window.onVisibility = (visible) =>
+          controller.reminders?.setWindowVisible(visible);
+      controller.attachWindow(window);
+      await window.start(controller.preferences.windowsTrayEnabled);
+    }
     final scheduler = PlatformNotificationScheduler();
-    scheduler.onOpen = controller.openNotifications;
+    scheduler.onOpen = () {
+      controller.openNotifications();
+      final window = controller.window;
+      if (window != null) unawaited(window.show());
+    };
     final zone = await scheduler.initialize(
       p.join(support.path, 'daymind.sqlite'),
     );

@@ -6,7 +6,7 @@ Không đánh đồng mã đã viết, kiểm thử tự động, build và nghi
 | --- | --- | --- |
 | 0 | Flutter Android/Windows build và SQLite/import/render tĩnh đã chạy ở preview 0.1.0. Firebase Auth/Firestore Emulator POC mới đạt local và CI 42566629407. | Nhắc nền Android khi đóng tiến trình; Windows packaging/activation/đóng tiến trình; phần cứng đích. |
 | 1 | CRUD local, migration, transaction/revision, không cần deadline, danh mục, bộ lọc, dashboard, giao diện responsive; 28 kiểm thử nền tảng trước, hiện tổng 53 đạt local. | Kiểm tra sử dụng dài ngày trên máy người dùng. |
-| 2 | Reminder rules/ledger/dedup/quiet/snooze/dismiss, quyền, Notification Center; 22 clock/SQLite + 2 UI mới đạt. Có receiver Android và kiểm thử recovery. Windows live engine có guard. | Build/kiểm thử receiver mới đang sửa và chạy lại; Android emulator smoke được thêm; Windows thoát hoàn toàn chưa hỗ trợ. Không đánh dấu hoàn thành. |
+| 2 | Reminder rules/ledger/dedup/quiet/snooze/dismiss, quyền, Notification Center; 22 clock/SQLite + 2 UI mới đạt. Có receiver Android và kiểm thử recovery. Windows live engine có guard. | Build/kiểm thử receiver mới đang sửa và chạy lại; Android emulator smoke được thêm; Windows đóng cửa sổ→khay theo lựa chọn mới đang được triển khai/kiểm thử; Thoát hẳn dừng nhắc. Không đánh dấu hoàn thành. |
 | 3 | Chưa triển khai calendar day/week/month và occurrence/series editing. | Toàn bộ kiểm thử recurrence/DST/monthly. |
 | 4 | Chưa có digest và analytics hoàn chỉnh. | Opt-in digest, denominator/fixtures, dashboard tùy chỉnh. |
 | 5 | Người dùng chọn Emulator; đã kiểm chứng kết nối Auth, Firestore, owner rules và CAS precondition. **Chưa có đồng bộ trong app.** | Account isolation SQLite, outbox/retry/tombstone/conflict UI, hai thiết bị offline/online, primary-device policy. |
@@ -20,3 +20,5 @@ Phiên bản đã xác minh trước thay đổi nhắc việc: commit `7ffd0d5`
 Không yêu cầu tài khoản cloud hoặc khóa thật để tiếp tục Emulator. Không tự bật Live2D/startup helper hay sửa `main` trong khi PR #1 còn mở.
 
 Vòng local cuối: `flutter analyze` không vấn đề, **53/53** kiểm thử đạt, gồm rollback nguyên tử task + custom reminder khi cấu hình sai và CRUD khi từ chối quyền. `tool/precache_sqlite.py` tải qua API phát hành GitHub chính thức và kiểm SHA256 từ gói sqlite3 3.9.1 đã ghim; ba asset Linux/Android ARM64/x64 đạt. Không đổi binary, TLS hoặc checksum. Ảnh Notification Center đã xem tại `docs/ui/notifications.png`. CI mới cần chạy trên commit chứa bước precache này trước khi nghiệm thu Android.
+
+Lựa chọn Windows mới của người dùng: đóng cửa sổ thu vào khay, có Mở/Thoát hẳn, không auto-start. Xem ADR0004. Bộ Flutter local vẫn **53/53 đạt** sau thay đổi. Local Gradle đã chạy lại compileKotlin thật (không UP-TO-DATE), đạt với JAR/POM có checksum qua repository local giới hạn phiên bản; CI cần kiểm chứng mã khay và Android receiver/emulator tiếp theo.

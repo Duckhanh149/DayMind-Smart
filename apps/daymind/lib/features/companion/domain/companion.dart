@@ -38,12 +38,14 @@ class AppPreferences {
     this.personality = Personality.gentle,
     this.assetName,
     this.companionSize = 80,
+    this.windowsTrayEnabled = true,
   });
   factory AppPreferences.fromJson(Map<String, dynamic> json) => AppPreferences(
     theme: ['system', 'light', 'dark'].contains(json['theme'])
         ? json['theme'] as String
         : 'system',
     companionEnabled: json['companionEnabled'] != false,
+    windowsTrayEnabled: json['windowsTrayEnabled'] != false,
     personality:
         Personality.values
             .where((p) => p.name == json['personality'])
@@ -61,6 +63,7 @@ class AppPreferences {
   );
   final String theme;
   final bool companionEnabled;
+  final bool windowsTrayEnabled;
   final Personality personality;
   final String? assetName;
   final double companionSize;
@@ -71,12 +74,14 @@ class AppPreferences {
     String? assetName,
     bool resetAsset = false,
     double? companionSize,
+    bool? windowsTrayEnabled,
   }) => AppPreferences(
     theme: theme ?? this.theme,
     companionEnabled: companionEnabled ?? this.companionEnabled,
     personality: personality ?? this.personality,
     assetName: resetAsset ? null : assetName ?? this.assetName,
     companionSize: companionSize ?? this.companionSize,
+    windowsTrayEnabled: windowsTrayEnabled ?? this.windowsTrayEnabled,
   );
   Map<String, dynamic> toJson() => {
     'theme': theme,
@@ -84,5 +89,6 @@ class AppPreferences {
     'personality': personality.name,
     'assetName': assetName,
     'companionSize': companionSize,
+    'windowsTrayEnabled': windowsTrayEnabled,
   };
 }
