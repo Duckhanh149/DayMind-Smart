@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/workspace_host.dart';
@@ -327,10 +329,50 @@ class _AccountPageState extends State<AccountPage> {
   );
 }
 
-class _ConflictList extends StatelessWidget {
+class _ConflictList extends StatefulWidget {
   const _ConflictList({required this.service, required this.run});
   final SyncService service;
   final Future<void> Function(Future<void> Function()) run;
+  @override
+  State<_ConflictList> createState() => _ConflictListState();
+}
+
+class _ConflictListState extends State<_ConflictList> {
+  late Future<List<ConflictHeader>> rowsFuture;
+  StreamSubscription<void>? subscription;
+  SyncService get service => widget.service;
+  @override
+  void initState() {
+    super.initState();
+    watch();
+  }
+
+  void watch() {
+    rowsFuture = service.store.conflicts(history: true);
+    subscription = service.changes.listen((_) {
+      if (mounted) {
+        setState(() {
+          rowsFuture = service.store.conflicts(history: true);
+        });
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(_ConflictList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.service != service) {
+      unawaited(subscription?.cancel());
+      watch();
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(subscription?.cancel());
+    super.dispose();
+  }
+
   Future<void> open(BuildContext context, ConflictHeader h) async {
     final c = await service.store.conflict(h.id);
     if (c == null || !context.mounted) return;
@@ -395,14 +437,31 @@ class _ConflictList extends StatelessWidget {
       ),
     );
     if (choice != null) {
-      await run(() => service.resolve(h.id, keepLocal: choice));
+      await widget.run(() => service.resolve(h.id, keepLocal: choice));
     }
   }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<List<ConflictHeader>>(
-    future: service.store.conflicts(history: true),
+    future: rowsFuture,
     builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return ListTile(
+          title: const Text('Chưa tải được bản lưu xung đột.'),
+          trailing: TextButton(
+            onPressed: () => setState(() {
+              rowsFuture = service.store.conflicts(history: true);
+            }),
+            child: const Text('Thử lại'),
+          ),
+        );
+      }
+      if (!snapshot.hasData) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: LinearProgressIndicator(),
+        );
+      }
       final rows = snapshot.data ?? [];
       if (rows.isEmpty) return const SizedBox.shrink();
       return Card(

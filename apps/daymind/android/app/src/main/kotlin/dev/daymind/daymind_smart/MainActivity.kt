@@ -37,20 +37,21 @@ class MainActivity : FlutterActivity() {
                     "initialize" -> {
                         val path = java.io.File(call.argument<String>("path")!!).canonicalFile
                         require(path.path.startsWith(filesDir.canonicalPath + java.io.File.separator))
-                        getSharedPreferences("daymind_runtime", MODE_PRIVATE).edit().putString("database", path.path).apply()
-                        ReminderRuntime.channel(this); ReminderRuntime.recover(this); result.success(null)
+                        ReminderRuntime.executor.execute {
+                            try {
+                                ReminderRuntime.switchDatabase(this, path.path)
+                                ReminderRuntime.channel(this); ReminderRuntime.recover(this)
+                                runOnUiThread { result.success(null) }
+                            } catch (_:Exception) {
+                                runOnUiThread { result.error("PROFILE_OPEN", "Chưa mở được thông báo cho không gian này.", null) }
+                            }
+                        }
                     }
                     "granted" -> result.success(ReminderRuntime.granted(this))
                     "deactivate" -> {
                         ReminderRuntime.executor.execute {
                             try {
-                                ReminderRuntime.database(this)?.use { db ->
-                                    db.rawQuery("SELECT platform_id FROM reminder_events WHERE state='scheduled' LIMIT 256", null).use { rows ->
-                                        while(rows.moveToNext()) ReminderRuntime.cancel(this, rows.getInt(0))
-                                    }
-                                }
-                                check(getSharedPreferences("daymind_runtime", MODE_PRIVATE).edit().remove("database").commit())
-                                getSystemService(android.app.NotificationManager::class.java).cancelAll()
+                                ReminderRuntime.deactivate(this)
                                 runOnUiThread { result.success(null) }
                             } catch (_:Exception) {
                                 runOnUiThread { result.error("PROFILE_CLOSE", "Chưa dừng được thông báo của không gian cũ.", null) }

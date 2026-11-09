@@ -244,6 +244,7 @@ class WorkspaceHost extends ChangeNotifier {
             ...prefs.toJson(),
             'primaryDevice':
                 choice?['here'] == true &&
+                choice?['deviceId'] == deviceId &&
                 await c.recurrence.records.get('account', 'deletion') == null &&
                 (await c.recurrence.records.get(
                       'notifications',
@@ -337,6 +338,7 @@ class WorkspaceHost extends ChangeNotifier {
         onPrimary: (here) async {
           await c.recurrence.records.put('notifications', 'cloud_primary', {
             'here': here,
+            'deviceId': deviceId,
           });
           final enabled =
               (await c.recurrence.records.get(

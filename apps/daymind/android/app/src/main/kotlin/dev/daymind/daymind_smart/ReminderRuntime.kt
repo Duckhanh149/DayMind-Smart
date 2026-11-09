@@ -38,11 +38,33 @@ object ReminderRuntime {
     }
     fun database(context: Context): SQLiteDatabase? {
         val path = context.getSharedPreferences("daymind_runtime", Context.MODE_PRIVATE).getString("database", null) ?: return null
+        return openDatabase(path)
+    }
+    private fun openDatabase(path: String): SQLiteDatabase? {
         if (!java.io.File(path).exists()) return null
         return SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READWRITE).apply {
             // This PRAGMA returns a row; Android's execSQL rejects row-producing statements.
             rawQuery("PRAGMA busy_timeout=5000", null).use { it.moveToFirst() }
         }
+    }
+    /** Call on the native executor before changing profile paths, including cold startup. */
+    fun deactivate(context: Context) {
+        val preferences = context.getSharedPreferences("daymind_runtime", Context.MODE_PRIVATE)
+        val previous = preferences.getString("database", null)
+        // Stop reads and clear visible content before touching a potentially busy old database.
+        check(preferences.edit().remove("database").commit())
+        manager(context).cancelAll()
+        (previous?.let { openDatabase(it) })?.use { db ->
+            db.rawQuery("SELECT platform_id FROM reminder_events WHERE state='scheduled' LIMIT 256", null).use { rows ->
+                while(rows.moveToNext()) cancel(context, rows.getInt(0))
+            }
+        }
+    }
+    fun switchDatabase(context: Context, path: String) {
+        val preferences = context.getSharedPreferences("daymind_runtime", Context.MODE_PRIVATE)
+        val previous = preferences.getString("database", null)
+        if(previous != null && previous != path) deactivate(context)
+        check(preferences.edit().putString("database", path).commit())
     }
     private fun config(db: SQLiteDatabase): JSONObject = db.rawQuery("SELECT value FROM extension_records WHERE area='notifications' AND id='settings'", null).use {
         if (it.moveToFirst()) JSONObject(it.getString(0)) else JSONObject()

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:uuid/uuid.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,8 +82,16 @@ class TestCloud implements SyncGateway {
   final removed = <String>{};
   final primaries = <String, PrimaryDevice>{};
   int count = 0;
+  bool offline = false;
   @override
   Future<void> provision(AuthSession session) async {
+    if (offline) {
+      throw const AccountFailure(
+        'offline',
+        'Test network unavailable',
+        retryable: true,
+      );
+    }
     if (removed.contains(session.uid)) {
       throw const AccountFailure('account_deleted', 'Đã xóa');
     }
@@ -342,6 +352,120 @@ void main() {
     expect(host.account, isNull);
     expect(host.controller!.tasks.single.title, 'Giữ cục bộ khi xóa');
   });
+  test('a new installation cannot reuse another device cached primary choice while offline', () async {
+    await host.signIn(
+      'owner-a@example.invalid',
+      'correct',
+      create: true,
+      copyLocal: false,
+    );
+    await host.sync!.sync();
+    await host.notificationDevice(true);
+    expect(host.controller!.reminders!.preferences.primaryDevice, isTrue);
+    final secure = host.secure;
+    await host.shutdown();
+    host.dispose();
+    await secure.set('installation', const Uuid().v4());
+    cloud.offline = true;
+    host = WorkspaceHost(dir, secure, auth, cloud);
+    await host.start();
+    await host.sync!.sync();
+    expect(host.account!.uid, 'owner-a');
+    expect(host.controller!.reminders!.preferences.primaryDevice, isFalse);
+    expect(host.sync!.lastSynced, isNull);
+  });
+  testWidgets(
+    'signed-in conflict can be reviewed and resolved on a phone at 200% text',
+    (tester) async {
+      await tester.runAsync(() async {
+        await host.signIn(
+          'owner-a@example.invalid',
+          'correct',
+          create: true,
+          copyLocal: false,
+        );
+        await host.sync!.sync();
+        await host.controller!.save(const TaskDraft(title: 'Bản đầu'));
+        await host.sync!.sync();
+        final remote = cloud.data['owner-a']!.values.singleWhere(
+          (r) => r.record.kind == SyncKind.task,
+        );
+        await cloud.write(
+          host.account!,
+          SyncRecord(
+            kind: SyncKind.task,
+            id: remote.record.id,
+            data: {...remote.record.data, 'title': 'Bản máy chủ'},
+          ),
+          expectedVersion: remote.version,
+        );
+        final local = host.controller!.tasks.single;
+        await host.controller!.save(
+          TaskDraft.fromJson({
+            ...TaskDraft.fromTask(local).toJson(),
+            'title': 'Bản thiết bị',
+          }),
+          existing: local,
+        );
+        await host.sync!.sync();
+        expect(host.sync!.conflictCount, 1);
+      });
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        tester.platformDispatcher.clearTextScaleFactorTestValue();
+      });
+      await tester.pumpWidget(WorkspaceApplication(host: host));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Cài đặt'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Tài khoản & đồng bộ'), 350);
+      await tester.tap(find.text('Tài khoản & đồng bộ'));
+      await tester.pumpAndSettle();
+      await tester.runAsync(() => host.sync!.sync());
+      for (
+        var i = 0;
+        i < 20 && find.text('Bản thiết bị').evaluate().isEmpty;
+        i++
+      ) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+        await tester.pump();
+        // Yield actual SQLite isolate messages after the lazy list builds its next child.
+        await tester.runAsync(() => host.sync!.store.conflicts(history: true));
+        await tester.pump();
+      }
+      expect(find.text('Bản thiết bị'), findsOneWidget);
+      await tester.ensureVisible(find.text('Bản thiết bị'));
+      await tester.pump();
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Bản thiết bị'));
+        final conflict = (await host.sync!.store.conflicts()).single;
+        await host.sync!.store.conflict(conflict.id);
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Bản trên thiết bị'), findsOneWidget);
+      expect(find.text('Bản máy chủ'), findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Dùng bản máy chủ'));
+        await host.sync!.sync();
+      });
+      await tester.pumpAndSettle();
+      expect(host.controller!.tasks.single.title, 'Bản máy chủ');
+      await tester.runAsync(() async {
+        expect(await host.sync!.store.conflicts(), isEmpty);
+        expect(
+          (await host.sync!.store.conflicts(history: true)).single.status,
+          'remote',
+        );
+      });
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
   testWidgets(
     'account screen fits a phone at 200% text and validates without sending credentials',
     (tester) async {

@@ -80,6 +80,20 @@ class ReminderRuntimeTest {
         val id=count("SELECT platform_id FROM reminder_events WHERE event_key='event'")
         ReminderRuntime.cancel(context,id);assertEquals(0,notifications.size())
     }
+    @Test fun switchingDatabaseAtColdStartClearsPreviousProfileAlarmsAndVisibleContent() {
+        event();ReminderRuntime.fire(context,"event");assertEquals(1,notifications.size())
+        val at=now+600000;event("future",at=at)
+        val id=count("SELECT platform_id FROM reminder_events WHERE event_key='future'")
+        ReminderRuntime.arm(context,id,"future",at)
+        val next=File(context.filesDir,"next-${UUID.randomUUID()}.sqlite")
+        try {
+            SQLiteDatabase.openOrCreateDatabase(next,null).close()
+            ReminderRuntime.switchDatabase(context,next.path)
+            assertEquals(next.path,context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).getString("database",null))
+            assertEquals(0,notifications.size())
+            assertEquals(0,shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.size)
+        } finally { next.delete() }
+    }
     @Test fun quietHoursAndSecondaryDeviceSuppressWithoutCompletingTask(){
         val calendar=Calendar.getInstance();val minute=calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE)
         configure(JSONObject().put("quietEnabled",true).put("quietStart",minute).put("quietEnd",(minute+60)%1440))
