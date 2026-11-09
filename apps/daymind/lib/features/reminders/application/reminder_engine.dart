@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/record_store.dart';
 import '../../tasks/data/database.dart';
 import '../../tasks/domain/task.dart' as domain;
+import '../../recurrence/domain/recurrence.dart';
 import '../domain/reminder.dart';
 
 class ReminderEngine {
@@ -106,13 +107,22 @@ class ReminderEngine {
         .map(ReminderRule.fromJson)
         .toList();
     final effectiveByTask = <String, List<ReminderRule>>{};
+    final off = <String>{};
     for (final task in tasks) {
-      final mode = modes[task.id] ?? 'auto';
+      final configId =
+          [
+            task.occurrenceId,
+            task.recurrenceRuleId,
+            task.reminderTaskId,
+          ].whereType<String>().where(modes.containsKey).firstOrNull ??
+          task.reminderTaskId;
+      final mode = modes[configId] ?? 'auto';
+      if (mode == 'off') off.add(task.id);
       final fallback = policy.defaultRule(task, prefs);
       effectiveByTask[task.id] = mode == 'off'
           ? []
           : mode == 'custom'
-          ? allRules.where((r) => r.taskId == task.id && r.enabled).toList()
+          ? allRules.where((r) => r.taskId == configId && r.enabled).toList()
           : fallback == null
           ? []
           : [fallback];
@@ -120,17 +130,17 @@ class ReminderEngine {
     for (final old in prior.where(
       (e) => ['planned', 'scheduled'].contains(e.state),
     )) {
-      final task = byId[old.taskId];
+      final task = byId[old.occurrenceId ?? old.taskId];
       final invalid =
           task == null ||
           task.terminal ||
           task.deletedAt != null ||
-          task.revision != old.taskRevision ||
-          modes[old.taskId] == 'off' ||
+          off.contains(task.id) ||
+          task.reminderRevision != old.taskRevision ||
+          (old.occurrenceId != null &&
+              task.revision != old.occurrenceRevision) ||
           (!old.ruleId.startsWith('snooze:') &&
-              !(effectiveByTask[old.taskId] ?? []).any(
-                (r) => r.id == old.ruleId,
-              ));
+              !(effectiveByTask[task.id] ?? []).any((r) => r.id == old.ruleId));
       if (invalid || now.millisecondsSinceEpoch > old.expiresMs) {
         await scheduler.cancel(old.platformId);
         await _state(
@@ -148,16 +158,17 @@ class ReminderEngine {
       }
     }
     for (final task in tasks.where((t) => !t.terminal && t.deletedAt == null)) {
-      final mode = modes[task.id] ?? 'auto';
-      if (mode == 'off') continue;
       final effective = effectiveByTask[task.id] ?? [];
       for (final rule in effective) {
         // One default slot per task revision: resuming/permission changes cannot create a second deadline fallback.
         final history = prior
             .where(
               (e) =>
-                  e.taskId == task.id &&
-                  e.taskRevision == task.revision &&
+                  e.taskId == task.reminderTaskId &&
+                  e.taskRevision == task.reminderRevision &&
+                  e.occurrenceId == task.occurrenceId &&
+                  (task.occurrenceId == null ||
+                      e.occurrenceRevision == task.revision) &&
                   e.ruleId == rule.id,
             )
             .toList();
@@ -198,10 +209,13 @@ class ReminderEngine {
               .insert(
                 ReminderEventsCompanion.insert(
                   eventKey: plan.key,
-                  taskId: task.id,
+                  taskId: task.reminderTaskId,
                   ruleId: rule.id,
-                  occurrenceId: Value(rule.occurrenceId),
-                  taskRevision: task.revision,
+                  occurrenceId: Value(task.occurrenceId ?? rule.occurrenceId),
+                  occurrenceRevision: Value(
+                    task.occurrenceId == null ? null : task.revision,
+                  ),
+                  taskRevision: task.reminderRevision,
                   scheduledMs: plan.at.millisecondsSinceEpoch,
                   expiresMs: plan.expiresAt.millisecondsSinceEpoch,
                   state: plan.suppressed ? 'suppressed' : 'planned',
@@ -281,7 +295,10 @@ class ReminderEngine {
   ) async {
     if (task.terminal ||
         task.deletedAt != null ||
-        task.revision != event.taskRevision ||
+        task.reminderRevision != event.taskRevision ||
+        task.occurrenceId != event.occurrenceId ||
+        (task.occurrenceId != null &&
+            task.revision != event.occurrenceRevision) ||
         !until.isAfter(clock()) ||
         until.difference(clock()) > const Duration(days: 30)) {
       throw const domain.ValidationException(
@@ -290,7 +307,7 @@ class ReminderEngine {
     }
     final rule = ReminderRule(
       id: 'snooze:${event.eventKey}',
-      taskId: task.id,
+      taskId: task.reminderTaskId,
       kind: ReminderKind.absolute,
       absoluteAt: until,
       occurrenceId: event.occurrenceId,
@@ -309,16 +326,29 @@ class ReminderEngine {
       ].contains(latest.state)) {
         return;
       }
+      final root = await (db.select(
+        db.tasks,
+      )..where((t) => t.id.equals(event.taskId))).getSingleOrNull();
+      if (root == null ||
+          root.deletedAt != null ||
+          [2, 3].contains(root.status) ||
+          root.revision != event.taskRevision ||
+          !await _occurrenceValid(event)) {
+        throw const domain.ValidationException(
+          'Công việc vừa thay đổi; không tạo lại nhắc cũ.',
+        );
+      }
       await _state(event, ReminderState.snoozed, 'snoozed');
       await db
           .into(db.reminderEvents)
           .insert(
             ReminderEventsCompanion.insert(
               eventKey: plan.key,
-              taskId: task.id,
+              taskId: task.reminderTaskId,
               ruleId: rule.id,
               occurrenceId: Value(event.occurrenceId),
-              taskRevision: task.revision,
+              occurrenceRevision: Value(event.occurrenceRevision),
+              taskRevision: task.reminderRevision,
               scheduledMs: plan.at.millisecondsSinceEpoch,
               expiresMs: plan.expiresAt.millisecondsSinceEpoch,
               state: plan.suppressed ? 'suppressed' : 'planned',
@@ -328,6 +358,17 @@ class ReminderEngine {
             ),
           );
     });
+  }
+
+  Future<bool> _occurrenceValid(ReminderEventRecord event) async {
+    if (event.occurrenceId == null) return true;
+    final json = await records.get('occurrences', event.occurrenceId!);
+    if (json == null) return false;
+    final o = TaskOccurrence.fromJson(json);
+    return o.taskId == event.taskId &&
+        !o.deleted &&
+        !o.terminal &&
+        o.revision == event.occurrenceRevision;
   }
 
   /// Used by guarded foreground schedulers. Android independently enforces these checks in its receiver.
@@ -342,7 +383,7 @@ class ReminderEngine {
             event.scheduledMs > now.millisecondsSinceEpoch) {
           continue;
         }
-        final task = taskMap[event.taskId];
+        final task = taskMap[event.occurrenceId ?? event.taskId];
         final current = await (db.select(
           db.tasks,
         )..where((t) => t.id.equals(event.taskId))).getSingleOrNull();
@@ -353,7 +394,10 @@ class ReminderEngine {
             [2, 3].contains(current.status) ||
             task.terminal ||
             task.deletedAt != null ||
-            task.revision != event.taskRevision) {
+            task.reminderRevision != event.taskRevision ||
+            (event.occurrenceId != null &&
+                task.revision != event.occurrenceRevision) ||
+            !await _occurrenceValid(event)) {
           await _state(event, ReminderState.cancelled, 'invalidated');
           continue;
         }

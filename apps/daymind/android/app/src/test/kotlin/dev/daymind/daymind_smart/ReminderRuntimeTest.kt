@@ -121,4 +121,40 @@ class ReminderRuntimeTest {
         event();ReminderRuntime.fire(context,"event");assertFalse(ReminderRuntime.granted(context))
         assertEquals("suppressed",state());assertEquals(0,notifications.size())
     }
+    private fun occurrence(id:String,taskId:String="t",status:String="todo",revision:Int=1) {
+        val value=JSONObject().put("id",id).put("taskId",taskId).put("ruleId","series-rule").put("status",status).put("revision",revision)
+        db.execSQL("INSERT OR REPLACE INTO extension_records VALUES('occurrences',?,?,?)",arrayOf<Any?>(id,value.toString(),now))
+    }
+    private fun scopedEvent(key:String,id:String,at:Long=now-1000) {
+        occurrence(id);event(key,at=at)
+        db.execSQL("UPDATE reminder_events SET occurrence_id=?,occurrence_revision=1 WHERE event_key=?",arrayOf<Any?>(id,key))
+    }
+    @Test fun completingOneOccurrenceNeverCompletesSeriesOrCancelsAnotherDate() {
+        scopedEvent("first","o1");scopedEvent("next","o2",at=now+600000)
+        ReminderRuntime.fire(context,"first")
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_done").putExtra("key","first"))
+        assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"));assertEquals("scheduled",state("next"))
+        val data=db.rawQuery("SELECT value FROM extension_records WHERE area='occurrences' AND id='o1'",null).use { it.moveToFirst();JSONObject(it.getString(0)) }
+        assertEquals("completed",data.getString("status"));assertEquals(2,data.getInt("revision"))
+    }
+    @Test fun staleOrForeignOccurrenceCannotPostNotification() {
+        scopedEvent("stale","o1");occurrence("o1",revision=2)
+        ReminderRuntime.fire(context,"stale");assertEquals("cancelled",state("stale"))
+        scopedEvent("foreign","o2");occurrence("o2",taskId="some-other-task")
+        ReminderRuntime.fire(context,"foreign");assertEquals("cancelled",state("foreign"));assertEquals(0,notifications.size())
+    }
+    @Test fun instanceNotificationOffDoesNotDisableOtherOccurrences() {
+        scopedEvent("off","o1");scopedEvent("on","o2")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','o1',?,?)",arrayOf<Any?>(JSONObject().put("mode","off").toString(),now))
+        ReminderRuntime.fire(context,"off");ReminderRuntime.fire(context,"on")
+        assertEquals("cancelled",state("off"));assertEquals("unknown",state("on"));assertEquals(1,notifications.size())
+    }
+    @Test fun segmentCustomRuleIsAcceptedThroughOccurrenceInheritance() {
+        scopedEvent("custom","o1")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','series-rule',?,?)",arrayOf<Any?>(JSONObject().put("mode","custom").toString(),now))
+        db.execSQL("INSERT INTO extension_records VALUES('reminder_rules','custom-rule',?,?)",arrayOf<Any?>(JSONObject().put("taskId","series-rule").put("enabled",true).toString(),now))
+        db.execSQL("UPDATE reminder_events SET rule_id='custom-rule' WHERE event_key='custom'")
+        ReminderRuntime.fire(context,"custom");assertEquals("unknown",state("custom"));assertEquals(1,notifications.size())
+    }
+
 }

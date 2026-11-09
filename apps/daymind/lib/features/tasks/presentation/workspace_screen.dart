@@ -13,9 +13,12 @@ import '../../companion/presentation/companion_card.dart';
 import '../../reminders/presentation/notification_pages.dart';
 import '../domain/task.dart';
 import 'task_editor.dart';
+import '../../calendar/presentation/calendar_page.dart';
+import '../../recurrence/presentation/recurrence_editor.dart';
 
 const pageLabels = {
   'today': 'Hôm nay',
+  'calendar': 'Lịch',
   'all': 'Tất cả công việc',
   'inbox': 'Hộp thư',
   'upcoming': 'Sắp tới',
@@ -27,6 +30,7 @@ const pageLabels = {
 };
 const pageIcons = {
   'today': Icons.wb_sunny_outlined,
+  'calendar': Icons.calendar_month_outlined,
   'all': Icons.grid_view_rounded,
   'inbox': Icons.inbox_outlined,
   'upcoming': Icons.event_outlined,
@@ -46,6 +50,7 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   final search = TextEditingController();
+  final scaffoldKey = GlobalKey<ScaffoldState>();
   String? category;
   TaskPriority? priority;
   bool overdueOnly = false, importing = false;
@@ -79,9 +84,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       search.clear();
     });
     context.go('/$page');
-    if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-      Navigator.pop(context);
-    }
+    scaffoldKey.currentState?.closeDrawer();
   }
 
   void notice(Object error) {
@@ -182,18 +185,24 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'daymind',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
+                const Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'daymind',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text('S M A R T', style: TextStyle(fontSize: 9)),
+                      ],
                     ),
-                    Text('S M A R T', style: TextStyle(fontSize: 9)),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -211,6 +220,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 for (final page in [
                   'today',
                   'all',
+                  'calendar',
                   'inbox',
                   'upcoming',
                   'completed',
@@ -465,6 +475,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                   : null,
                             ),
                           ),
+                          if (task.occurrenceId != null)
+                            const Text(
+                              '↻ Lặp lại',
+                              style: TextStyle(fontSize: 11),
+                            ),
                           if (task.status != TaskStatus.todo)
                             Text(
                               statusLabels[task.status.index],
@@ -488,7 +503,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                     tooltip: 'Tùy chọn ${task.title}',
                     onSelected: (value) {
                       if (value == 'edit') showTaskEditor(context, task: task);
-                      if (value == 'delete') act(controller.delete(task));
+                      if (value == 'delete') {
+                        if (task.occurrenceId == null) {
+                          act(controller.delete(task));
+                        } else {
+                          chooseEditScope(context, deleting: true).then((
+                            scope,
+                          ) {
+                            if (scope != null) {
+                              act(controller.delete(task, scope: scope));
+                            }
+                          });
+                        }
+                      }
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(
@@ -515,7 +542,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         TaskView.values.where((v) => v.name == widget.page).firstOrNull ??
         TaskView.today;
     final items = filterTasks(
-      controller.tasks,
+      controller.visibleTasks,
       view: view,
       now: now,
       search: search.text,
@@ -524,11 +551,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       overdueOnly: overdueOnly,
     );
     final today = filterTasks(
-      controller.tasks,
+      controller.visibleTasks,
       view: TaskView.today,
       now: now,
     ).length;
-    final completed = controller.tasks
+    final completed = controller.visibleTasks
         .where(
           (t) =>
               t.deletedAt == null &&
@@ -537,8 +564,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               sameDay(t.completedAt!, now),
         )
         .length;
-    final late = controller.tasks.where((t) => t.overdue(now)).length;
-    final high = controller.tasks
+    final late = controller.visibleTasks.where((t) => t.overdue(now)).length;
+    final high = controller.visibleTasks
         .where(
           (t) =>
               t.deletedAt == null &&
@@ -1108,7 +1135,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.1.0',
+          applicationVersion: '0.2.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1130,8 +1157,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ? settingsContent(controller)
         : widget.page == 'notifications'
         ? NotificationCenterPage(controller: controller)
+        : widget.page == 'calendar'
+        ? CalendarPage(controller: controller)
         : taskContent(controller);
     final scaffold = Scaffold(
+      key: scaffoldKey,
       appBar: wide
           ? null
           : AppBar(
@@ -1196,20 +1226,21 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           : NavigationBar(
               selectedIndex: [
                 'today',
-                'all',
+                'calendar',
                 'upcoming',
                 'companion',
               ].indexOf(widget.page).clamp(0, 3),
-              onDestinationSelected: (index) =>
-                  navigate(['today', 'all', 'upcoming', 'companion'][index]),
+              onDestinationSelected: (index) => navigate(
+                ['today', 'calendar', 'upcoming', 'companion'][index],
+              ),
               destinations: const [
                 NavigationDestination(
                   icon: Icon(Icons.wb_sunny_outlined),
                   label: 'Hôm nay',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.grid_view_rounded),
-                  label: 'Công việc',
+                  icon: Icon(Icons.calendar_month_outlined),
+                  label: 'Lịch',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.event_outlined),

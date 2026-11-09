@@ -30,7 +30,9 @@ class TaskReminderConfig {
   List<ReminderRule> forTask(String taskId) => rules
       .map(
         (r) => ReminderRule(
-          id: r.id,
+          id: r.taskId == taskId
+              ? r.id
+              : sha256.convert(utf8.encode('$taskId|${r.id}')).toString(),
           taskId: taskId,
           kind: r.kind,
           offsetMinutes: r.offsetMinutes,
@@ -204,7 +206,7 @@ class ReminderPolicy {
     }
     return ReminderRule(
       id: 'default',
-      taskId: task.id,
+      taskId: task.reminderTaskId,
       offsetMinutes: prefs.preset == ReminderPreset.custom
           ? prefs.defaultOffsetMinutes
           : switch (task.priority) {
@@ -258,7 +260,7 @@ class ReminderPolicy {
     final key = sha256
         .convert(
           utf8.encode(
-            '${task.id}|${rule.occurrenceId ?? 'once'}|${rule.id}|${at.millisecondsSinceEpoch}|${task.revision}:${rule.revision}',
+            '${task.reminderTaskId}|${task.occurrenceId ?? rule.occurrenceId ?? 'once'}|${rule.id}|${at.millisecondsSinceEpoch}|${task.reminderRevision}:${task.occurrenceId == null ? 'once' : task.revision}:${rule.revision}',
           ),
         )
         .toString();

@@ -76,12 +76,20 @@ object ReminderRuntime {
     private fun eligible(db: SQLiteDatabase, event: Cursor): Boolean {
         val taskId = event.getString(event.getColumnIndexOrThrow("task_id"))
         if (event.getString(event.getColumnIndexOrThrow("rule_id")) == "digest") return config(db).optBoolean("digestEnabled", false) && taskId == "__digest__:" + owner(db).ifEmpty { "local" }
-        val mode=db.rawQuery("SELECT value FROM extension_records WHERE area='task_reminders' AND id=?",arrayOf(taskId)).use { if(it.moveToFirst())JSONObject(it.getString(0)).optString("mode","auto") else "auto" }
+        val occurrenceId = event.getString(event.getColumnIndexOrThrow("occurrence_id"))
+        val occurrenceData = if (occurrenceId == null) null else db.rawQuery("SELECT value FROM extension_records WHERE area='occurrences' AND id=?",arrayOf(occurrenceId)).use { if(it.moveToFirst())JSONObject(it.getString(0)) else null }
+        val candidates = listOfNotNull(occurrenceId, occurrenceData?.optString("ruleId")?.takeIf { it.isNotEmpty() }, taskId)
+        var configId = taskId
+        var mode = "auto"
+        for (id in candidates) {
+            val stored = db.rawQuery("SELECT value FROM extension_records WHERE area='task_reminders' AND id=?",arrayOf(id)).use { if(it.moveToFirst())JSONObject(it.getString(0)) else null }
+            if(stored != null) { configId = id; mode = stored.optString("mode","auto"); break }
+        }
         val ruleId=event.getString(event.getColumnIndexOrThrow("rule_id"))
         if(mode=="off")return false
         if(!ruleId.startsWith("snooze:")) {
             if(ruleId=="default" && (mode!="auto" || config(db).optString("preset","normal")=="minimal"))return false
-            if(ruleId!="default" && !db.rawQuery("SELECT value FROM extension_records WHERE area='reminder_rules' AND id=?",arrayOf(ruleId)).use { if(!it.moveToFirst())false else JSONObject(it.getString(0)).let { rule -> rule.optBoolean("enabled",true) && rule.optString("taskId")==taskId } })return false
+            if(ruleId!="default" && (mode!="custom" || !db.rawQuery("SELECT value FROM extension_records WHERE area='reminder_rules' AND id=?",arrayOf(ruleId)).use { if(!it.moveToFirst())false else JSONObject(it.getString(0)).let { rule -> rule.optBoolean("enabled",true) && rule.optString("taskId")==configId } }))return false
         }
         return db.rawQuery("SELECT * FROM tasks WHERE id=? AND deleted_at IS NULL AND status NOT IN (2,3)", arrayOf(taskId)).use { task ->
             if (!task.moveToFirst() || task.getInt(task.getColumnIndexOrThrow("revision")) != event.getInt(event.getColumnIndexOrThrow("task_revision"))) return@use false
@@ -94,7 +102,7 @@ object ReminderRuntime {
                     if (!item.moveToFirst()) false else {
                         val data = JSONObject(item.getString(0))
                         val revision = event.getColumnIndex("occurrence_revision")
-                        !data.optBoolean("deleted", false) && data.optString("status") !in listOf("completed","cancelled","skipped") &&
+                        data.optString("taskId") == taskId && !data.optBoolean("deleted", false) && data.optString("status") !in listOf("completed","cancelled","skipped") &&
                             (revision < 0 || event.isNull(revision) || data.optInt("revision", 1) == event.getInt(revision))
                     }
                 }
@@ -189,7 +197,7 @@ object ReminderRuntime {
                         if(action=="DAYMIND_done") {
                             if(occurrence==null) db.execSQL("UPDATE tasks SET status=2,completed_at=?,updated_at=?,revision=revision+1 WHERE id=?",arrayOf<Any?>(now/1000,now/1000,task))
                             else db.rawQuery("SELECT value FROM extension_records WHERE area='occurrences' AND id=?",arrayOf(occurrence)).use { row ->
-                                if(row.moveToFirst()) { val data=JSONObject(row.getString(0));data.put("status","completed");data.put("completedAt",java.time.Instant.ofEpochMilli(now).toString());data.put("revision",data.optInt("revision",1)+1)
+                                if(row.moveToFirst()) { val data=JSONObject(row.getString(0));data.put("status","completed");data.put("updatedAt",java.time.Instant.ofEpochMilli(now).toString());data.put("completedAt",java.time.Instant.ofEpochMilli(now).toString());data.put("revision",data.optInt("revision",1)+1)
                                     db.execSQL("UPDATE extension_records SET value=?,updated_ms=? WHERE area='occurrences' AND id=?",arrayOf<Any?>(data.toString(),now,occurrence)) }
                             }
                             val scope=if(occurrence==null)"task_id=?" else "task_id=? AND occurrence_id=?"

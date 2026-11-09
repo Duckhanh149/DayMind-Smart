@@ -1,5 +1,9 @@
 import 'dart:io';
 
+import 'package:daymind_smart/features/recurrence/application/recurrence_service.dart';
+import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
+import 'package:daymind_smart/features/calendar/presentation/calendar_page.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -107,6 +111,82 @@ void main() {
 
   for (final scale in [1.0, 2.0]) {
     testWidgets(
+      'calendar month week day and recurrence scope at scale $scale',
+      (tester) async {
+        final (_, controller) = await mount(
+          tester,
+          const Size(360, 800),
+          scale: scale,
+        );
+        await controller.save(
+          TaskDraft(
+            title: 'Việc lặp kiểm thử',
+            scheduledStartAt: controller.now(),
+            scheduledEndAt: controller.now().add(const Duration(hours: 1)),
+            dueAt: controller.now().add(const Duration(hours: 5)),
+          ),
+          repetition: const RepeatChange(
+            enabled: true,
+            spec: RepeatSpec(
+              frequency: RepeatFrequency.daily,
+              firstDate: '2026-11-08',
+              zone: 'UTC',
+              count: 3,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Lịch').last);
+        await tester.pumpAndSettle();
+        expect(find.byType(CalendarPage), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {
+          await expectLater(
+            find.byType(DaymindApp),
+            matchesGoldenFile('previews/calendar.png'),
+          );
+        }
+        await tester.tap(find.byKey(const Key('calendar-week')));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.byKey(const Key('calendar-day')));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Việc lặp kiểm thử').first,
+          150,
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Việc lặp kiểm thử').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Việc lặp kiểm thử').first);
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('task-title')),
+          'Chỉ sửa một lần',
+        );
+        await tester.tap(find.byKey(const Key('save-task')));
+        await tester.pumpAndSettle();
+        expect(find.text('Áp dụng thay đổi cho'), findsOneWidget);
+        await tester.tap(find.text('Chỉ lần này'));
+        await tester.pumpAndSettle();
+        expect(
+          controller.visibleTasks
+              .where((t) => t.title == 'Chỉ sửa một lần')
+              .length,
+          1,
+        );
+        expect(
+          controller.visibleTasks
+              .where((t) => t.title == 'Việc lặp kiểm thử')
+              .length,
+          2,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  for (final scale in [1.0, 2.0]) {
+    testWidgets(
       'notification center and advanced reminder form at text scale $scale',
       (tester) async {
         final (_, controller) = await mount(
@@ -129,7 +209,9 @@ void main() {
           250,
         );
         expect(tester.takeException(), isNull);
-        await tester.tap(find.text('Công việc').last);
+        await tester.tap(find.byType(DrawerButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Tất cả công việc').last);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('add-task')));
         await tester.pumpAndSettle();
@@ -185,7 +267,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.tasks.single.title, 'Gọi điện cho mẹ');
       expect(controller.tasks.single.dueAt, isNull);
-      await tester.tap(find.text('Công việc').last);
+      await tester.tap(find.byType(DrawerButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tất cả công việc').last);
       await tester.pumpAndSettle();
       expect(find.text('Gọi điện cho mẹ'), findsOneWidget);
       await tester.tap(find.byType(Checkbox).first);

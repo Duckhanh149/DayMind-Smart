@@ -236,14 +236,16 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     'expired': 'Đã hết thời điểm nhắc',
   };
   Widget item(ReminderEventRecord event, ReminderCoordinator service) {
-    final task = widget.controller.tasks
-        .where((t) => t.id == event.taskId)
+    final task = widget.controller.visibleTasks
+        .where((t) => t.id == (event.occurrenceId ?? event.taskId))
         .firstOrNull;
     final active =
         task != null &&
         !task.terminal &&
         task.deletedAt == null &&
-        task.revision == event.taskRevision;
+        task.reminderRevision == event.taskRevision &&
+        (event.occurrenceId == null ||
+            task.revision == event.occurrenceRevision);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -334,9 +336,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           (e) =>
               (!unread || (!e.read && e.state == 'unknown')) &&
               (!overdue ||
-                  widget.controller.tasks.any(
+                  widget.controller.visibleTasks.any(
                     (t) =>
-                        t.id == e.taskId && t.overdue(widget.controller.now()),
+                        t.id == (e.occurrenceId ?? e.taskId) &&
+                        t.overdue(widget.controller.now()),
                   )),
         )
         .toList();

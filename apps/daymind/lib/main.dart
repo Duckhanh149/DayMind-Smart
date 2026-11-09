@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:async';
 
+import 'package:timezone/data/latest.dart' as tzdata;
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
@@ -22,6 +24,7 @@ import 'platform/window_lifecycle.dart';
 bool _fontLicenseRegistered = false;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tzdata.initializeTimeZones();
   if (!_fontLicenseRegistered) {
     _fontLicenseRegistered = true;
     LicenseRegistry.addLicense(() async* {
@@ -61,7 +64,7 @@ Future<void> main() async {
     );
     final reminders = ReminderCoordinator(
       ReminderEngine(database, scheduler),
-      controller.repository.list,
+      controller.reminderTasks,
       onNativeChange: controller.refreshFromNative,
       onInApp: (title) {
         controller.dialogue = 'Đến giờ: $title';

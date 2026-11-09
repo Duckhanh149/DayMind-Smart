@@ -1,6 +1,16 @@
-# Kiểm chứng bản native 0.1.0
+# Kiểm chứng bản native
 
 Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web root độc lập.
+
+## Checkpoint hiện tại
+
+- Giai đoạn 2: commit `428cbe75`, [workflow 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt cả Android và Windows: 55 Flutter tests; 12 receiver/recovery tests; emulator API35 phát một thông báo sau khi tiến trình app đóng, revision/quiet guards và không replay; Windows native integration + tiến trình close→tray/Mở/Thoát + installer đạt.
+- Giai đoạn 3 đang chuẩn bị build preview 0.2.0: local analyze không issues, **79/79 Flutter tests đạt**, 13 domain recurrence và 9 SQLite/controller/calendar/reminder integration mới, thêm kiểm thử UI thường/200%. Main/debug Kotlin compile đạt local. Bốn receiver occurrence tests mới phải được CI thực thi; chưa tính là đã đạt native.
+- Ảnh [calendar.png](ui/calendar.png) là render Flutter headless đã xem lại; không phải ảnh máy thật.
+- Chưa nghiệm thu Android OEM/Doze/reboot hoặc Windows 10/11 phần cứng thật. Không có chữ ký phát hành sản xuất.
+
+## Bằng chứng preview 0.1.0 trước đây
+
 
 - Flutter 3.47.9 / Dart 3.13.7; JDK Temurin 21.0.13+9; Android SDK 35/36, NDK 28.2.13676358, CMake 3.22.1.
 - flutter analyze: PASS, không issues. flutter test: 28/28 PASS trên Linux và runner Windows.
@@ -14,5 +24,5 @@ Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web ro
 - Windows gói cuối: CRC PASS, có OFL trong asset bundle (nội dung tương đương LF/CRLF), installer và exe có PE header hợp lệ. Installer SHA256 62bbb28d7aa6fd3641fb346f871fe2063494364141679d95eb6a7f468f4d8d59.
 - Artifacts hiện có tại workflow 42560998276: Android 13649473103; Windows 13648973240. PR #1 chờ chấp thuận hợp nhất vào main để tạo GitHub Release; chưa công bố release.
 - Android thiết bị thật, Windows 10/11 cài thủ công, low-end hardware RAM/CPU: chưa chạy. Runner Windows native smoke không thay thế các mục này.
-- Thông báo khi app đóng/reboot, MSIX identity/activation, Firebase/sync, animation/floating companion/Live2D: chưa có; thuộc các giai đoạn tiếp.
+- Ở preview 0.1.0 ban đầu: thông báo khi app đóng, Firebase/sync, animation/floating companion/Live2D chưa có. Trạng thái nhắc việc mới xem checkpoint hiện tại ở trên; sync/animation/Live2D vẫn chưa hoàn thành.
 - Chưa có chứng thư ký phát hành Windows hoặc khóa Android sản xuất. Đây là preview, chưa phải bản Store.

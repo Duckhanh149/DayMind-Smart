@@ -33,11 +33,20 @@ class _ReminderEditorState extends State<ReminderEditor> {
 
   Future<void> load() async {
     try {
-      final saved = await widget.engine.records.get(
-        'task_reminders',
+      Map<String, dynamic>? saved;
+      var configId = widget.task.id;
+      for (final id in [
         widget.task.id,
-      );
-      final savedRules = await widget.engine.rules(widget.task.id);
+        widget.task.recurrenceRuleId,
+        widget.task.seriesId,
+      ].whereType<String>()) {
+        saved = await widget.engine.records.get('task_reminders', id);
+        if (saved != null) {
+          configId = id;
+          break;
+        }
+      }
+      final savedRules = await widget.engine.rules(configId);
       final prefs = await widget.engine.preferences();
       if (mounted) {
         setState(() {

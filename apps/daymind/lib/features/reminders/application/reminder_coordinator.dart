@@ -151,7 +151,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> snooze(ReminderEventRecord event, Duration duration) async {
     final task = (await getTasks())
-        .where((t) => t.id == event.taskId)
+        .where((t) => t.id == (event.occurrenceId ?? event.taskId))
         .firstOrNull;
     if (task == null) {
       throw const domain.ValidationException('Công việc không còn tồn tại.');
