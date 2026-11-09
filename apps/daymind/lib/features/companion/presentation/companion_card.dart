@@ -12,9 +12,11 @@ class CompanionCard extends StatelessWidget {
     super.key,
     required this.controller,
     this.compact = false,
+    this.dialogueKey,
   });
   final WorkspaceController controller;
   final bool compact;
+  final Key? dialogueKey;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -50,6 +52,7 @@ class CompanionCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             controller.dialogue,
+            key: dialogueKey,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           if (!compact)

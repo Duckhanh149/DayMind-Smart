@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart'
+    show RenderAbstractViewport, RenderBox, MatrixUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -62,6 +64,21 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   bool overdueOnly = false, importing = false;
   late final Timer timer;
   final libraryScroll = ScrollController();
+  final dialogueKey = GlobalKey();
+  bool get dialogueVisible {
+    if (ModalRoute.of(context)?.isCurrent == false) return false;
+    final box = dialogueKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    final viewport = RenderAbstractViewport.maybeOf(box);
+    final bounds = MatrixUtils.transformRect(
+      box.getTransformTo(viewport),
+      Offset.zero & box.size,
+    );
+    final clip =
+        viewport?.paintBounds ?? (Offset.zero & MediaQuery.sizeOf(context));
+    return clip.contains(bounds.center);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -686,6 +703,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           if (controller.preferences.companionEnabled) ...[
             CompanionCard(
               controller: controller,
+              dialogueKey: dialogueKey,
               compact: MediaQuery.sizeOf(context).width < 600,
             ),
             const SizedBox(height: 24),
@@ -975,7 +993,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CompanionCard(controller: controller),
+              CompanionCard(controller: controller, dialogueKey: dialogueKey),
               const SizedBox(height: 20),
               CompanionSettingsSection(controller: controller),
               const SizedBox(height: 20),
@@ -1156,7 +1174,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     ) {
       final c = ref.read(workspaceProvider);
       if (!c.preferences.companionEnabled ||
-          !{'today', 'companion'}.contains(widget.page)) {
+          !{'today', 'companion'}.contains(widget.page) ||
+          !dialogueVisible) {
         final message = c.inAppAnnouncement;
         if (message != null) {
           ScaffoldMessenger.of(context).showSnackBar(

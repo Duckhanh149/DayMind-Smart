@@ -269,6 +269,71 @@ void main() {
     },
   );
 
+  for (final hiddenBySettings in [true, false]) {
+    testWidgets(
+      'foreground reminders stay visible when companion is hidden (settings=$hiddenBySettings)',
+      (tester) async {
+        final (_, c) = await mount(
+          tester,
+          const Size(390, 844),
+          seed: true,
+          scale: hiddenBySettings ? 1 : 2,
+        );
+        if (hiddenBySettings) {
+          await c.configure((p) => p.copyWith(companionEnabled: false));
+          await tester.pumpAndSettle();
+          expect(find.byType(CompanionCard), findsNothing);
+        } else {
+          await tester.drag(
+            find.byType(ListView).first,
+            const Offset(0, -1200),
+          );
+          await tester.pumpAndSettle();
+        }
+        const message = 'Đến giờ: Kiểm tra nhắc trong ứng dụng';
+        c.foregroundReminder(
+          const CompanionCue(
+            CompanionEvent.reminderDue,
+            message,
+            task: 'Kiểm tra nhắc',
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(message), findsOneWidget);
+        expect(find.text('Xem'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('visible companion dialogue is the only foreground cue', (
+    tester,
+  ) async {
+    final (_, c) = await mount(
+      tester,
+      const Size(390, 844),
+      seed: true,
+      notifications: true,
+    );
+    await c.reminders!.configure({'quietEnabled': false});
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(c.dialogue));
+    await tester.pumpAndSettle();
+    c.foregroundReminder(
+      const CompanionCue(
+        CompanionEvent.reminderDue,
+        'Thông báo dự phòng không được hiện trùng',
+        task: 'Đọc sách',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(c.dialogue, contains('Đọc sách'));
+    expect(find.text(c.dialogue), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    expect((c.reminders!.engine.scheduler as FakeScheduler).shown, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'calendar browsing loads the adjacent month outside the rolling horizon',
     (tester) async {

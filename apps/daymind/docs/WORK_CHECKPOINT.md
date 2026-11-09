@@ -16,13 +16,17 @@ Tác vụ “Tiếp tục DayMind” kiểm tra mỗi giờ (Asia/Saigon), nối
 
 Editor tên/ba tính cách/18 mẫu lời thoại/sáu sự kiện/bốn biểu cảm, preview, ánh xạ ảnh cục bộ; auto/manual vị trí/kích thước, low-resource. Metadata dùng outbox/CAS/conflict archive, không upload ảnh/layout. Cooldown30s, giờ yên lặng không thoại; dấu ngày quá hạn lưu cục bộ qua restart, chỉ gợi ý khi xem Hôm nay. Không có scheduler/âm thanh riêng.
 
-**Source tối ưu đang được đẩy/kiểm chứng, chưa chuyển7:**
+**Source tối ưu đã đẩy `57d38e5f5d956c251c73e31dba4c7d591048d4fe`, chưa chuyển7.** [Native CI42714789128](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42714789128) và [Emulator CI42714789361](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42714789361) đang chạy; chờ đúng source này trước khi code7. Workspace đã đồng bộ soft reset sau khi đối chiếu tree `fe0f0875593b4b82a9528a8c114a83cfcde0254e`. PR#1 đã cập nhật.
 
 - Nguồn PNG/WebP giữ nguyên byte/hash; derivative PNG≤256px trong `.previews/`. UI dùng derivative (128px chân dung low-resource/64px thumbnail). Quota128 nguồn/32MiB tính cả derivative; legacy cache tạo một lượt theo nhu cầu, chặn symlink và dọn cả nguồn/cache khi xóa.
 - Library dùng ListView ngang theo viewport; menu biểu cảm chỉ text. Hồi quy thư viện128 ảnh với chữ200%, quota/retry legacy, nguồn không bị đổi.
 - Lời chào startup đợi ReminderCoordinator lấy múi giờ; standalone controller đọc quiet settings đã lưu. Kiểm thử23:00 Asia/Ho_Chi_Minh khi16:00UTC; không tiêu cooldown trước khi có cấu hình thực.
-- **Local cuối:147/147 Flutter tests và analyze sạch** (`/workspace/work/evidence/phase6-147-final.txt`, `phase6-thumbnail-analyze.txt`). Kotlin main/debug compile đã đạt sau thay đổi typed foreground cue; Kotlin không đổi trong tối ưu ảnh.
-- Native probe dùng bốn PNG indexed2048² gốc tạo offline, đổi24 lần, đo RSS trước/sau nhập/đỉnh mẫu/sau dọn và cache. Bắt buộc `RawImage.image != null`, frame≤128px và chân dung trong viewport. Chờ CI trên source tối ưu để so sánh Windows rồi qua cổng6.
+- **Local cuối:150/150 Flutter tests và analyze sạch** (`/workspace/work/evidence/phase6-150-final.txt`, `phase6-thumbnail-analyze.txt`). Kotlin main/debug compile đã đạt sau thay đổi typed foreground cue; Kotlin không đổi trong tối ưu ảnh.
+- Native probe dùng bốn PNG indexed2048² gốc tạo offline, đổi24 lần, đo RSS trước/sau nhập/đỉnh mẫu/sau dọn và cache. Bắt buộc `RawImage.image != null`, frame≤128px và chân dung trong viewport. Chờ CI trên source tối ưu để so sánh Windows, đồng thời giữ sửa visibility bên dưới trước khi qua cổng6.
+
+Sửa cuối chưa commit: thẻ lời thoại Hôm nay/Companion có GlobalKey; xác nhận text nằm trong viewport trước khi chọn cách hiển thị cue foreground. Khi Companion tắt hoặc text bị cuộn khuất, hiện SnackBar có Xem Notification Center, không tạo OS alert thứ hai. Hai UI tests (100/200% chữ) đã đạt; bộ150 cuối ở phase6-150-final.txt đã đạt, analyze visibility sạch. Ca thứ ba xác nhận khi lời thoại thực sự thấy được thì không có SnackBar/OS alert trùng. Không chuyển7 chỉ dựa trên CI57d38e5 khi sửa này còn chưa commit/kiểm chứng.
+
+CI57d38e5: Windows job129493383717 đã đạt renderer/account/tray/installer. RSS trước455356416, sau nhập574844928, đỉnh585175040, sau dọn461066240bytes; cache131072bytes. So với nguồn9320ce9, phần RSS sau dọn gần baseline hơn (5,4MiB so113MiB); không suy diễn là số đo release/thiết bị yếu. Emulator CI42714789361 đạt; Android CI42714789128 còn chờ kết quả cuối tại thời điểm ghi.
 
 ## Lịch sử cần tránh làm lại
 
