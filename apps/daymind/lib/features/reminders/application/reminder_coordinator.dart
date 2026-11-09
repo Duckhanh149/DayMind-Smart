@@ -103,7 +103,10 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
       events = await engine.events();
-      error = null;
+      error = engine.scheduler is PlatformNotificationScheduler
+          ? (engine.scheduler as PlatformNotificationScheduler)
+                .initializationError
+          : null;
     } catch (e) {
       error = '$e';
     } finally {
@@ -183,6 +186,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     if (engine.scheduler is PlatformNotificationScheduler) {
       (engine.scheduler as PlatformNotificationScheduler).onChanged = null;
       (engine.scheduler as PlatformNotificationScheduler).onInApp = null;
+      (engine.scheduler as PlatformNotificationScheduler).onOpen = null;
     }
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);

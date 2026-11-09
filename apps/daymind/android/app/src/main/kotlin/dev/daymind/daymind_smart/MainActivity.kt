@@ -16,6 +16,12 @@ class MainActivity : FlutterActivity() {
         fun changed(title: String? = null) { android.os.Handler(android.os.Looper.getMainLooper()).post { bridge?.invokeMethod("changed", title) } }
     }
     private var permissionResult: MethodChannel.Result? = null
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent);setIntent(intent)
+        if(intent.getBooleanExtra("daymindOpenNotifications",false) && bridge!=null) {
+            intent.removeExtra("daymindOpenNotifications");bridge?.invokeMethod("openNotifications",null)
+        }
+    }
     override fun onResume() { super.onResume(); foreground = true }
     override fun onPause() { foreground = false; super.onPause() }
     override fun onDestroy() { foreground = false; bridge = null; super.onDestroy() }
@@ -25,6 +31,7 @@ class MainActivity : FlutterActivity() {
         bridge?.setMethodCallHandler { call, result ->
             try {
                 when (call.method) {
+                    "consumeOpen" -> { val open=intent.getBooleanExtra("daymindOpenNotifications",false);intent.removeExtra("daymindOpenNotifications");result.success(open) }
                     "initialize" -> {
                         val path = java.io.File(call.argument<String>("path")!!).canonicalFile
                         require(path.path.startsWith(filesDir.canonicalPath + java.io.File.separator))

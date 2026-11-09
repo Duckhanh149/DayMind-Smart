@@ -6,8 +6,14 @@ import 'package:daymind_smart/app/controller.dart';
 import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/tasks/data/database.dart';
 import 'package:daymind_smart/features/tasks/domain/task.dart';
+import 'package:daymind_smart/features/reminders/domain/reminder.dart';
+import 'package:daymind_smart/features/reminders/application/reminder_engine.dart';
+import 'package:daymind_smart/features/reminders/application/reminder_coordinator.dart';
+
+import 'reminder_engine_test.dart' show FakeScheduler;
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late DaymindDatabase db;
   late WorkspaceController controller;
   late Directory temp;
@@ -55,5 +61,33 @@ void main() {
     await controller.toggle(controller.tasks.single);
     expect(controller.tasks.single.status, TaskStatus.completed);
     expect(controller.preferences.companionEnabled, false);
+  });
+  test('task and custom reminder save atomically; permission denial never blocks CRUD', () async {
+    final scheduler = FakeScheduler()..permission = false;
+    controller.attachReminders(
+      ReminderCoordinator(
+        ReminderEngine(db, scheduler),
+        controller.repository.list,
+      ),
+    );
+    await expectLater(
+      controller.save(
+        const TaskDraft(title: 'Không được lưu một nửa'),
+        notifications: const TaskReminderConfig('custom', [
+          ReminderRule(id: 'bad', taskId: 'new', offsetMinutes: -1),
+        ]),
+      ),
+      throwsA(isA<ValidationException>()),
+    );
+    expect(await controller.repository.list(), isEmpty);
+    await controller.save(
+      const TaskDraft(title: 'Lưu dù chưa có quyền'),
+      notifications: const TaskReminderConfig('off', []),
+    );
+    expect(controller.tasks.single.title, 'Lưu dù chưa có quyền');
+    expect(controller.busy, isFalse);
+    expect(scheduler.active, isEmpty);
+    await controller.toggle(controller.tasks.single);
+    expect(controller.tasks.single.status, TaskStatus.completed);
   });
 }

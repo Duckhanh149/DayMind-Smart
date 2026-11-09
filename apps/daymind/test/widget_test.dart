@@ -109,13 +109,13 @@ void main() {
     testWidgets(
       'notification center and advanced reminder form at text scale $scale',
       (tester) async {
-        await mount(
+        final (_, controller) = await mount(
           tester,
           const Size(360, 800),
           scale: scale,
           notifications: true,
         );
-        await tester.tap(find.byTooltip('Thông báo'));
+        controller.openNotifications();
         await tester.pumpAndSettle();
         expect(find.byType(NotificationCenterPage), findsOneWidget);
         if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {

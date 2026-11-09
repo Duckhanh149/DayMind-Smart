@@ -11,8 +11,10 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   static const channel = MethodChannel('daymind/reminders');
   final plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
+  String? initializationError;
   void Function()? onChanged;
   void Function(String)? onInApp;
+  void Function()? onOpen;
   @override
   bool get supportsClosedApp => Platform.isAndroid;
   Future<String> initialize(String databasePath) async {
@@ -23,18 +25,29 @@ class PlatformNotificationScheduler implements NotificationScheduler {
       timeLocation(timezone);
     } catch (_) {
       timezone = 'UTC';
+      initializationError = 'Chưa xác định được múi giờ thiết bị. Kiểm tra múi giờ hệ thống và mở lại ứng dụng.';
       // With an unknown local zone, keep reminders disabled until a valid zone is selected.
       return '';
     }
     if (Platform.isAndroid) {
-      await channel.invokeMethod<void>('initialize', {'path': databasePath});
-      channel.setMethodCallHandler((call) async {
-        if (call.method == 'changed') {
-          if (call.arguments is String) onInApp?.call(call.arguments as String);
-          onChanged?.call();
+      try {
+        await channel.invokeMethod<void>('initialize', {'path': databasePath});
+        channel.setMethodCallHandler((call) async {
+          if (call.method == 'openNotifications') onOpen?.call();
+          if (call.method == 'changed') {
+            if (call.arguments is String) {
+              onInApp?.call(call.arguments as String);
+            }
+            onChanged?.call();
+          }
+        });
+        _ready = true;
+        if (await channel.invokeMethod<bool>('consumeOpen') ?? false) {
+          onOpen?.call();
         }
-      });
-      _ready = true;
+      } catch (e) {
+        initializationError = 'Chưa khởi tạo được thông báo: $e';
+      }
     } else if (Platform.isWindows) {
       try {
         _ready =
@@ -46,11 +59,25 @@ class PlatformNotificationScheduler implements NotificationScheduler {
                   guid: '58f1b340-572b-49db-8b03-3712d9ff2dde',
                 ),
               ),
-              onDidReceiveNotificationResponse: (_) => onChanged?.call(),
+              onDidReceiveNotificationResponse: (_) {
+                onChanged?.call();
+                onOpen?.call();
+              },
             ) ??
             false;
-      } catch (_) {
+        if (_ready &&
+            (await plugin.getNotificationAppLaunchDetails())
+                    ?.didNotificationLaunchApp ==
+                true) {
+          onOpen?.call();
+        }
+        if (!_ready) {
+          initializationError =
+              'Hệ điều hành chưa khởi tạo được kênh thông báo.';
+        }
+      } catch (e) {
         _ready = false;
+        initializationError = 'Chưa khởi tạo được thông báo Windows: $e';
       }
     }
     return timezone;
@@ -67,6 +94,9 @@ class PlatformNotificationScheduler implements NotificationScheduler {
 
   @override
   Future<bool> requestPermission() async {
+    if (!_ready) {
+      throw StateError(initializationError ?? 'Thông báo chưa sẵn sàng.');
+    }
     if (Platform.isAndroid) {
       return await channel.invokeMethod<bool>('requestPermission') ?? false;
     }

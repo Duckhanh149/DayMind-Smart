@@ -42,6 +42,7 @@ Future<void> main() async {
     );
     await controller.load();
     final scheduler = PlatformNotificationScheduler();
+    scheduler.onOpen = controller.openNotifications;
     final zone = await scheduler.initialize(
       p.join(support.path, 'daymind.sqlite'),
     );

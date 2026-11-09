@@ -30,6 +30,12 @@ class WorkspaceController extends ChangeNotifier {
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
   bool busy = false;
+  int notificationOpenRequest = 0;
+  void openNotifications() {
+    notificationOpenRequest++;
+    notifyListeners();
+  }
+
   ReminderCoordinator? reminders;
   void attachReminders(ReminderCoordinator coordinator) {
     reminders = coordinator;

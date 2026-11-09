@@ -149,7 +149,7 @@ object ReminderRuntime {
                     while(rows.moveToNext()) { if(!eligible(db,rows))continue; visibleIds.add(rows.getInt(rows.getColumnIndexOrThrow("platform_id")));if(count<7)style.addLine(rows.getString(rows.getColumnIndexOrThrow("title")));high=high || rows.getInt(rows.getColumnIndexOrThrow("priority"))==2;count++ }
                 }
                 if (count == 0) return
-                val launch = PendingIntent.getActivity(context,groupId,Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                val launch = PendingIntent.getActivity(context,groupId,Intent(context,MainActivity::class.java).putExtra("daymindOpenNotifications",true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 val dismiss = PendingIntent.getBroadcast(context,groupId,Intent(context,ReminderActionReceiver::class.java).setAction("DAYMIND_DISMISS").putExtra("key",key).putExtra("group",groupId).putExtra("start",start).putExtra("end",start+window),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 val attempts=db.rawQuery("SELECT COUNT(*) FROM delivery_logs WHERE outcome='display_attempt' AND at_ms>=? AND at_ms<?",arrayOf(start.toString(),(start+window).toString())).use { it.moveToFirst();it.getInt(0) }
                 val headline = if(count<=1) title else "${if(high) "Ưu tiên cao · " else ""}$count công việc cần nhắc"

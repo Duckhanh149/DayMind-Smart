@@ -58,6 +58,8 @@ jobs:
       - run: flutter config --no-analytics
       - run: flutter --version
       - run: flutter pub get --enforce-lockfile
+      - name: Precache verified upstream SQLite native assets
+        run: python tool/precache_sqlite.py
       - uses: android-actions/setup-android@v3
         if: runner.os == 'Linux'
         with:
