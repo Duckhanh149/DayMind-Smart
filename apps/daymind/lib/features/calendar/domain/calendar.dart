@@ -3,7 +3,7 @@ import '../../recurrence/domain/recurrence.dart';
 
 import 'package:timezone/timezone.dart' as tz;
 
-enum CalendarEntryKind { scheduled, deadline }
+enum CalendarEntryKind { scheduled, end, deadline }
 
 class CalendarEntry {
   const CalendarEntry(this.task, this.kind, this.at, this.end);
@@ -34,6 +34,8 @@ List<CalendarEntry> calendarEntries(List<Task> tasks) => [
         t.scheduledStartAt!,
         t.scheduledEndAt,
       ),
+    if (t.scheduledStartAt == null && t.scheduledEndAt != null)
+      CalendarEntry(t, CalendarEntryKind.end, t.scheduledEndAt!, null),
     if (t.dueAt != null)
       CalendarEntry(t, CalendarEntryKind.deadline, t.dueAt!, null),
   ],

@@ -5,7 +5,7 @@ Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web ro
 ## Checkpoint hiện tại
 
 - Giai đoạn 2: commit `428cbe75`, [workflow 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt cả Android và Windows: 55 Flutter tests; 12 receiver/recovery tests; emulator API35 phát một thông báo sau khi tiến trình app đóng, revision/quiet guards và không replay; Windows native integration + tiến trình close→tray/Mở/Thoát + installer đạt.
-- Giai đoạn 3 đang chuẩn bị build preview 0.2.0: local analyze không issues, **80/80 Flutter tests đạt**, 13 domain recurrence và 10 SQLite/controller/calendar/reminder integration mới, thêm kiểm thử UI thường/200%. Main/debug Kotlin compile đạt local. Bốn receiver occurrence tests mới phải được CI thực thi; chưa tính là đã đạt native.
+- Giai đoạn 3 đang chuẩn bị build preview 0.2.0: local analyze không issues, **82/82 Flutter tests đạt**, 13 domain recurrence và 11 SQLite/controller/calendar/reminder integration mới, thêm kiểm thử UI thường/200%. Main/debug Kotlin compile đạt local. Bốn receiver occurrence tests mới phải được CI thực thi; chưa tính là đã đạt native.
 - Ảnh [calendar.png](ui/calendar.png) là render Flutter headless đã xem lại; không phải ảnh máy thật.
 - Chưa nghiệm thu Android OEM/Doze/reboot hoặc Windows 10/11 phần cứng thật. Không có chữ ký phát hành sản xuất.
 
@@ -26,3 +26,7 @@ Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web ro
 - Android thiết bị thật, Windows 10/11 cài thủ công, low-end hardware RAM/CPU: chưa chạy. Runner Windows native smoke không thay thế các mục này.
 - Ở preview 0.1.0 ban đầu: thông báo khi app đóng, Firebase/sync, animation/floating companion/Live2D chưa có. Trạng thái nhắc việc mới xem checkpoint hiện tại ở trên; sync/animation/Live2D vẫn chưa hoàn thành.
 - Chưa có chứng thư ký phát hành Windows hoặc khóa Android sản xuất. Đây là preview, chưa phải bản Store.
+
+Giai đoạn 3 native checkpoint: [workflow 42606373902](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42606373902) ở `db618d9` đạt Android/Windows: 79 Flutter tests, **16 receiver/recovery tests thực thi**, emulator cold-process và Windows tray/installer. Vòng `d3ce1ea` đã đạt Windows với 80 tests và `RECURRENCE_POC` SQLite thật (complete một lần, future edit, giữ history); Android đang chạy smoke tại thời điểm ghi. Artifact Windows `13668657117` kiểm CRC/runtimes/OFL đạt; main exe x64 SHA256 `31ad0db5657630325c8132f9e4c595c3462be3fd08b8d3f57ae52fe43fd37b03`, installer (Inno bootstrap x86, payload x64) SHA256 `a7725717dac55941246b0b263fd250e5492e4b832b705a0d5d9d962119bd66ad`.
+
+Hai ca QA lịch mới (chỉ có giờ kết thúc, chọn ngày tháng bên cạnh ngoài rolling horizon) đã sửa và toàn bộ **82 tests local đạt**, analyze sạch. Bản nguồn mới cần CI thực thi lại; không gán kết quả 80 tests cho source 82 tests.

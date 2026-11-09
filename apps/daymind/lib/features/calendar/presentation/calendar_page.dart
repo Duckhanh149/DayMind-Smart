@@ -129,6 +129,8 @@ class _CalendarPageState extends State<CalendarPage> {
                               Text(
                                 entry.kind == CalendarEntryKind.deadline
                                     ? 'Hạn hoàn thành · ${clock(entry.at)}'
+                                    : entry.kind == CalendarEntryKind.end
+                                    ? 'Kết thúc lịch thực hiện · ${clock(entry.at)}'
                                     : 'Lịch thực hiện · ${clock(entry.at)}${entry.end == null ? '' : ' → ${clock(entry.end!)}${dateKey(tz.TZDateTime.from(entry.at, zoneLocation(zone))) == dateKey(tz.TZDateTime.from(entry.end!, zoneLocation(zone))) ? '' : ' (${dateKey(tz.TZDateTime.from(entry.end!, zoneLocation(zone)))})'}'}',
                               ),
                               if (entry.task.occurrenceId != null)
@@ -298,6 +300,7 @@ class _CalendarPageState extends State<CalendarPage> {
               final d = gridStart.add(Duration(days: i)), day = dateKey(d);
               final count = all.where((e) => e.occursOn(day, zone)).length;
               return Semantics(
+                key: ValueKey('calendar-date-$day'),
                 selected: selected == day,
                 label: '$day, $count mốc lịch',
                 child: Material(
@@ -306,7 +309,10 @@ class _CalendarPageState extends State<CalendarPage> {
                       : Theme.of(context).colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
-                    onTap: () => setState(() => selected = day),
+                    onTap: () {
+                      setState(() => selected = day);
+                      if (d.month != date.month || d.year != date.year) load();
+                    },
                     borderRadius: BorderRadius.circular(10),
                     child: Center(
                       child: Column(

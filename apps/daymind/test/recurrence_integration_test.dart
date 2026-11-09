@@ -272,6 +272,32 @@ void main() {
     );
     expect(controller.recurrence.rules.single.spec.zone, 'UTC');
   });
+  test('end-only schedule remains visible and can repeat without an invented start', () async {
+    final id = await controller.save(
+      TaskDraft(
+        title: 'Chỉ đặt giờ kết thúc',
+        scheduledEndAt: DateTime.utc(2026, 1, 5, 7),
+      ),
+      repetition: const RepeatChange(
+        enabled: true,
+        spec: RepeatSpec(
+          frequency: RepeatFrequency.daily,
+          firstDate: '2026-01-05',
+          zone: 'UTC',
+          count: 2,
+        ),
+      ),
+    );
+    final tasks = controller.visibleTasks
+        .where((t) => t.seriesId == id)
+        .toList();
+    expect(tasks.length, 2);
+    expect(tasks.every((t) => t.scheduledStartAt == null), isTrue);
+    final entries = calendarEntries(tasks);
+    expect(entries.length, 2);
+    expect(entries.every((e) => e.kind == CalendarEntryKind.end), isTrue);
+    expect(entries.map((e) => e.at.day).toSet(), {5, 6});
+  });
   test('calendar separates schedule and deadline and marks actual interval overlaps', () {
     Task make(String id, int hour, int end) => Task(
       id: id,

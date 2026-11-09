@@ -109,6 +109,45 @@ void main() {
     return (db, controller);
   }
 
+  testWidgets(
+    'calendar browsing loads the adjacent month outside the rolling horizon',
+    (tester) async {
+      final (_, controller) = await mount(tester, const Size(390, 844));
+      await controller.save(
+        TaskDraft(title: 'Chuỗi dài', dueAt: controller.now()),
+        repetition: const RepeatChange(
+          enabled: true,
+          spec: RepeatSpec(
+            frequency: RepeatFrequency.daily,
+            firstDate: '2026-11-08',
+            zone: 'UTC',
+          ),
+        ),
+      );
+      await tester.tap(find.text('Lịch').last);
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(find.byTooltip('Khoảng sau'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Tháng 5 / 2027'), findsOneWidget);
+      expect(
+        controller.recurrence.occurrences.any((o) => o.date == '2027-06-30'),
+        isFalse,
+      );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('calendar-date-2027-06-01')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('calendar-date-2027-06-01')));
+      await tester.pumpAndSettle();
+      expect(
+        controller.recurrence.occurrences.any((o) => o.date == '2027-06-30'),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
   for (final scale in [1.0, 2.0]) {
     testWidgets(
       'calendar month week day and recurrence scope at scale $scale',

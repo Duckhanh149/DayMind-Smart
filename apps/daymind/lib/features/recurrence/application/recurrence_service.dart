@@ -188,7 +188,8 @@ class RecurrenceService {
           'Hãy tạo chuỗi ở trạng thái cần làm hoặc đang làm, rồi hoàn thành từng lần riêng.',
         );
       }
-      final reference = draft.scheduledStartAt ?? draft.dueAt;
+      final reference =
+          draft.scheduledStartAt ?? draft.dueAt ?? draft.scheduledEndAt;
       final templateDate = reference == null
           ? spec.firstDate
           : dateKey(tz.TZDateTime.from(reference, zoneLocation(spec.zone)));

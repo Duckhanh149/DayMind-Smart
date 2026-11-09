@@ -49,8 +49,8 @@ APK phân phối ở mục Releases được build tối ưu ARM64 nhưng vẫn 
 
 ## Kiểm chứng và phạm vi còn lại
 
-`flutter analyze`: không có lỗi/cảnh báo. `flutter test`: **80 kiểm thử đạt local**: domain, SQLite, migration, restart, conflict, safe import, cấu hình đồng thời, bố cục 390/360/768/1440 px, chữ 200%, bàn phím và CRUD UI.
+`flutter analyze`: không có lỗi/cảnh báo. `flutter test`: **82 kiểm thử đạt local**: domain, SQLite, migration, restart, conflict, safe import, cấu hình đồng thời, bố cục 390/360/768/1440 px, chữ 200%, bàn phím và CRUD UI.
 
-Giai đoạn 2 đã đạt kiểm thử tự động Android emulator/receiver và Windows khay hệ thống tại workflow 42578566468. Giai đoạn 3 đã đạt local 80 tests/analyze; bản lịch lặp mới cần CI Android/Windows trước khi nghiệm thu. Daily digest, thống kê, đồng bộ trong app, hoạt ảnh, cửa sổ Companion nổi và Live2D chưa hoàn thành. Dữ liệu native và website hiện tách biệt; chưa có đồng bộ hoặc chuyển dữ liệu tự động. Gỡ app/xóa thư mục dữ liệu có thể làm mất công việc; chưa có backup/restore bằng mật khẩu.
+Giai đoạn 2 đã đạt kiểm thử tự động Android emulator/receiver và Windows khay hệ thống tại workflow 42578566468. Giai đoạn 3 đã đạt local 82 tests/analyze; bản lịch lặp mới cần CI Android/Windows trước khi nghiệm thu. Daily digest, thống kê, đồng bộ trong app, hoạt ảnh, cửa sổ Companion nổi và Live2D chưa hoàn thành. Dữ liệu native và website hiện tách biệt; chưa có đồng bộ hoặc chuyển dữ liệu tự động. Gỡ app/xóa thư mục dữ liệu có thể làm mất công việc; chưa có backup/restore bằng mật khẩu.
 
 Cổng nghiệm thu Android thiết bị thật, Windows 10/11 thực tế và thông báo OEM/Doze/reboot thật vẫn phải xác minh; không tuyên bố đã đạt chỉ từ widget tests hoặc compilation. Trạng thái build cụ thể xem `docs/BUILD_STATUS.md` và kết quả Actions. Các giai đoạn tính năng tiếp theo giữ theo master spec, không đánh dấu toàn bộ dự án đã hoàn tất.
