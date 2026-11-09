@@ -7,6 +7,9 @@ import android.content.Intent
 import android.util.Base64
 import org.json.JSONObject
 import java.util.Calendar
+import java.time.Instant
+import java.time.ZoneId
+import java.security.MessageDigest
 
 /** CI fixture endpoint. Registered only in the debug manifest; excluded from release APKs. */
 class ReminderDebugReceiver : BroadcastReceiver() {
@@ -19,11 +22,16 @@ class ReminderDebugReceiver : BroadcastReceiver() {
                     answer.put("ready",true)
                     val command=intent.getStringExtra("command") ?: "ready"
                     val fixture=intent.getStringExtra("fixture") ?: "cold"
-                    require(fixture in listOf("cold","edited","quiet","past"))
-                    val key="device-smoke-$fixture";val now=System.currentTimeMillis()
+                    require(fixture in listOf("cold","edited","quiet","past","digest"))
+                    val now=System.currentTimeMillis();val digestAt=(now/60000+1)*60000
+                    val digestDate=Instant.ofEpochMilli(digestAt).atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                    val debug=context.getSharedPreferences("daymind_debug",Context.MODE_PRIVATE)
+                    val digestKey=MessageDigest.getInstance("SHA-256").digest("__digest__:local|$digestDate".toByteArray()).joinToString(""){"%02x".format(it)}
+                    val key=if(fixture=="digest") { if(command=="seed"){debug.edit().putString("digestKey",digestKey).commit();digestKey}else debug.getString("digestKey",digestKey)!! } else "device-smoke-$fixture"
                     if(command=="seed") {
-                        val delay=if(fixture=="past")-60000L else 20000L
+                        val delay=if(fixture=="past")-60000L else if(fixture=="digest")digestAt-now else 20000L
                         val settings=JSONObject().put("preset","normal").put("primaryDevice",true).put("quietEnabled",fixture=="quiet").put("groupingMinutes",10)
+                        if(fixture=="digest") { val local=Instant.ofEpochMilli(digestAt).atZone(ZoneId.systemDefault());settings.put("digestEnabled",true).put("digestMinute",local.hour*60+local.minute) }
                         val minute=Calendar.getInstance().let { it.get(Calendar.HOUR_OF_DAY)*60+it.get(Calendar.MINUTE) }
                         settings.put("quietStart",minute).put("quietEnd",(minute+30)%1440)
                         db.beginTransaction()
@@ -31,15 +39,28 @@ class ReminderDebugReceiver : BroadcastReceiver() {
                             db.execSQL("INSERT OR REPLACE INTO extension_records(area,id,value,updated_ms) VALUES('notifications','settings',?,?)",arrayOf<Any?>(settings.toString(),now))
                             db.execSQL("INSERT OR REPLACE INTO tasks(id,title,description,priority,status,created_at,updated_at,revision) VALUES(?,?,'',1,0,?,?,1)",arrayOf<Any?>(key,"DayMind device smoke $fixture",now/1000,now/1000))
                             db.execSQL("INSERT OR REPLACE INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,?,'default',1,?,?,'scheduled',0,?,1,?)",arrayOf<Any?>(key,key,now+delay,now+900000,"DayMind device smoke $fixture",now))
+                            if(fixture=="digest") {
+                                db.execSQL("UPDATE reminder_events SET task_id='__digest__:local',rule_id='digest',task_revision=0 WHERE event_key=?",arrayOf<Any?>(key))
+                                db.execSQL("INSERT OR REPLACE INTO extension_records(area,id,value,updated_ms) VALUES('digest_slots',?,?,?)",arrayOf<Any?>(key,JSONObject().put("date",digestDate).put("ownerId","local").toString(),now))
+                            }
                             if(fixture=="edited")db.execSQL("UPDATE tasks SET revision=2 WHERE id=?",arrayOf<Any?>(key))
                             db.setTransactionSuccessful()
                         } finally { db.endTransaction() }
                         db.rawQuery("SELECT platform_id FROM reminder_events WHERE event_key=?",arrayOf(key)).use { it.moveToFirst();ReminderRuntime.arm(context,it.getInt(0),key,now+delay) }
+                    } else if(command=="retime"&&fixture=="digest") {
+                        db.rawQuery("SELECT value FROM extension_records WHERE area='notifications' AND id='settings'",null).use { rows -> rows.moveToFirst();val settings=JSONObject(rows.getString(0));settings.put("digestMinute",(settings.optInt("digestMinute")+1)%1440);db.execSQL("UPDATE extension_records SET value=? WHERE area='notifications' AND id='settings'",arrayOf<Any?>(settings.toString())) }
+                        ReminderRuntime.recover(context,false)
                     } else if(command=="recover") {
                         ReminderRuntime.recover(context,true)
                     } else require(command in listOf("ready","status"))
                     db.rawQuery("SELECT state FROM reminder_events WHERE event_key=?",arrayOf(key)).use { if(it.moveToFirst())answer.put("state",it.getString(0)) }
-                    answer.put("notifications",context.getSystemService(NotificationManager::class.java).activeNotifications.size)
+                    val notices=context.getSystemService(NotificationManager::class.java).activeNotifications
+                    answer.put("notifications",notices.size)
+                    if(fixture=="digest") {
+                        answer.put("digestNotifications",notices.count { it.id==999999999 })
+                        answer.put("digestActions",notices.firstOrNull { it.id==999999999 }?.notification?.actions?.size ?: 0)
+                        db.rawQuery("SELECT COUNT(*) FROM delivery_logs WHERE event_key=? AND outcome='display_attempt'",arrayOf(key)).use { it.moveToFirst();answer.put("attempts",it.getInt(0)) }
+                    }
                     answer.put("foreground",MainActivity.foreground)
                 } ?: answer.put("ready",false)
             } catch(error:Exception){answer.put("error",error.javaClass.simpleName)}

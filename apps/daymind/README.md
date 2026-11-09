@@ -1,6 +1,6 @@
 # DayMind SMART — Android & Windows
 
-Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Companion 2D tĩnh, Reminder Engine, lịch ngày/tuần/tháng và công việc lặp lại. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
+Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Companion 2D tĩnh, Reminder Engine, lịch ngày/tuần/tháng và công việc lặp lại. Preview 0.3.0 bổ sung trợ lý hằng ngày và thống kê. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
 
 ## Đã triển khai
 
@@ -9,7 +9,10 @@
 - Drift/SQLite có transaction và migration v1/2→v3; revision chặn sửa/xóa từ biểu mẫu cũ. Mở lại app vẫn có dữ liệu.
 - Companion **Mầm** là nhân vật gốc, mặc định im lặng; 3 tính cách, lời thoại trong app có cooldown, bật/tắt, kích thước tùy chỉnh. Companion nằm trong vùng riêng, không nổi trên các nút hay biểu mẫu.
 - Nhập/thư viện/chọn/xóa ảnh PNG/WebP tĩnh. Kiểm tra magic bytes, decode thật, tối đa 4 MB/tệp, 2048×2048 px, decode vừa trong 256×256, tổng thư viện 32 MB; tên hash, ghi nguyên tử và chặn đường dẫn vượt thư mục. Không nhận ZIP, GIF hoặc Live2D.
-- Nhắc việc: một nhắc theo ưu tiên hoặc tối đa 8 mốc tự đặt; xem giờ hiệu lực, giờ yên lặng, gộp, snooze, dismiss, hủy lịch cũ khi sửa/hoàn thành. Trung tâm thông báo có tất cả/chưa đọc/quá hạn. Không xin quyền tự động. Android có receiver và lịch inexact có guard; Windows đóng cửa sổ thu vào khay theo lựa chọn của người dùng để tiếp tục nhắc, có Mở/Thoát hẳn; phần native khay đang qua kiểm thử CI. Không tự khởi động cùng Windows.
+- Nhắc việc: một nhắc theo ưu tiên hoặc tối đa 8 mốc tự đặt; xem giờ hiệu lực, giờ yên lặng, gộp, snooze, dismiss, hủy lịch cũ khi sửa/hoàn thành. Trung tâm thông báo có tất cả/chưa đọc/quá hạn. Không xin quyền tự động. Android có receiver và lịch inexact có guard; Windows đóng cửa sổ thu vào khay theo lựa chọn của người dùng để tiếp tục nhắc, có Mở/Thoát hẳn; phần native khay đã qua kiểm thử CI. Không tự khởi động cùng Windows.
+- Lịch ngày/tuần/tháng với múi giờ hiển thị; daily/weekly/monthly, khoảng lặp, thứ, số lần/ngày kết thúc, chọn rõ bỏ qua hay dùng cuối tháng thiếu ngày. Sửa một/từ lần này/toàn chuỗi, giữ lịch sử và ngoại lệ.
+- Trợ lý hằng ngày: tối đa ba gợi ý có lý do, không lặp nhiều lần của cùng chuỗi; tùy chỉnh các thẻ trang Hôm nay. Thống kê 7/30 ngày dùng ngày hoàn thành thật, hiển thị mẫu số và loại việc hủy/thùng rác.
+- Bản tóm tắt **mặc định tắt**, giờ gợi ý 07:00; một bản mỗi ngày địa phương khi bật. Đọc số liệu mới khi phát, không có nút hoàn thành/hoãn công việc. Đổi giờ/quyền không phát lại bản đã xử lý. Cần CI native của bản 0.3.0 để chốt phần mới.
 - Android tắt automatic app backup; không tự tải công việc/ảnh lên cloud. Firebase Emulator POC ở `firebase/` đã đạt local/CI; chưa có account/sync trong ứng dụng.
 
 ## Chạy và build
@@ -46,11 +49,13 @@ APK phân phối ở mục Releases được build tối ưu ARM64 nhưng vẫn 
 ![Desktop](docs/ui/desktop.png)
 ![Companion](docs/ui/companion.png)
 ![Trung tâm thông báo](docs/ui/notifications.png)
+![Lịch](docs/ui/calendar.png)
+![Thống kê](docs/ui/analytics.png)
 
 ## Kiểm chứng và phạm vi còn lại
 
-`flutter analyze`: không có lỗi/cảnh báo. `flutter test`: **82 kiểm thử đạt local**: domain, SQLite, migration, restart, conflict, safe import, cấu hình đồng thời, bố cục 390/360/768/1440 px, chữ 200%, bàn phím và CRUD UI.
+`flutter analyze`: không có lỗi/cảnh báo. `flutter test`: **104 kiểm thử đạt local**: domain, SQLite, migration, restart, conflict, safe import, cấu hình đồng thời, bố cục 390/360/768/1440 px, chữ 200%, bàn phím và CRUD UI.
 
-Giai đoạn 2 đã đạt kiểm thử tự động Android emulator/receiver và Windows khay hệ thống tại workflow 42578566468. Giai đoạn 3 đã đạt local 82 tests/analyze; bản lịch lặp mới cần CI Android/Windows trước khi nghiệm thu. Daily digest, thống kê, đồng bộ trong app, hoạt ảnh, cửa sổ Companion nổi và Live2D chưa hoàn thành. Dữ liệu native và website hiện tách biệt; chưa có đồng bộ hoặc chuyển dữ liệu tự động. Gỡ app/xóa thư mục dữ liệu có thể làm mất công việc; chưa có backup/restore bằng mật khẩu.
+Giai đoạn 2 đã đạt kiểm thử native; giai đoạn 3 đạt [CI 42608475322](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42608475322) với 82 Flutter tests, 16 receiver tests, Android cold-process smoke và Windows SQLite recurrence/tray/installer. Giai đoạn 4 hiện đạt 104 tests/analyze local; 23 receiver tests và smoke digest mới chờ CI. Đồng bộ trong app, hoạt ảnh, cửa sổ Companion nổi và Live2D chưa hoàn thành. Dữ liệu native và website hiện tách biệt. Chưa có backup/restore bằng mật khẩu.
 
 Cổng nghiệm thu Android thiết bị thật, Windows 10/11 thực tế và thông báo OEM/Doze/reboot thật vẫn phải xác minh; không tuyên bố đã đạt chỉ từ widget tests hoặc compilation. Trạng thái build cụ thể xem `docs/BUILD_STATUS.md` và kết quả Actions. Các giai đoạn tính năng tiếp theo giữ theo master spec, không đánh dấu toàn bộ dự án đã hoàn tất.

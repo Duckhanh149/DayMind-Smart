@@ -11,6 +11,7 @@ class FakeScheduler implements NotificationScheduler {
   final active = <int, DateTime>{};
   final cancelled = <int>[];
   int calls = 0;
+  final shown = <({int id, String title, String body})>[];
   @override
   bool get supportsClosedApp => false;
   @override
@@ -40,7 +41,9 @@ class FakeScheduler implements NotificationScheduler {
     required String title,
     required String body,
     String? eventKey,
-  }) async {}
+  }) async {
+    shown.add((id: id, title: title, body: body));
+  }
 }
 
 void main() {

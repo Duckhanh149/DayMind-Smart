@@ -14,11 +14,14 @@ import '../../reminders/presentation/notification_pages.dart';
 import '../domain/task.dart';
 import 'task_editor.dart';
 import '../../calendar/presentation/calendar_page.dart';
+import '../../assistant/domain/daily_assistant.dart';
+import '../../assistant/presentation/assistant_pages.dart';
 import '../../recurrence/presentation/recurrence_editor.dart';
 
 const pageLabels = {
   'today': 'Hôm nay',
   'calendar': 'Lịch',
+  'analytics': 'Thống kê',
   'all': 'Tất cả công việc',
   'inbox': 'Hộp thư',
   'upcoming': 'Sắp tới',
@@ -31,6 +34,7 @@ const pageLabels = {
 const pageIcons = {
   'today': Icons.wb_sunny_outlined,
   'calendar': Icons.calendar_month_outlined,
+  'analytics': Icons.bar_chart_outlined,
   'all': Icons.grid_view_rounded,
   'inbox': Icons.inbox_outlined,
   'upcoming': Icons.event_outlined,
@@ -221,6 +225,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   'today',
                   'all',
                   'calendar',
+                  'analytics',
                   'inbox',
                   'upcoming',
                   'completed',
@@ -550,21 +555,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       priority: priority,
       overdueOnly: overdueOnly,
     );
-    final today = filterTasks(
+    final summary = DaySummary.calculate(
       controller.visibleTasks,
-      view: TaskView.today,
-      now: now,
-    ).length;
-    final completed = controller.visibleTasks
-        .where(
-          (t) =>
-              t.deletedAt == null &&
-              t.status == TaskStatus.completed &&
-              t.completedAt != null &&
-              sameDay(t.completedAt!, now),
-        )
-        .length;
-    final late = controller.visibleTasks.where((t) => t.overdue(now)).length;
+      now,
+      controller.reminders?.preferences.timezoneId ?? 'UTC',
+    );
+    final today = summary.open,
+        completed = summary.completed,
+        late = summary.overdue;
     final high = controller.visibleTasks
         .where(
           (t) =>
@@ -598,6 +596,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
         const SizedBox(height: 24),
         if (widget.page == 'today') ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => editDashboard(context, controller),
+              icon: const Icon(Icons.dashboard_customize_outlined),
+              label: const Text('Tùy chỉnh trang hôm nay'),
+            ),
+          ),
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth > 760 ? 4 : 2;
@@ -607,47 +613,53 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Cần làm hôm nay',
-                      today,
-                      Icons.wb_sunny_outlined,
-                      'Gồm việc đã quá hạn',
-                      () => navigate('today'),
+                  if (controller.dashboard.cards.contains('today'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Cần làm hôm nay',
+                        today,
+                        Icons.wb_sunny_outlined,
+                        'Gồm việc đã quá hạn',
+                        () => navigate('today'),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Đã xong hôm nay',
-                      completed,
-                      Icons.task_alt,
-                      'Ghi nhận mọi nỗ lực',
-                      () => navigate('completed'),
+                  if (controller.dashboard.cards.contains('completed'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Đã xong hôm nay',
+                        completed,
+                        Icons.task_alt,
+                        'Ghi nhận mọi nỗ lực',
+                        () => navigate('completed'),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Đang quá hạn',
-                      late,
-                      Icons.schedule,
-                      'Chọn một việc để tiếp tục',
-                      () => navigate('all', lateOnly: true),
+                  if (controller.dashboard.cards.contains('overdue'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Đang quá hạn',
+                        late,
+                        Icons.schedule,
+                        'Chọn một việc để tiếp tục',
+                        () => navigate('all', lateOnly: true),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Ưu tiên cao',
-                      high,
-                      Icons.flag_outlined,
-                      'Điều cần tập trung',
-                      () =>
-                          navigate('all', selectedPriority: TaskPriority.high),
+                  if (controller.dashboard.cards.contains('high'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Ưu tiên cao',
+                        high,
+                        Icons.flag_outlined,
+                        'Điều cần tập trung',
+                        () => navigate(
+                          'all',
+                          selectedPriority: TaskPriority.high,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               );
             },
@@ -659,6 +671,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               compact: MediaQuery.sizeOf(context).width < 600,
             ),
             const SizedBox(height: 24),
+          ],
+          if (controller.dashboard.cards.contains('suggestions')) ...[
+            FocusSuggestions(controller: controller),
+            const SizedBox(height: 16),
           ],
         ],
         TextField(
@@ -1135,7 +1151,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.2.0',
+          applicationVersion: '0.3.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1150,6 +1166,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       'companion',
       'settings',
       'notifications',
+      'analytics',
     ].contains(widget.page);
     final content = widget.page == 'companion'
         ? companionContent(controller)
@@ -1157,6 +1174,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ? settingsContent(controller)
         : widget.page == 'notifications'
         ? NotificationCenterPage(controller: controller)
+        : widget.page == 'analytics'
+        ? AnalyticsPage(controller: controller)
         : widget.page == 'calendar'
         ? CalendarPage(controller: controller)
         : taskContent(controller);
@@ -1228,10 +1247,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 'today',
                 'calendar',
                 'upcoming',
-                'companion',
+                'analytics',
               ].indexOf(widget.page).clamp(0, 3),
               onDestinationSelected: (index) => navigate(
-                ['today', 'calendar', 'upcoming', 'companion'][index],
+                ['today', 'calendar', 'upcoming', 'analytics'][index],
               ),
               destinations: const [
                 NavigationDestination(
@@ -1247,8 +1266,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   label: 'Sắp tới',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.eco_outlined),
-                  label: 'Companion',
+                  icon: Icon(Icons.bar_chart_outlined),
+                  label: 'Thống kê',
                 ),
               ],
             ),

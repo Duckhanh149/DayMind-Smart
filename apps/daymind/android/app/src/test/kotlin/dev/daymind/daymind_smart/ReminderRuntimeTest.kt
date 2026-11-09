@@ -18,6 +18,10 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
 import java.util.Calendar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -34,11 +38,11 @@ class ReminderRuntimeTest {
         context=RuntimeEnvironment.getApplication()
         file=File(context.filesDir,"${UUID.randomUUID()}.sqlite")
         db=SQLiteDatabase.openOrCreateDatabase(file,null)
-        db.execSQL("CREATE TABLE tasks(id TEXT PRIMARY KEY,title TEXT,status INTEGER,revision INTEGER,deleted_at INTEGER,updated_at INTEGER,completed_at INTEGER,owner_id TEXT)")
+        db.execSQL("CREATE TABLE tasks(id TEXT PRIMARY KEY,title TEXT,status INTEGER,revision INTEGER,deleted_at INTEGER,updated_at INTEGER,completed_at INTEGER,owner_id TEXT,due_at INTEGER,scheduled_start_at INTEGER,scheduled_end_at INTEGER)")
         db.execSQL("CREATE TABLE extension_records(area TEXT,id TEXT,value TEXT,updated_ms INTEGER,PRIMARY KEY(area,id))")
         db.execSQL("CREATE TABLE reminder_events(platform_id INTEGER PRIMARY KEY AUTOINCREMENT,event_key TEXT UNIQUE,task_id TEXT,rule_id TEXT,occurrence_id TEXT,occurrence_revision INTEGER,task_revision INTEGER,scheduled_ms INTEGER,expires_ms INTEGER,state TEXT,read INTEGER,title TEXT,priority INTEGER,updated_ms INTEGER)")
         db.execSQL("CREATE TABLE delivery_logs(id TEXT PRIMARY KEY,event_key TEXT,outcome TEXT,at_ms INTEGER)")
-        db.execSQL("INSERT INTO tasks VALUES('t','Việc',0,1,NULL,0,NULL,'')")
+        db.execSQL("INSERT INTO tasks(id,title,status,revision,deleted_at,updated_at,completed_at,owner_id) VALUES('t','Việc',0,1,NULL,0,NULL,'')")
         configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("groupingMinutes",10))
         context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).edit().putString("database",file.path).commit()
         MainActivity.foreground=false;MainActivity.bridge=null
@@ -155,6 +159,66 @@ class ReminderRuntimeTest {
         db.execSQL("INSERT INTO extension_records VALUES('reminder_rules','custom-rule',?,?)",arrayOf<Any?>(JSONObject().put("taskId","series-rule").put("enabled",true).toString(),now))
         db.execSQL("UPDATE reminder_events SET rule_id='custom-rule' WHERE event_key='custom'")
         ReminderRuntime.fire(context,"custom");assertEquals("unknown",state("custom"));assertEquals(1,notifications.size())
+    }
+
+    private fun digestKey(date:String)=MessageDigest.getInstance("SHA-256").digest("__digest__:local|$date".toByteArray()).joinToString(""){"%02x".format(it)}
+    private fun digestEvent():String {
+        val local=Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault());val minute=local.hour*60+local.minute
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",minute))
+        val date=local.toLocalDate().toString();val key=digestKey(date)
+        event(key,at=ReminderRuntime.digestWallInstant(ZoneId.systemDefault(),local.toLocalDate(),minute)!!);db.execSQL("UPDATE reminder_events SET task_id='__digest__:local',rule_id='digest',task_revision=0 WHERE event_key=?",arrayOf<Any?>(key))
+        db.execSQL("INSERT INTO extension_records VALUES('digest_slots',?,?,?)",arrayOf<Any?>(key,JSONObject().put("date",date).put("ownerId","local").toString(),now))
+        return key
+    }
+    @Test fun nativeDigestUsesFreshCountsAndHasNoTaskActions() {
+        db.execSQL("UPDATE tasks SET due_at=? WHERE id='t'",arrayOf<Any?>((now-60000)/1000))
+        db.execSQL("INSERT INTO tasks(id,title,status,revision,due_at) VALUES('series','Root',0,1,?)",arrayOf<Any?>((now-60000)/1000))
+        db.execSQL("INSERT INTO extension_records VALUES('recurrence','r',?,?)",arrayOf<Any?>(JSONObject().put("taskId","series").toString(),now))
+        val o=JSONObject().put("taskId","series").put("status","todo").put("draft",JSONObject().put("scheduledEndAt",Instant.ofEpochMilli(now).toString()))
+        db.execSQL("INSERT INTO extension_records VALUES('occurrences','daily',?,?)",arrayOf<Any?>(o.toString(),now))
+        val key=digestEvent();ReminderRuntime.fire(context,key)
+        val notice=notifications.allNotifications.single()
+        assertEquals("Nhịp ngày mới",notice.extras.getCharSequence("android.title").toString())
+        assertEquals("Hôm nay: 2 việc cần làm · 1 quá hạn",notice.extras.getCharSequence("android.text").toString())
+        assertEquals(0,notice.actions?.size ?: 0);assertEquals("unknown",state(key))
+    }
+    @Test fun digestAndTaskGroupsStaySeparateAndDismissOnlyTheirOwnKind() {
+        event("work");ReminderRuntime.fire(context,"work")
+        val key=digestEvent();ReminderRuntime.fire(context,key);assertEquals(2,notifications.size())
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_DISMISS").putExtra("key",key).putExtra("group",999999999).putExtra("digest",true).putExtra("start",now-60000).putExtra("end",now+60000))
+        assertEquals("dismissed",state(key));assertEquals("unknown",state("work"));assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+    }
+    @Test fun digestDoesNotAcceptForgedDoneOrSnoozeAndNeverChangesTask() {
+        val key=digestEvent();ReminderRuntime.fire(context,key)
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_done").putExtra("key",key))
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_snooze").putExtra("key",key))
+        assertEquals("unknown",state(key));assertEquals(1,count("SELECT COUNT(*) FROM reminder_events"));assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+    }
+    @Test fun rollingDigestPlanExtendsAndTimeEditCannotRepeatAnAttemptedDate() {
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",420))
+        val day=LocalDate.of(2026,1,5);val zone=ZoneId.systemDefault();val at=day.atStartOfDay(zone).toInstant().toEpochMilli()
+        ReminderRuntime.ensureDigestSlots(context,db,at);assertEquals(3,count("SELECT COUNT(*) FROM reminder_events"))
+        val key=digestKey(day.toString());db.execSQL("UPDATE reminder_events SET state='unknown' WHERE event_key=?",arrayOf<Any?>(key))
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",480))
+        ReminderRuntime.ensureDigestSlots(context,db,at+7*3600000);assertEquals("unknown",state(key));assertEquals(3,count("SELECT COUNT(*) FROM reminder_events"))
+        ReminderRuntime.ensureDigestSlots(context,db,day.plusDays(3).atStartOfDay(zone).toInstant().toEpochMilli())
+        assertEquals(6,count("SELECT COUNT(*) FROM reminder_events"));assertEquals(1,count("SELECT COUNT(*) FROM reminder_events WHERE event_key='${digestKey("2026-01-10")}'"))
+    }
+    @Test fun digestWallClockHandlesGapAndFirstFoldLikeDart() {
+        val zone=ZoneId.of("America/New_York")
+        assertEquals(Instant.parse("2026-03-08T07:00:00Z").toEpochMilli(),ReminderRuntime.digestWallInstant(zone,LocalDate.of(2026,3,8),150)!!)
+        assertEquals(Instant.parse("2026-11-01T05:30:00Z").toEpochMilli(),ReminderRuntime.digestWallInstant(zone,LocalDate.of(2026,11,1),90)!!)
+    }
+    @Test fun staleDigestDateOrOwnerCannotDisplay() {
+        val key=digestEvent()
+        db.execSQL("UPDATE extension_records SET value=? WHERE area='digest_slots' AND id=?",arrayOf<Any?>(JSONObject().put("date","2000-01-01").put("ownerId","local").toString(),key))
+        ReminderRuntime.fire(context,key);assertEquals("cancelled",state(key));assertEquals(0,notifications.size())
+    }
+
+    @Test fun changingDigestTimeRejectsAnObsoleteAlarmBeforeReplanning() {
+        val key=digestEvent();val local=Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault());val minute=(local.hour*60+local.minute+1)%1440
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",minute))
+        ReminderRuntime.fire(context,key);assertEquals("cancelled",state(key));assertEquals(0,notifications.size())
     }
 
 }

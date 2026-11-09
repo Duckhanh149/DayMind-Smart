@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../tasks/data/database.dart';
 import '../../tasks/domain/task.dart' as domain;
+import '../../assistant/domain/daily_assistant.dart' show localDay;
 import '../../../platform/notification_scheduler.dart';
 import '../domain/reminder.dart';
 import 'reminder_engine.dart';
@@ -26,9 +27,9 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   NotificationPreferences preferences = const NotificationPreferences();
   List<ReminderEventRecord> events = [];
   bool granted = false, _foreground = true, _running = false, _disposed = false;
-  String? error;
+  String? error, _plannedDay;
   Timer? _timer;
-  bool _windowVisible = true;
+  bool _windowVisible = true, _pendingReplan = false;
   void setWindowVisible(bool visible) {
     _windowVisible = visible;
     if (visible) unawaited(reloadFromNative());
@@ -79,7 +80,11 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> refresh({bool replan = true}) async {
-    if (_running || _disposed) return;
+    if (_disposed) return;
+    if (_running) {
+      _pendingReplan = _pendingReplan || replan;
+      return;
+    }
     _running = true;
     try {
       preferences = await engine.preferences();
@@ -97,27 +102,50 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       }
       granted = await engine.scheduler.granted();
       final tasks = await getTasks();
-      if (replan) await engine.reconcile(tasks);
+      final day = localDay(engine.clock(), preferences.timezoneId);
+      if (replan || _plannedDay != day) {
+        await engine.reconcile(tasks);
+        _plannedDay = day;
+      }
       if (!Platform.isAndroid) {
         final due = await engine.claimDue(tasks);
-        if (due.isNotEmpty) {
-          final sorted = [...due]
-            ..sort((a, b) => b.priority.compareTo(a.priority));
+        if (_disposed) return;
+        final digests = due.where((e) => e.ruleId == 'digest').toList();
+        for (final digest in digests) {
           if (_foreground && _windowVisible) {
-            onInApp?.call(sorted.first.title);
+            onInApp?.call(digest.title);
           } else {
-            final id =
-                1000000000 +
-                DateTime.now().millisecondsSinceEpoch ~/
-                    (preferences.groupingMinutes * 60000) %
-                    1000000000;
+            await engine.scheduler.show(
+              id: 999999999,
+              title: 'Nhịp ngày mới',
+              body: digest.title,
+              eventKey: digest.eventKey,
+            );
+          }
+        }
+        final work = due.where((e) => e.ruleId != 'digest').toList()
+          ..sort((a, b) => b.priority.compareTo(a.priority));
+        if (work.isNotEmpty && !_disposed) {
+          if (_foreground && _windowVisible) {
+            onInApp?.call('Đến giờ: ${work.first.title}');
+          } else {
+            final window = preferences.groupingMinutes * 60000,
+                stamp = engine.clock().millisecondsSinceEpoch;
+            final start = stamp ~/ window * window;
+            final group = await engine.groupForWindow(
+              tasks,
+              start,
+              start + window,
+            );
+            if (_disposed || group.isEmpty) return;
+            final id = 1000000000 + start ~/ window % 1000000000;
             await engine.scheduler.show(
               id: id,
-              title: due.length == 1
-                  ? due.single.title
-                  : '${due.length} công việc cần nhắc',
-              body: sorted.take(7).map((e) => e.title).join('\n'),
-              eventKey: sorted.first.eventKey,
+              title: group.length == 1
+                  ? group.single.title
+                  : '${group.any((e) => e.priority == 2) ? 'Ưu tiên cao · ' : ''}${group.length} công việc cần nhắc',
+              body: group.take(7).map((e) => e.title).join('\n'),
+              eventKey: group.first.eventKey,
             );
           }
         }
@@ -132,6 +160,10 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     } finally {
       _running = false;
       if (!_disposed) notifyListeners();
+      if (_pendingReplan && !_disposed) {
+        _pendingReplan = false;
+        unawaited(refresh());
+      }
     }
   }
 

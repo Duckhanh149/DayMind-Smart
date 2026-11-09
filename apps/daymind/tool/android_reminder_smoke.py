@@ -74,3 +74,15 @@ fixture('recover', 'past')
 until(lambda: fixture(name='past').get('state') == 'expired', 30, 'restart recovery skips historical reminder')
 assert fixture()['notifications'] <= 1
 print('PASS: recovery did not replay a past reminder. This is not an OEM/Doze/real reboot test.')
+
+fixture('seed', 'digest')
+cold_close()
+until(lambda: 'Nhịp ngày mới' in adb('shell', 'dumpsys', 'notification', '--noredact'),
+      360, 'opt-in daily digest after cold process termination')
+observed = fixture(name='digest')
+assert observed['state'] == 'unknown' and observed['digestNotifications'] == 1 and observed['digestActions'] == 0 and observed['attempts'] == 1, observed
+fixture('retime', 'digest')
+observed = fixture(name='digest')  # single native executor queues this read after recovery
+assert observed['state'] == 'unknown' and observed['attempts'] == 1, observed
+assert fixture(name='digest')['digestNotifications'] == 1
+print('PASS: opt-in digest posted after cold close, has no task actions, and time edit/recovery did not repeat it.')

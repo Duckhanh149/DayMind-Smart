@@ -10,6 +10,7 @@ import '../features/reminders/domain/reminder.dart';
 import '../platform/window_lifecycle.dart';
 import '../features/recurrence/application/recurrence_service.dart';
 import '../features/recurrence/domain/recurrence.dart';
+import '../features/assistant/domain/daily_assistant.dart';
 
 final workspaceProvider = ChangeNotifierProvider<WorkspaceController>(
   (ref) => throw UnimplementedError(),
@@ -45,6 +46,7 @@ class WorkspaceController extends ChangeNotifier {
   });
   List<Category> categories = [];
   AppPreferences preferences = const AppPreferences();
+  DashboardPreferences dashboard = const DashboardPreferences();
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
   bool busy = false;
@@ -73,6 +75,9 @@ class WorkspaceController extends ChangeNotifier {
     await recurrence.materialize(tasks);
     categories = await repository.categories();
     preferences = AppPreferences.fromJson(await repository.readPreferences());
+    dashboard = DashboardPreferences.fromJson(
+      await recurrence.records.get('assistant', 'dashboard'),
+    );
     dialogue =
         behavior.respond(CompanionEvent.appOpen, preferences.personality) ??
         dialogue;
@@ -210,6 +215,13 @@ class WorkspaceController extends ChangeNotifier {
         ? repository.restore(task.id, task.revision)
         : recurrence.restore(task),
   );
+  Future<void> configureDashboard(Set<String> cards) => _write(() async {
+    if (cards.any((id) => !dashboardCards.containsKey(id))) {
+      throw const ValidationException('Thẻ trang hôm nay không hợp lệ.');
+    }
+    dashboard = DashboardPreferences({...cards});
+    await recurrence.records.put('assistant', 'dashboard', dashboard.toJson());
+  });
   Future<void> addCategory(String name, int color) =>
       _write(() => repository.addCategory(name, color));
   Future<void> configure(AppPreferences Function(AppPreferences) update) =>

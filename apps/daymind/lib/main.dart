@@ -68,7 +68,7 @@ Future<void> main() async {
       readTimezone: scheduler.localTimezone,
       onNativeChange: controller.refreshFromNative,
       onInApp: (title) {
-        controller.dialogue = 'Đến giờ: $title';
+        controller.dialogue = title;
       },
     );
     controller.attachReminders(reminders);

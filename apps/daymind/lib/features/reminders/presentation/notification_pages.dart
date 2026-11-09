@@ -116,6 +116,25 @@ class NotificationSettingsSection extends StatelessWidget {
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              value: prefs.digestEnabled,
+              title: const Text('Bản tóm tắt hằng ngày'),
+              subtitle: const Text(
+                'Mỗi ngày một bản khi bạn bật. Xem số việc hôm nay và quá hạn; không tạo thêm chuỗi nhắc quá hạn.',
+              ),
+              onChanged: (value) =>
+                  _run(context, reminders.configure({'digestEnabled': value})),
+            ),
+            if (prefs.digestEnabled)
+              OutlinedButton(
+                onPressed: () =>
+                    _time(context, 'digestMinute', prefs.digestMinute),
+                child: Text(
+                  'Giờ tóm tắt: ${_clock(prefs.digestMinute)} · giờ thiết bị',
+                ),
+              ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               value: prefs.primaryDevice,
               title: const Text('Nhắc trên thiết bị này'),
               subtitle: const Text(
@@ -254,6 +273,14 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (event.ruleId == 'digest')
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '☀ Bản tóm tắt hằng ngày',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
               Text(event.title, style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 6),
               Text(

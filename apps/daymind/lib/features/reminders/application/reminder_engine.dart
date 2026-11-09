@@ -5,6 +5,8 @@ import '../../../core/record_store.dart';
 import '../../tasks/data/database.dart';
 import '../../tasks/domain/task.dart' as domain;
 import '../../recurrence/domain/recurrence.dart';
+import '../../recurrence/application/recurrence_service.dart';
+import '../../assistant/domain/daily_assistant.dart';
 import '../domain/reminder.dart';
 
 class ReminderEngine {
@@ -128,7 +130,7 @@ class ReminderEngine {
           : [fallback];
     }
     for (final old in prior.where(
-      (e) => ['planned', 'scheduled'].contains(e.state),
+      (e) => e.ruleId != 'digest' && ['planned', 'scheduled'].contains(e.state),
     )) {
       final task = byId[old.occurrenceId ?? old.taskId];
       final invalid =
@@ -235,6 +237,7 @@ class ReminderEngine {
         }
       }
     }
+    await _reconcileDigests(prefs, now, permitted);
     if (permitted) {
       final candidates =
           await (db.select(db.reminderEvents)
@@ -277,6 +280,143 @@ class ReminderEngine {
         .go();
   }
 
+  Future<String> _digestOwner() async {
+    final owner =
+        (await records.get('account', 'session'))?['ownerId'] as String?;
+    return owner == null || owner.isEmpty ? 'local' : owner;
+  }
+
+  Future<void> _reconcileDigests(
+    NotificationPreferences prefs,
+    DateTime now,
+    bool permitted,
+  ) async {
+    final owner = await _digestOwner();
+    final slots = const DailyDigestPolicy().slots(prefs, now, owner);
+    final byKey = {for (final slot in slots) slot.key: slot};
+    final old = (await events()).where((e) => e.ruleId == 'digest').toList();
+    for (final event in old.where(
+      (e) => ['planned', 'scheduled', 'suppressed'].contains(e.state),
+    )) {
+      if (!byKey.containsKey(event.eventKey) ||
+          event.expiresMs <= now.millisecondsSinceEpoch) {
+        await scheduler.cancel(event.platformId);
+        await _state(
+          event,
+          ReminderState.cancelled,
+          'digest_disabled_or_window',
+        );
+      }
+    }
+    for (final slot in slots) {
+      final existing = old.where((e) => e.eventKey == slot.key).firstOrNull;
+      if (existing != null &&
+          ![
+            'planned',
+            'scheduled',
+            'suppressed',
+            'cancelled',
+          ].contains(existing.state)) {
+        continue;
+      }
+      if (!slot.at.isAfter(now)) {
+        if (existing?.state == 'scheduled' &&
+            existing!.scheduledMs <= now.millisecondsSinceEpoch &&
+            existing.expiresMs > now.millisecondsSinceEpoch &&
+            permitted) {
+          continue;
+        }
+        if (existing != null &&
+            ['planned', 'scheduled', 'suppressed'].contains(existing.state)) {
+          await scheduler.cancel(existing.platformId);
+          await _state(
+            existing,
+            ReminderState.expired,
+            'digest_past_not_replayed',
+          );
+        }
+        continue;
+      }
+      var state = slot.suppressed ? 'suppressed' : 'planned';
+      if (existing != null) {
+        final unchanged =
+            existing.scheduledMs == slot.at.millisecondsSinceEpoch &&
+            existing.expiresMs == slot.expiresAt.millisecondsSinceEpoch;
+        if (existing.state == 'scheduled' &&
+            unchanged &&
+            permitted &&
+            !slot.suppressed) {
+          state = 'scheduled';
+        } else if (existing.state == 'scheduled') {
+          await scheduler.cancel(existing.platformId);
+        }
+      }
+      await db.transaction(() async {
+        await records.put('digest_slots', slot.key, {
+          'date': slot.date,
+          'ownerId': owner,
+        });
+        if (existing == null) {
+          await db
+              .into(db.reminderEvents)
+              .insert(
+                ReminderEventsCompanion.insert(
+                  eventKey: slot.key,
+                  taskId: slot.taskId,
+                  ruleId: 'digest',
+                  taskRevision: 0,
+                  scheduledMs: slot.at.millisecondsSinceEpoch,
+                  expiresMs: slot.expiresAt.millisecondsSinceEpoch,
+                  state: state,
+                  title: 'Bản tóm tắt ngày ${slot.date}',
+                  priority: 0,
+                  updatedMs: now.millisecondsSinceEpoch,
+                ),
+              );
+        } else {
+          await (db.update(
+            db.reminderEvents,
+          )..where((e) => e.eventKey.equals(slot.key))).write(
+            ReminderEventsCompanion(
+              scheduledMs: Value(slot.at.millisecondsSinceEpoch),
+              expiresMs: Value(slot.expiresAt.millisecondsSinceEpoch),
+              state: Value(state),
+              updatedMs: Value(now.millisecondsSinceEpoch),
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  Future<List<domain.Task>> _freshTasks() async {
+    final repo = SqliteTaskRepository(db);
+    final recurrence = RecurrenceService(repo, clock: clock);
+    await recurrence.reload();
+    return recurrence.project(await repo.list());
+  }
+
+  Future<bool> _validDigest(
+    ReminderEventRecord event,
+    NotificationPreferences prefs,
+    DateTime now,
+  ) async {
+    final owner = await _digestOwner(),
+        slot = await records.get('digest_slots', event.eventKey);
+    return prefs.digestEnabled &&
+        event.taskId == '__digest__:$owner' &&
+        slot?['ownerId'] == owner &&
+        slot?['date'] == localDay(now, prefs.timezoneId) &&
+        const DailyDigestPolicy()
+            .slots(prefs, now, owner)
+            .any(
+              (s) =>
+                  s.key == event.eventKey &&
+                  !s.suppressed &&
+                  s.at.millisecondsSinceEpoch == event.scheduledMs,
+            );
+  }
+
   Future<void> dismiss(ReminderEventRecord event) async {
     await scheduler.cancel(event.platformId);
     await _state(event, ReminderState.dismissed, 'dismissed');
@@ -293,7 +433,8 @@ class ReminderEngine {
     domain.Task task,
     DateTime until,
   ) async {
-    if (task.terminal ||
+    if (event.ruleId == 'digest' ||
+        task.terminal ||
         task.deletedAt != null ||
         task.reminderRevision != event.taskRevision ||
         task.occurrenceId != event.occurrenceId ||
@@ -360,6 +501,36 @@ class ReminderEngine {
     });
   }
 
+  Future<List<ReminderEventRecord>> groupForWindow(
+    List<domain.Task> tasks,
+    int from,
+    int through,
+  ) async {
+    final byId = {for (final t in tasks) t.id: t};
+    final rows =
+        await (db.select(db.reminderEvents)
+              ..where(
+                (e) =>
+                    e.state.equals('unknown') &
+                    e.ruleId.equals('digest').not() &
+                    e.updatedMs.isBiggerOrEqualValue(from) &
+                    e.updatedMs.isSmallerThanValue(through),
+              )
+              ..orderBy([
+                (e) => OrderingTerm.desc(e.priority),
+                (e) => OrderingTerm.asc(e.scheduledMs),
+              ]))
+            .get();
+    return rows.where((e) {
+      final t = byId[e.occurrenceId ?? e.taskId];
+      return t != null &&
+          !t.terminal &&
+          t.deletedAt == null &&
+          t.reminderRevision == e.taskRevision &&
+          (e.occurrenceId == null || t.revision == e.occurrenceRevision);
+    }).toList();
+  }
+
   Future<bool> _occurrenceValid(ReminderEventRecord event) async {
     if (event.occurrenceId == null) return true;
     final json = await records.get('occurrences', event.occurrenceId!);
@@ -373,14 +544,43 @@ class ReminderEngine {
 
   /// Used by guarded foreground schedulers. Android independently enforces these checks in its receiver.
   Future<List<ReminderEventRecord>> claimDue(List<domain.Task> tasks) async {
-    final prefs = await preferences(), now = clock();
     final permission = await scheduler.granted();
     return db.transaction(() async {
+      final prefs = await preferences(), now = clock();
       final result = <ReminderEventRecord>[];
       final taskMap = {for (final task in tasks) task.id: task};
       for (final event in await events()) {
         if (event.state != 'scheduled' ||
             event.scheduledMs > now.millisecondsSinceEpoch) {
+          continue;
+        }
+        if (event.ruleId == 'digest') {
+          if (!await _validDigest(event, prefs, now)) {
+            await _state(event, ReminderState.cancelled, 'digest_invalidated');
+            continue;
+          }
+          if (event.expiresMs <= now.millisecondsSinceEpoch) {
+            await _state(event, ReminderState.expired, 'digest_expired');
+            continue;
+          }
+          if (!prefs.primaryDevice || prefs.quietAt(now) || !permission) {
+            await _state(
+              event,
+              ReminderState.suppressed,
+              'quiet_or_permission',
+            );
+            continue;
+          }
+          final summary = DaySummary.calculate(
+            await _freshTasks(),
+            now,
+            prefs.timezoneId,
+          ).digest;
+          await (db.update(db.reminderEvents)
+                ..where((e) => e.eventKey.equals(event.eventKey)))
+              .write(ReminderEventsCompanion(title: Value(summary)));
+          await _state(event, ReminderState.unknown, 'display_attempt');
+          result.add(event.copyWith(title: summary));
           continue;
         }
         final task = taskMap[event.occurrenceId ?? event.taskId];

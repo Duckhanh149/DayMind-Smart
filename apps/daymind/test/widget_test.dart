@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:daymind_smart/features/recurrence/application/recurrence_service.dart';
 import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
 import 'package:daymind_smart/features/calendar/presentation/calendar_page.dart';
+import 'package:daymind_smart/features/assistant/presentation/assistant_pages.dart';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -145,6 +146,67 @@ void main() {
         controller.recurrence.occurrences.any((o) => o.date == '2027-06-30'),
         isTrue,
       );
+      expect(tester.takeException(), isNull);
+    },
+  );
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('analytics uses real completion data at scale $scale', (
+      tester,
+    ) async {
+      final (_, c) = await mount(
+        tester,
+        const Size(360, 800),
+        seed: true,
+        scale: scale,
+      );
+      await c.toggle(c.tasks.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thống kê').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(AnalyticsPage), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Đúng hạn khi hoàn thành'),
+        150,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('100%'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {
+        await tester.drag(
+          find.byKey(const Key('analytics-page')),
+          const Offset(0, 900),
+        );
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(DaymindApp),
+          matchesGoldenFile('previews/analytics.png'),
+        );
+      }
+    });
+  }
+  testWidgets(
+    'daily digest requires opt-in and never offers task completion actions',
+    (tester) async {
+      final (_, c) = await mount(
+        tester,
+        const Size(390, 844),
+        notifications: true,
+      );
+      c.openNotifications();
+      await tester.pumpAndSettle();
+      final toggle = find.widgetWithText(
+        SwitchListTile,
+        'Bản tóm tắt hằng ngày',
+      );
+      await tester.scrollUntilVisible(toggle, 150);
+      await tester.pumpAndSettle();
+      expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(c.reminders!.preferences.digestEnabled, isTrue);
+      expect(c.reminders!.events.where((e) => e.ruleId == 'digest').length, 3);
+      expect(find.text('Hoàn thành'), findsNothing);
+      expect(find.text('Hoãn…'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -364,6 +426,13 @@ void main() {
     tester,
   ) async {
     await mount(tester, const Size(390, 844));
+    await tester.tap(find.byType(DrawerButton));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Companion').last,
+      150,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Companion').last);
     await tester.pumpAndSettle();
     expect(find.text('Một người bạn nhỏ.'), findsOneWidget);
