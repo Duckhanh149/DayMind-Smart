@@ -68,7 +68,7 @@ jobs:
       - run: flutter test
       - name: Build Android APK
         if: runner.os == 'Linux'
-        run: flutter build apk --debug --target-platform android-arm64,android-x64
+        run: flutter build apk --release --target-platform android-arm64 --split-per-abi
       - name: Build Windows application
         if: runner.os == 'Windows'
         run: flutter build windows --release
@@ -95,7 +95,7 @@ jobs:
         if: runner.os == 'Linux'
         with:
           name: DayMind-Android-APK
-          path: apps/daymind/build/app/outputs/flutter-apk/app-debug.apk
+          path: apps/daymind/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Windows'
@@ -105,3 +105,39 @@ jobs:
             apps/daymind/build/windows/x64/runner/Release/
             apps/daymind/build/windows-installer/DayMind-Setup.exe
           if-no-files-found: error
+  preview-release:
+    name: Publish installable preview
+    needs: native
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: DayMind-Android-APK
+          path: release/android
+      - uses: actions/download-artifact@v4
+        with:
+          name: DayMind-Windows-10-11-x64
+          path: release/windows
+      - name: Prepare packages and checksums
+        shell: bash
+        run: |
+          cp release/android/app-arm64-v8a-release.apk release/DayMind-Android-ARM64.apk
+          cp release/windows/windows-installer/DayMind-Setup.exe release/DayMind-Windows-Setup.exe
+          (cd release/windows/windows/x64/runner/Release && zip -qr "$GITHUB_WORKSPACE/release/DayMind-Windows-Portable.zip" .)
+          cd release
+          sha256sum DayMind-Android-ARM64.apk DayMind-Windows-Setup.exe DayMind-Windows-Portable.zip > SHA256SUMS.txt
+      - name: Publish preview without replacing existing releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if gh release view v0.1.0-preview >/dev/null 2>&1; then
+            echo "Preview release already exists; preserving its assets."
+            exit 0
+          fi
+          gh release create v0.1.0-preview --prerelease --target "$GITHUB_SHA" --title "DayMind SMART 0.1.0 Preview" --notes-file apps/daymind/docs/RELEASE_NOTES.md release/DayMind-Android-ARM64.apk release/DayMind-Windows-Setup.exe release/DayMind-Windows-Portable.zip release/SHA256SUMS.txt

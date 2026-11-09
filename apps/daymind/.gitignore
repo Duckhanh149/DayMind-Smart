@@ -49,3 +49,4 @@ app.*.map.json
 
 # Generated previews are copied to docs/ui only after review.
 test/previews/
+android/.kotlin/
