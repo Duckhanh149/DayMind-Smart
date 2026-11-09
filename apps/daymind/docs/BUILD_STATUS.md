@@ -11,7 +11,7 @@ Preview 0.4.0 / **giai đoạn 5 đã đạt cổng tự động** ở `c1e61c21
 - Windows: DPAPI, native SQLite/recurrence, real Auth/Firestore/profile/primary/logout/relogin/delete, close→tray/Mở/Thoát và installer đạt; không auto-start.
 - Artifact Android `13705550456`, Windows `13703957427` thuộc đúng source `c1e61c2`. Chưa có Firebase production, khóa ký sản xuất hoặc nghiệm thu phần cứng Android OEM/Doze/Windows 10/11.
 
-Giai đoạn 6 preview0.5.0: 142/142 Flutter tests và 16/16 Emulator cases đạt local; analyze sạch, Kotlin main/debug compile đạt. Đang kiểm chứng native: editor/personality/expressions/placement/low-resource, metadata sync và import quota. Integration mới đo RSS/cache khi đổi24 lượt qua bốn ảnh2048² trên cả hai nền tảng; chưa gán kết quả CI của c1e61c2 cho source mới.
+Giai đoạn 6 preview0.5.0: 144/144 Flutter tests và 16/16 Emulator cases đạt local; analyze sạch, Kotlin main/debug compile đạt. Đang kiểm chứng native: editor/personality/expressions/placement/low-resource, metadata sync và import quota. Integration mới đo RSS/cache khi đổi24 lượt qua bốn ảnh2048² trên cả hai nền tảng; chưa gán kết quả CI của c1e61c2 cho source mới.
 
 Giai đoạn 6 được triển khai sau checkpoint này. Các mục chờ CI ở nhật ký phía dưới là trạng thái lịch sử, không phải kết quả hiện tại.
 

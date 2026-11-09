@@ -189,10 +189,21 @@ void main() {
         tester.element(find.byType(WorkspaceScreen)),
       );
       await tester.pumpAndSettle();
-      expect(
-        PaintingBinding.instance.imageCache.liveImageCount,
-        greaterThan(0),
+      final portrait = find.byKey(const Key('companion-portrait'));
+      await tester.ensureVisible(portrait);
+      await tester.pumpAndSettle();
+      final displayed = find.descendant(
+        of: portrait,
+        matching: find.byType(RawImage),
       );
+      // clearLiveImages evicts tracking records even while an Image widget owns
+      // its frame. Assert the visible decoded frame, not a cache listener count.
+      expect(displayed, findsOneWidget);
+      final decoded = tester.widget<RawImage>(displayed).image;
+      expect(decoded, isNotNull);
+      expect(decoded!.width, lessThanOrEqualTo(128));
+      expect(decoded.height, lessThanOrEqualTo(128));
+      expect(portrait.hitTestable(), findsOneWidget);
       peakRss = peakRss < ProcessInfo.currentRss
           ? ProcessInfo.currentRss
           : peakRss;

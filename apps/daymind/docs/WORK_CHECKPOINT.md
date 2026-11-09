@@ -18,7 +18,7 @@ Người dùng muốn tiếp tục sau khi phải chờ giới hạn. Tác vụ 
 
 Giai đoạn 6 đã triển khai editor hồ sơ/tính cách/lời thoại, biểu cảm vector và ánh xạ PNG/WebP, preview nhập, vị trí auto/manual, low-resource, metadata sync/CAS. Regression mới kiểm tra count/concurrent quota, symlink, WebP động bị từ chối, draft/stale editor, phone360/390/desktop1440 và chữ200%. Hai ca Emulator bổ sung profile convergence/conflict đã chạy đạt (tổng16). Native integration thêm RSS/cache benchmark `COMPANION_RESOURCE_POC`, cần CI source mới trước khi qua cổng6.
 
-Kiểm chứng local cuối: 142 Flutter tests, analyze sạch, 16 Emulator cases, Kotlin main/debug compile đạt; bốn ca editor/preview/save chữ100/200% đạt. Ảnh headless đã xem. Native CI source6 đang kiểm chứng; không được triển khai giai đoạn7 trước khi qua cổng.
+Kiểm chứng local cuối: 144 Flutter tests, analyze sạch, 16 Emulator cases, Kotlin main/debug compile đạt; bốn ca editor/preview/save chữ100/200% đạt. Ảnh headless đã xem. Native CI source6 đang kiểm chứng; không được triển khai giai đoạn7 trước khi qua cổng.
 
 Source giai đoạn6 đã đẩy: `ca3cbd9646e061a080148aa7a5b5fd5d3a8b2d56`, tree `fa98f10f701e60e57a01a72d182711c40ea3cc36`. [Native CI42709633872](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42709633872), [Emulator CI42709633834](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42709633834) đang chạy. PR#1 đã cập nhật phạm vi Companion và điều kiện cổng. Workspace đã đồng bộ bằng soft reset sau khi xác minh remote tree; không hard reset.
 
@@ -33,3 +33,9 @@ Từ `apps/daymind`: `flutter analyze`, `flutter test`. Bộ Emulator là packag
 Mã nguồn chạy được và kiểm thử tự động không thay thế nghiệm thu Android OEM/Doze/reboot hoặc Windows 10/11 trên phần cứng người dùng. Chưa có Firebase production; không gửi khóa dịch vụ hoặc mật khẩu thật vào chat/repository.
 
 Windows job129475431472 của CI42709633872 đã đạt native/account/tray/installer, cache ảnh đỉnh mẫu131072bytes. RSS452476928→744235008bytes bao gồm `Picture.toImage` tạo fixture lớn trong runtime debug, nên chưa dùng số này làm mức sử dụng của renderer. Probe đang được tinh chỉnh dùng PNG indexed gốc tạo offline (không có GPU surface tạo fixture), tách thời gian nhập/chọn và RSS sau dọn; cần CI source mới cho báo cáo bộ nhớ đáng diễn giải. Emulator CI42709633834 đã đạt16 tests +7 AOT. Android sourceca3 vẫn chờ kết quả cuối; không chuyển giai đoạn7.
+
+CI ca3cbd9 Android: analyze/142 Flutter tests, release APK,25 receiver/Keystore/cold-process/digest đạt; native integration dừng ở assertion `imageCache.liveImageCount > 0`, trước marker tài nguyên/account. Không tính đạt. Counter này có thể bằng0 sau `clearLiveImages` dù widget còn giữ frame; probe được đổi sang đưa chân dung vào viewport, kiểm tra `RawImage.image != null` và width/height≤128. Không bỏ kiểm tra renderer. Source9320ce9 đang chạy CI42711123074 cho fixture offline, vẫn chứa assertion cũ; cần commit mới chứa kiểm tra frame trực tiếp và CI mới. Không triển khai giai đoạn7.
+
+Hai ca renderer mới trên Linux đã tái hiện: `clearLiveImages()` làm liveImageCount=0 trong khi RawImage vẫn giữ frame hợp lệ; cả chế độ decode256 và low-resource128 đều hiển thị được bốn PNG indexed2048². Đây là kiểm tra hồi quy cho nguyên nhân assertion Android cũ. Kiểm tra native mới bắt buộc frame thật và chân dung trong viewport; tiếp tục chờ CI mới, không coi kiểm tra Linux thay Android.
+
+Vòng cuối sau sửa probe: toàn bộ144 Flutter tests đạt, analyze sạch. Thay đổi từ9320ce9 chỉ nằm trong integration test/renderer regression/docs; mã ứng dụng, Kotlin, rules và giao thức sync vẫn giữ sourceca3cbd9 đã qua16 Emulator +7 AOT. Đẩy tiếp commit kiểm tra frame rồi chờ native CI cả hai nền tảng; không làm lại các bước phase5 đã qua và không hợp nhất main.
