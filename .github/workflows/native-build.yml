@@ -63,6 +63,9 @@ jobs:
       - name: Precache verified upstream Kotlin compiler
         if: runner.os == 'Linux'
         run: python tool/precache_kotlin.py
+      - name: Precache verified upstream Gradle distribution
+        if: runner.os == 'Linux'
+        run: python tool/precache_gradle.py
       - uses: android-actions/setup-android@v3
         if: runner.os == 'Linux'
         with:
