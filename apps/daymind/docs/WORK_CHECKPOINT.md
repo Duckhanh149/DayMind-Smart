@@ -4,7 +4,7 @@
 
 Hoàn thiện ứng dụng Android và Windows 10/11 theo các giai đoạn 0–9; kiểm chứng giai đoạn hiện tại trước khi triển khai giai đoạn kế tiếp. Dùng Firebase Emulator trước khi có dự án production. Đóng cửa sổ Windows thu vào khay để tiếp tục nhắc; menu có Mở và Thoát hẳn; tự khởi động cùng Windows mặc định tắt.
 
-Người dùng muốn tiếp tục sau khi phải chờ giới hạn. Trong phiên đang hoạt động có thể chờ công cụ rồi tiếp tục; nếu nền tảng kết thúc phiên, cần có lượt tiếp tục để bắt đầu lại. Tài liệu này giữ điểm nối, không phải một tác vụ nền có khả năng tự khởi động phiên mới.
+Người dùng muốn tiếp tục sau khi phải chờ giới hạn. Tác vụ nền “Tiếp tục DayMind” đã được bật để kiểm tra mỗi giờ theo múi giờ Asia/Saigon và thử nối tiếp khi hạn mức/môi trường cho phép; không chạy song song với phiên đang thực hiện dự án. Không bảo đảm tiếp tục ngay khi giới hạn vừa hết. Tài liệu này giữ điểm nối để lượt sau bảo toàn công việc và kiểm tra CI đúng commit trước khi thay đổi.
 
 ## Nguồn và kiểm chứng gần nhất
 
@@ -13,7 +13,7 @@ Người dùng muốn tiếp tục sau khi phải chờ giới hạn. Trong phi�
 - Giai đoạn 0–4 đã qua cổng tự động; chi tiết trong [PHASE_STATUS.md](PHASE_STATUS.md).
 - Giai đoạn 5: 121 kiểm thử Flutter và phân tích mã sạch tại local; Kotlin main/debug biên dịch đạt. Tám ca account/profile/UI bao gồm chọn bản xung đột với chữ 200%.
 - [Emulator CI 42665407030](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42665407030) đã đạt 14 ca dữ liệu/Auth thật và bảy ca Auth/payload AOT trên checkpoint này.
-- [Native CI 42665407040](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42665407040): Windows đã đạt 121 tests, DPAPI/Auth/Firestore/profile/primary/logout/relogin/delete, tray và installer. Android đã build release và qua receiver suite yêu cầu ít nhất 25 ca; cold-process/Keystore/native account vẫn cần kiểm tra kết quả cuối. Không suy ra kết quả Android từ bản cũ.
+- [Native CI 42665407040](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42665407040): Windows đã đạt 121 tests, DPAPI/Auth/Firestore/profile/primary/logout/relogin/delete, tray và installer. Android đã build release, đạt 25 receiver cases và Keystore/cold-process/digest. Lượt native account treo sau khi cài APK kiểm thử và bị hủy khi job hết thời gian; chưa tính ca này đạt. Driver mới giới hạn 10 phút, khởi động debug process mới và thu log chẩn đoán đã che dữ liệu nhạy cảm. Cần chạy lại CI sau thay đổi driver.
 
 ## Việc kế tiếp
 

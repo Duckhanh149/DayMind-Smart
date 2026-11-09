@@ -19,8 +19,11 @@ import 'package:daymind_smart/platform/secure_session_store.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  debugPrint('NATIVE_INTEGRATION_STAGE: Dart entrypoint reached.');
   testWidgets('native startup and durable task creation', (tester) async {
+    debugPrint('NATIVE_INTEGRATION_STAGE: opening workspace.');
     await app.main();
+    debugPrint('NATIVE_INTEGRATION_STAGE: workspace opened.');
     await tester.pumpAndSettle();
     expect(find.byType(WorkspaceScreen), findsOneWidget);
     final secure = NativeSessionStore();
@@ -136,9 +139,11 @@ void main() {
       final localIds = host.controller!.tasks.map((t) => t.id).toSet();
       final email = '${const Uuid().v4()}@example.invalid',
           secret = const Uuid().v4();
+      debugPrint('ACCOUNT_NATIVE_STAGE: create and open isolated workspace.');
       await host.signIn(email, secret, create: true, copyLocal: false);
       await tester.pumpAndSettle();
       final service = host.sync!;
+      debugPrint('ACCOUNT_NATIVE_STAGE: initial sync.');
       await service.sync();
       expect(service.message, isNull);
       expect(host.controller!.tasks, isEmpty);
@@ -165,18 +170,22 @@ void main() {
         isTrue,
       );
       await host.notificationDevice(true);
+      debugPrint('ACCOUNT_NATIVE_STAGE: primary device selected.');
       expect(host.controller!.reminders!.preferences.primaryDevice, isTrue);
       await host.signOut();
+      debugPrint('ACCOUNT_NATIVE_STAGE: returned to local workspace.');
       await tester.pumpAndSettle();
       expect(await secure.read(), isNull);
       expect(host.controller!.tasks.map((t) => t.id).toSet(), localIds);
       expect(host.controller!.tasks.any((t) => t.id == privateId), isFalse);
       await host.signIn(email, secret, create: false, copyLocal: false);
+      debugPrint('ACCOUNT_NATIVE_STAGE: account reopened.');
       await tester.pumpAndSettle();
       await host.sync!.sync();
       expect(host.account!.uid, owner);
       expect(host.controller!.tasks.any((t) => t.id == privateId), isTrue);
       await host.deleteAccount(secret);
+      debugPrint('ACCOUNT_NATIVE_STAGE: verified deletion completed.');
       await tester.pumpAndSettle();
       expect(host.account, isNull);
       expect(host.controller!.tasks.map((t) => t.id).toSet(), localIds);
