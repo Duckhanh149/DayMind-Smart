@@ -1,0 +1,30 @@
+name: Firebase Emulator POC
+on:
+  push:
+    branches: [main, native/flutter-app]
+    paths:
+      - apps/daymind/firebase/**
+      - .github/workflows/firebase-emulator.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/daymind/firebase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/daymind/firebase/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:emulator

@@ -37,17 +37,18 @@ class PlatformNotificationScheduler implements NotificationScheduler {
       _ready = true;
     } else if (Platform.isWindows) {
       try {
-        await plugin.initialize(
-          settings: const InitializationSettings(
-            windows: WindowsInitializationSettings(
-              appName: 'DayMind SMART',
-              appUserModelId: 'dev.daymind.DayMindSMART',
-              guid: '58f1b340-572b-49db-8b03-3712d9ff2dde',
-            ),
-          ),
-          onDidReceiveNotificationResponse: (_) => onChanged?.call(),
-        );
-        _ready = true;
+        _ready =
+            await plugin.initialize(
+              settings: const InitializationSettings(
+                windows: WindowsInitializationSettings(
+                  appName: 'DayMind SMART',
+                  appUserModelId: 'dev.daymind.DayMindSMART',
+                  guid: '58f1b340-572b-49db-8b03-3712d9ff2dde',
+                ),
+              ),
+              onDidReceiveNotificationResponse: (_) => onChanged?.call(),
+            ) ??
+            false;
       } catch (_) {
         _ready = false;
       }

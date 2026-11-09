@@ -23,7 +23,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   final void Function(String)? onInApp;
   NotificationPreferences preferences = const NotificationPreferences();
   List<ReminderEventRecord> events = [];
-  bool granted = false, _foreground = true, _running = false;
+  bool granted = false, _foreground = true, _running = false, _disposed = false;
   String? error;
   Timer? _timer;
   Future<void> start(String zone) async {
@@ -39,9 +39,8 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     await engine.configure(preferences);
     if (engine.scheduler is PlatformNotificationScheduler) {
       (engine.scheduler as PlatformNotificationScheduler).onInApp = onInApp;
-      (engine.scheduler as PlatformNotificationScheduler).onChanged = () async {
-        await onNativeChange?.call();
-        await refresh();
+      (engine.scheduler as PlatformNotificationScheduler).onChanged = () {
+        unawaited(reloadFromNative());
       };
     }
     WidgetsBinding.instance.addObserver(this);
@@ -56,13 +55,23 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _foreground = state == AppLifecycleState.resumed;
     if (_foreground) {
-      onNativeChange?.call();
-      refresh();
+      unawaited(reloadFromNative());
+    }
+  }
+
+  Future<void> reloadFromNative() async {
+    if (_disposed) return;
+    try {
+      await onNativeChange?.call();
+      await refresh();
+    } catch (e) {
+      error = '$e';
+      if (!_disposed) notifyListeners();
     }
   }
 
   Future<void> refresh({bool replan = true}) async {
-    if (_running) return;
+    if (_running || _disposed) return;
     _running = true;
     try {
       preferences = await engine.preferences();
@@ -99,7 +108,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       error = '$e';
     } finally {
       _running = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -170,6 +179,11 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _disposed = true;
+    if (engine.scheduler is PlatformNotificationScheduler) {
+      (engine.scheduler as PlatformNotificationScheduler).onChanged = null;
+      (engine.scheduler as PlatformNotificationScheduler).onInApp = null;
+    }
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();

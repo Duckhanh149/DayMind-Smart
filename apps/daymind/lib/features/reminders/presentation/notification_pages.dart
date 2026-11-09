@@ -116,6 +116,16 @@ class NotificationSettingsSection extends StatelessWidget {
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              value: prefs.primaryDevice,
+              title: const Text('Nhắc trên thiết bị này'),
+              subtitle: const Text(
+                'Tắt để giữ công việc và lịch sử trong ứng dụng mà không phát thông báo OS.',
+              ),
+              onChanged: (value) =>
+                  _run(context, reminders.configure({'primaryDevice': value})),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               title: const Text('Giờ yên lặng'),
               subtitle: const Text(
                 'Không vượt chế độ Không làm phiền của hệ điều hành.',

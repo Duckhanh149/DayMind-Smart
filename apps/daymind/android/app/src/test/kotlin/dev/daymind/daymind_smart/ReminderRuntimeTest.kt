@@ -66,6 +66,16 @@ class ReminderRuntimeTest {
         event(expires=now-100);ReminderRuntime.fire(context,"event")
         assertEquals("expired",state());assertEquals(0,notifications.size())
     }
+    @Test fun earlyBroadcastRearmsWithoutDisplaying(){
+        event(at=now+600000);ReminderRuntime.fire(context,"event")
+        assertEquals("scheduled",state());assertEquals(0,notifications.size())
+        assertEquals(1,shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.size)
+    }
+    @Test fun cancellingAnEventRemovesItsVisibleGroup(){
+        event();ReminderRuntime.fire(context,"event");assertEquals(1,notifications.size())
+        val id=count("SELECT platform_id FROM reminder_events WHERE event_key='event'")
+        ReminderRuntime.cancel(context,id);assertEquals(0,notifications.size())
+    }
     @Test fun quietHoursAndSecondaryDeviceSuppressWithoutCompletingTask(){
         val calendar=Calendar.getInstance();val minute=calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE)
         configure(JSONObject().put("quietEnabled",true).put("quietStart",minute).put("quietEnd",(minute+60)%1440))

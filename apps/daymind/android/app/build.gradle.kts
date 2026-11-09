@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "dev.daymind.daymind_smart"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

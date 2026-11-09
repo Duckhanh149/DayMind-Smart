@@ -57,6 +57,9 @@ object ReminderRuntime {
         val intent = Intent(context, ReminderAlarmReceiver::class.java).setAction("DAYMIND_ALARM")
         val pending = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
         if (pending != null) { context.getSystemService(AlarmManager::class.java).cancel(pending); pending.cancel() }
+        for (visible in manager(context).activeNotifications) {
+            if (visible.notification.extras.getIntArray("daymind_event_ids")?.contains(id) == true) manager(context).cancel(visible.id)
+        }
     }
     private fun log(db: SQLiteDatabase, key: String, outcome: String, now: Long) {
         db.execSQL("INSERT INTO delivery_logs(id,event_key,outcome,at_ms) VALUES(?,?,?,?)", arrayOf(UUID.randomUUID().toString(),key,outcome,now))
@@ -128,6 +131,7 @@ object ReminderRuntime {
                         config = ReminderRuntime.config(db)
                         val expires = event.getLong(event.getColumnIndexOrThrow("expires_ms"))
                         when {
+                            event.getLong(event.getColumnIndexOrThrow("scheduled_ms")) > now -> arm(context,event.getInt(event.getColumnIndexOrThrow("platform_id")),key,event.getLong(event.getColumnIndexOrThrow("scheduled_ms")))
                             !eligible(db,event) -> state(db,key,"cancelled","invalidated",now)
                             expires < now -> state(db,key,"expired","late_skipped",now)
                             !granted(context) || !config.optBoolean("primaryDevice",true) || quiet(config,now) -> state(db,key,"suppressed","quiet_or_permission",now)
@@ -140,9 +144,9 @@ object ReminderRuntime {
             if (allowed && !MainActivity.foreground) {
                 val minutes = config.optInt("groupingMinutes",10).coerceIn(1,60); val window = minutes * 60000L; val start = now / window * window
                 val groupId = 1000000000 + (start / window % 1000000000L).toInt()
-                val style = NotificationCompat.InboxStyle(); var count = 0; var high = false
+                val style = NotificationCompat.InboxStyle(); var count = 0; var high = false; val visibleIds=mutableListOf<Int>()
                 db.rawQuery("SELECT DISTINCT e.* FROM reminder_events e JOIN delivery_logs l ON l.event_key=e.event_key WHERE l.outcome='display_attempt' AND l.at_ms>=? AND l.at_ms<? AND e.state='unknown' ORDER BY e.priority DESC,e.scheduled_ms",arrayOf(start.toString(),(start+window).toString())).use { rows ->
-                    while(rows.moveToNext()) { if(!eligible(db,rows))continue; if(count<7)style.addLine(rows.getString(rows.getColumnIndexOrThrow("title")));high=high || rows.getInt(rows.getColumnIndexOrThrow("priority"))==2;count++ }
+                    while(rows.moveToNext()) { if(!eligible(db,rows))continue; visibleIds.add(rows.getInt(rows.getColumnIndexOrThrow("platform_id")));if(count<7)style.addLine(rows.getString(rows.getColumnIndexOrThrow("title")));high=high || rows.getInt(rows.getColumnIndexOrThrow("priority"))==2;count++ }
                 }
                 if (count == 0) return
                 val launch = PendingIntent.getActivity(context,groupId,Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -153,6 +157,7 @@ object ReminderRuntime {
                     .setContentText(if(count<=1)"Mở DayMind để xem hoặc hoãn công việc." else "Mở DayMind để xem đầy đủ.")
                     .setStyle(style.setSummaryText("DayMind SMART")).setContentIntent(launch).setDeleteIntent(dismiss)
                     .setAutoCancel(true).setOnlyAlertOnce(true).setSilent(attempts>1).setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .addExtras(android.os.Bundle().apply { putIntArray("daymind_event_ids",visibleIds.toIntArray()) })
                 val digest = db.rawQuery("SELECT rule_id FROM reminder_events WHERE event_key=?",arrayOf(key)).use { it.moveToFirst() && it.getString(0)=="digest" }
                 if(count<=1 && !digest) {
                     for((action,label) in listOf("done" to "Hoàn thành","snooze" to "Hoãn 10 phút")) {

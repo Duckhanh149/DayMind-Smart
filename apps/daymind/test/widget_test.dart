@@ -118,6 +118,12 @@ void main() {
         await tester.tap(find.byTooltip('Thông báo'));
         await tester.pumpAndSettle();
         expect(find.byType(NotificationCenterPage), findsOneWidget);
+        if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {
+          await expectLater(
+            find.byType(DaymindApp),
+            matchesGoldenFile('previews/notifications.png'),
+          );
+        }
         await tester.scrollUntilVisible(
           find.text('Hiện một thông báo thử im lặng'),
           250,

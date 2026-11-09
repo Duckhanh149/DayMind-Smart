@@ -63,12 +63,23 @@ jobs:
           packages: platform-tools
       - name: Install Android platform dependencies
         if: runner.os == 'Linux'
-        run: sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
+        run: sdkmanager "platforms;android-35" "platforms;android-36" "platforms;android-37" "build-tools;36.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
       - run: flutter analyze
       - run: flutter test
       - name: Build Android APK
         if: runner.os == 'Linux'
-        run: flutter build apk --release --target-platform android-arm64 --split-per-abi
+        shell: bash
+        run: |
+          set -o pipefail
+          for attempt in 1 2; do
+            if flutter build apk --release --target-platform android-arm64 --split-per-abi 2>&1 | tee "$RUNNER_TEMP/daymind-android-build.log"; then
+              exit 0
+            fi
+            if ! rg -q 'Unexpected response code: (502|503|504)' "$RUNNER_TEMP/daymind-android-build.log"; then
+              exit 1
+            fi
+          done
+          exit 1
       - name: Android receiver and recovery tests
         if: runner.os == 'Linux'
         working-directory: apps/daymind/android
