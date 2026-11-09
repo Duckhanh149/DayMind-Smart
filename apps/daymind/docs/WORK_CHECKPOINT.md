@@ -18,7 +18,9 @@ Người dùng muốn tiếp tục sau khi phải chờ giới hạn. Tác vụ 
 
 Giai đoạn 6 đã triển khai editor hồ sơ/tính cách/lời thoại, biểu cảm vector và ánh xạ PNG/WebP, preview nhập, vị trí auto/manual, low-resource, metadata sync/CAS. Regression mới kiểm tra count/concurrent quota, symlink, WebP động bị từ chối, draft/stale editor, phone360/390/desktop1440 và chữ200%. Hai ca Emulator bổ sung profile convergence/conflict đã chạy đạt (tổng16). Native integration thêm RSS/cache benchmark `COMPANION_RESOURCE_POC`, cần CI source mới trước khi qua cổng6.
 
-Kiểm chứng local cuối: 142 Flutter tests, analyze sạch, 16 Emulator cases, Kotlin main/debug compile đạt; bốn ca editor/preview/save chữ100/200% đạt. Ảnh headless đã xem. Native CI chưa chạy cho source6 mới; không được triển khai giai đoạn7 trước khi qua cổng.
+Kiểm chứng local cuối: 142 Flutter tests, analyze sạch, 16 Emulator cases, Kotlin main/debug compile đạt; bốn ca editor/preview/save chữ100/200% đạt. Ảnh headless đã xem. Native CI source6 đang kiểm chứng; không được triển khai giai đoạn7 trước khi qua cổng.
+
+Source giai đoạn6 đã đẩy: `ca3cbd9646e061a080148aa7a5b5fd5d3a8b2d56`, tree `fa98f10f701e60e57a01a72d182711c40ea3cc36`. [Native CI42709633872](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42709633872), [Emulator CI42709633834](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42709633834) đang chạy. PR#1 đã cập nhật phạm vi Companion và điều kiện cổng. Workspace đã đồng bộ bằng soft reset sau khi xác minh remote tree; không hard reset.
 
 Bằng chứng chi tiết tại `/workspace/work/evidence/phase6-*`; giữ thay đổi chưa commit. Không chạy lại emulator trên cổng đang dùng: Auth9199, Firestore8180; nếu CLI đã dừng, kiểm tra process/cổng rồi phục hồi test service, không suy diễn Java orphan là toàn bộ suite đang chạy. Cập nhật checkpoint/PR bằng commit và kết quả thật sau vòng native CI.
 
@@ -29,3 +31,5 @@ Giữ mọi thay đổi chưa commit khi phiên dừng; kiểm tra source/CI m�
 Từ `apps/daymind`: `flutter analyze`, `flutter test`. Bộ Emulator là package riêng ở `emulator_test/`; chạy `flutter pub get --enforce-lockfile` ở đó trước khi dùng `firebase/npm run test:emulator`. CI native còn chạy kiểm tra receiver thực thi thật, Android Emulator và Windows process/integration.
 
 Mã nguồn chạy được và kiểm thử tự động không thay thế nghiệm thu Android OEM/Doze/reboot hoặc Windows 10/11 trên phần cứng người dùng. Chưa có Firebase production; không gửi khóa dịch vụ hoặc mật khẩu thật vào chat/repository.
+
+Windows job129475431472 của CI42709633872 đã đạt native/account/tray/installer, cache ảnh đỉnh mẫu131072bytes. RSS452476928→744235008bytes bao gồm `Picture.toImage` tạo fixture lớn trong runtime debug, nên chưa dùng số này làm mức sử dụng của renderer. Probe đang được tinh chỉnh dùng PNG indexed gốc tạo offline (không có GPU surface tạo fixture), tách thời gian nhập/chọn và RSS sau dọn; cần CI source mới cho báo cáo bộ nhớ đáng diễn giải. Emulator CI42709633834 đã đạt16 tests +7 AOT. Android sourceca3 vẫn chờ kết quả cuối; không chuyển giai đoạn7.

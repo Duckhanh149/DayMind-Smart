@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'companion_fixtures.dart';
+
 import 'dart:io';
 import 'dart:convert';
-import 'dart:ui' as ui;
 
 import 'package:go_router/go_router.dart';
 import 'package:daymind_smart/features/companion/domain/companion.dart';
@@ -154,24 +155,20 @@ void main() {
     final timer = Stopwatch()..start();
     var peakRss = rssBefore, peakCache = 0;
     final images = <String>[];
-    for (var i = 0; i < 4; i++) {
-      final recorder = ui.PictureRecorder();
-      ui.Canvas(recorder).drawRect(
-        const Rect.fromLTWH(0, 0, 2048, 2048),
-        ui.Paint()..color = ui.Color(0xff658b40 + i * 0x112211),
-      );
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(2048, 2048);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      picture.dispose();
+    for (final fixture in companionPngFixtures) {
       images.add(
         await controller.importer.installBytes(
-          bytes!.buffer.asUint8List(),
+          base64Decode(fixture),
           'probe.png',
         ),
       );
+      peakRss = peakRss < ProcessInfo.currentRss
+          ? ProcessInfo.currentRss
+          : peakRss;
     }
+    final rssAfterImport = ProcessInfo.currentRss,
+        importElapsedMs = timer.elapsedMilliseconds;
+    timer.reset();
     for (var i = 0; i < 24; i++) {
       await controller.mapExpression(
         CompanionExpression.neutral,
@@ -218,7 +215,7 @@ void main() {
     await controller.updateCompanionLayout((v) => v.copy(lowResource: false));
     await tester.pumpAndSettle();
     debugPrint(
-      'COMPANION_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'sourcePixels': '2048x2048', 'images': 4, 'selections': 24, 'lowResourceDecode': 128, 'rssBefore': rssBefore, 'rssSamplePeak': peakRss, 'imageCacheSamplePeak': peakCache, 'elapsedMs': timer.elapsedMilliseconds})}',
+      'COMPANION_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'sourcePixels': '2048x2048', 'images': 4, 'selections': 24, 'lowResourceDecode': 128, 'rssBefore': rssBefore, 'rssAfterImport': rssAfterImport, 'rssSamplePeak': peakRss, 'rssAfterCleanup': ProcessInfo.currentRss, 'imageCacheSamplePeak': peakCache, 'importElapsedMs': importElapsedMs, 'selectionElapsedMs': timer.elapsedMilliseconds})}',
     );
     GoRouter.of(tester.element(find.byType(WorkspaceScreen))).go('/today');
     await tester.pumpAndSettle();
