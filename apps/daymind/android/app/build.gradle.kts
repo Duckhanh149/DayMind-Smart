@@ -52,7 +52,7 @@ flutter {
 
 androidComponents {
     beforeVariants(selector().all()) { variant ->
-        variant.enableUnitTest = true
+        (variant as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
     }
 }
 
