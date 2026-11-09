@@ -6,4 +6,6 @@
 - Một lần sửa snapshot; từ lần này cắt rule cũ và thêm segment giữ cadence anchor; toàn chuỗi sửa template từng segment. Completed/cancelled/skipped history giữ nguyên. Ngoại lệ và explicit deletion được giữ qua split; row hết cadence là retired, không làm đầy thùng rác. Xóa toàn chuỗi soft-delete root, khôi phục không mất history.
 - Reminder event dùng root task revision + occurrence revision. Mode/rule inheritance: occurrence → segment → root → default. Nhắc tuyệt đối chỉ được đặt cho một lần; chuỗi dùng offset tương đối. Notification Center và native Done nhắm occurrence, không hoàn thành root.
 - Lưu thay đổi template và materialize trong cùng transaction của controller trước khi Android receiver có thể đọc phiên bản mới. Stale form và fresh SQLite guards tránh sửa/nhắc từ snapshot cũ.
-- 13 domain + 9 integration + 2 UI recurrence cases bổ sung trên regression giai đoạn 2. Bốn Android receiver cases mới kiểm tra Done một lần, revision/foreign-owner task, mode off một lần và custom segment inheritance.
+- 13 domain + 10 integration + 2 UI recurrence cases bổ sung trên regression giai đoạn 2. Bốn Android receiver cases mới kiểm tra Done một lần, revision/foreign-owner task, mode off một lần và custom segment inheritance.
+
+- Theo dõi đổi múi giờ trên mỗi vòng live scheduler (20 giây); cập nhật quiet-hour zone và replan, giữ nguyên múi giờ riêng của recurrence. Không cần restart app khi Windows nằm ở tray. Windows native integration bổ sung lưu/materialize SQLite thật, complete một lần, future edit và xóa chuỗi; chờ CI thực thi.

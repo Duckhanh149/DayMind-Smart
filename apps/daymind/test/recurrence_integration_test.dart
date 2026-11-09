@@ -25,8 +25,10 @@ void main() {
   late ReminderEngine engine;
   late DateTime now;
   late String rootId;
+  late String deviceZone;
   setUp(() async {
     now = DateTime.utc(2026, 1, 5);
+    deviceZone = 'UTC';
     db = DaymindDatabase(NativeDatabase.memory());
     temp = Directory.systemTemp.createTempSync('daymind-recurrence-');
     controller = WorkspaceController(
@@ -38,7 +40,11 @@ void main() {
     engine = ReminderEngine(db, FakeScheduler(), clock: () => now);
     await engine.configure(const NotificationPreferences(quietEnabled: false));
     controller.attachReminders(
-      ReminderCoordinator(engine, controller.reminderTasks),
+      ReminderCoordinator(
+        engine,
+        controller.reminderTasks,
+        readTimezone: () async => deviceZone,
+      ),
     );
     rootId = await controller.save(
       TaskDraft(title: 'Chuỗi gốc', dueAt: DateTime.utc(2026, 1, 5, 10)),
@@ -248,6 +254,24 @@ void main() {
       expect((await controller.repository.list()).length, count);
     },
   );
+  test('travel updates quiet-hour zone during tray polling without changing the series zone', () async {
+    await engine.configure(
+      const NotificationPreferences(quietEnabled: true, timezoneId: 'UTC'),
+    );
+    await controller.reminders!.refresh();
+    expect(
+      (await engine.events()).where((e) => e.state == 'scheduled').length,
+      4,
+    );
+    deviceZone = 'America/New_York';
+    await controller.reminders!.refresh(replan: false);
+    expect((await engine.preferences()).timezoneId, deviceZone);
+    expect(
+      (await engine.events()).where((e) => e.state == 'scheduled'),
+      isEmpty,
+    );
+    expect(controller.recurrence.rules.single.spec.zone, 'UTC');
+  });
   test('calendar separates schedule and deadline and marks actual interval overlaps', () {
     Task make(String id, int hour, int end) => Task(
       id: id,

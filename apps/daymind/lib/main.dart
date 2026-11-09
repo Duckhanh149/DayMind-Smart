@@ -65,6 +65,7 @@ Future<void> main() async {
     final reminders = ReminderCoordinator(
       ReminderEngine(database, scheduler),
       controller.reminderTasks,
+      readTimezone: scheduler.localTimezone,
       onNativeChange: controller.refreshFromNative,
       onInApp: (title) {
         controller.dialogue = 'Đến giờ: $title';

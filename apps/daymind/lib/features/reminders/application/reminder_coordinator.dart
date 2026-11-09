@@ -16,11 +16,13 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     this.getTasks, {
     this.onNativeChange,
     this.onInApp,
+    this.readTimezone,
   });
   final ReminderEngine engine;
   final Future<List<domain.Task>> Function() getTasks;
   final Future<void> Function()? onNativeChange;
   final void Function(String)? onInApp;
+  final Future<String> Function()? readTimezone;
   NotificationPreferences preferences = const NotificationPreferences();
   List<ReminderEventRecord> events = [];
   bool granted = false, _foreground = true, _running = false, _disposed = false;
@@ -81,6 +83,18 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     _running = true;
     try {
       preferences = await engine.preferences();
+      if (readTimezone != null) {
+        final zone = await readTimezone!();
+        timeLocation(zone);
+        if (zone != preferences.timezoneId) {
+          preferences = NotificationPreferences.fromJson({
+            ...preferences.toJson(),
+            'timezoneId': zone,
+          });
+          await engine.configure(preferences);
+          replan = true;
+        }
+      }
       granted = await engine.scheduler.granted();
       final tasks = await getTasks();
       if (replan) await engine.reconcile(tasks);

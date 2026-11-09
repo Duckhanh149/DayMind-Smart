@@ -15,14 +15,19 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   void Function()? onChanged;
   void Function(String)? onInApp;
   void Function()? onOpen;
+  Future<String> localTimezone() async {
+    final zone = (await FlutterTimezone.getLocalTimezone()).identifier;
+    timeLocation(zone);
+    return zone;
+  }
+
   @override
   bool get supportsClosedApp => Platform.isAndroid;
   Future<String> initialize(String databasePath) async {
     tzdata.initializeTimeZones();
     var timezone = 'UTC';
     try {
-      timezone = (await FlutterTimezone.getLocalTimezone()).identifier;
-      timeLocation(timezone);
+      timezone = await localTimezone();
     } catch (_) {
       timezone = 'UTC';
       initializationError = 'Chưa xác định được múi giờ thiết bị. Kiểm tra múi giờ hệ thống và mở lại ứng dụng.';

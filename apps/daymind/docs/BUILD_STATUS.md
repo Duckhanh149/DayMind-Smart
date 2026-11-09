@@ -5,7 +5,7 @@ Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web ro
 ## Checkpoint hiện tại
 
 - Giai đoạn 2: commit `428cbe75`, [workflow 42578566468](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42578566468) đạt cả Android và Windows: 55 Flutter tests; 12 receiver/recovery tests; emulator API35 phát một thông báo sau khi tiến trình app đóng, revision/quiet guards và không replay; Windows native integration + tiến trình close→tray/Mở/Thoát + installer đạt.
-- Giai đoạn 3 đang chuẩn bị build preview 0.2.0: local analyze không issues, **79/79 Flutter tests đạt**, 13 domain recurrence và 9 SQLite/controller/calendar/reminder integration mới, thêm kiểm thử UI thường/200%. Main/debug Kotlin compile đạt local. Bốn receiver occurrence tests mới phải được CI thực thi; chưa tính là đã đạt native.
+- Giai đoạn 3 đang chuẩn bị build preview 0.2.0: local analyze không issues, **80/80 Flutter tests đạt**, 13 domain recurrence và 10 SQLite/controller/calendar/reminder integration mới, thêm kiểm thử UI thường/200%. Main/debug Kotlin compile đạt local. Bốn receiver occurrence tests mới phải được CI thực thi; chưa tính là đã đạt native.
 - Ảnh [calendar.png](ui/calendar.png) là render Flutter headless đã xem lại; không phải ảnh máy thật.
 - Chưa nghiệm thu Android OEM/Doze/reboot hoặc Windows 10/11 phần cứng thật. Không có chữ ký phát hành sản xuất.
 
