@@ -25,6 +25,10 @@ for old in results.rglob('TEST-*ReminderRuntimeTest*.xml'):
 status = subprocess.call([wrapper, f':app:{task}', '--no-daemon', '--console=plain',
                           '-Ptarget-platform=android-x64'], cwd=android)
 if status:
+    for report in results.rglob('TEST-*ReminderRuntimeTest*.xml'):
+        suite=ET.parse(report).getroot()
+        for failure in suite.findall('.//failure'):
+            print(failure.text or failure.get('message',''),flush=True)
     sys.exit(status)
 count = 0
 for report in results.rglob('TEST-*ReminderRuntimeTest*.xml'):

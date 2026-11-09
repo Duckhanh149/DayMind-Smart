@@ -36,7 +36,10 @@ object ReminderRuntime {
     fun database(context: Context): SQLiteDatabase? {
         val path = context.getSharedPreferences("daymind_runtime", Context.MODE_PRIVATE).getString("database", null) ?: return null
         if (!java.io.File(path).exists()) return null
-        return SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READWRITE).apply { execSQL("PRAGMA busy_timeout=5000") }
+        return SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READWRITE).apply {
+            // This PRAGMA returns a row; Android's execSQL rejects row-producing statements.
+            rawQuery("PRAGMA busy_timeout=5000", null).use { it.moveToFirst() }
+        }
     }
     private fun config(db: SQLiteDatabase): JSONObject = db.rawQuery("SELECT value FROM extension_records WHERE area='notifications' AND id='settings'", null).use {
         if (it.moveToFirst()) JSONObject(it.getString(0)) else JSONObject()
