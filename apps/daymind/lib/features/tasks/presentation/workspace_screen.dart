@@ -61,6 +61,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   TaskPriority? priority;
   bool overdueOnly = false, importing = false;
   late final Timer timer;
+  final libraryScroll = ScrollController();
   @override
   void initState() {
     super.initState();
@@ -87,6 +88,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   @override
   void dispose() {
     timer.cancel();
+    libraryScroll.dispose();
     search.dispose();
     super.dispose();
   }
@@ -880,72 +882,78 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     if (names.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: names.indexed.map((entry) {
-          final (index, name) = entry;
-          return SizedBox(
-            width: 132,
-            child: Column(
-              children: [
-                SizedBox(
-                  width: 96,
-                  height: 96,
-                  child: Image(
-                    image: ResizeImage(
-                      FileImage(controller.importer.resolve(name)!),
-                      width: controller.companionLayout.lowResource ? 64 : 128,
-                      height: controller.companionLayout.lowResource ? 64 : 128,
-                      policy: ResizeImagePolicy.fit,
-                      allowUpscaling: false,
-                    ),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const MamMascot(),
-                  ),
-                ),
-                Text(
-                  'Nhân vật ${index + 1}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+      child: SizedBox(
+        key: const Key('companion-library'),
+        height: 196 + (MediaQuery.textScalerOf(context).scale(12) - 12) * 2,
+        child: Scrollbar(
+          controller: libraryScroll,
+          thumbVisibility: true,
+          child: ListView.builder(
+            controller: libraryScroll,
+            scrollDirection: Axis.horizontal,
+            itemExtent: 148,
+            itemCount: names.length,
+            itemBuilder: (_, index) {
+              final name = names[index];
+              return SizedBox(
+                width: 132,
+                child: Column(
                   children: [
-                    IconButton(
-                      tooltip: 'Chọn nhân vật ${index + 1}',
-                      icon: Icon(
-                        controller.preferences.assetName == name
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
+                    SizedBox(
+                      width: 96,
+                      height: 96,
+                      child: CompanionAssetImage(
+                        importer: controller.importer,
+                        name: name,
+                        decodeSize: controller.companionLayout.lowResource
+                            ? 64
+                            : 128,
                       ),
-                      onPressed: controller.busy
-                          ? null
-                          : () => act(
-                              controller.configure(
-                                (prefs) => prefs.copyWith(assetName: name),
-                              ),
-                            ),
                     ),
-                    IconButton(
-                      tooltip: 'Xóa nhân vật ${index + 1}',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: controller.busy
-                          ? null
-                          : () async {
-                              try {
-                                await controller.removeCompanionAsset(name);
-                                if (mounted) setState(() {});
-                              } catch (error) {
-                                notice(error);
-                              }
-                            },
+                    Text(
+                      'Nhân vật ${index + 1}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Chọn nhân vật ${index + 1}',
+                          icon: Icon(
+                            controller.preferences.assetName == name
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                          ),
+                          onPressed: controller.busy
+                              ? null
+                              : () => act(
+                                  controller.configure(
+                                    (prefs) => prefs.copyWith(assetName: name),
+                                  ),
+                                ),
+                        ),
+                        IconButton(
+                          tooltip: 'Xóa nhân vật ${index + 1}',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: controller.busy
+                              ? null
+                              : () async {
+                                  try {
+                                    await controller.removeCompanionAsset(name);
+                                    if (mounted) setState(() {});
+                                  } catch (error) {
+                                    notice(error);
+                                  }
+                                },
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          );
-        }).toList(),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

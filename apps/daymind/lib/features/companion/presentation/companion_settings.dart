@@ -171,23 +171,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                         for (var i = 0; i < images.length; i++)
                           DropdownMenuItem(
                             value: images[i],
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: Image.file(
-                                    c.importer.resolve(images[i])!,
-                                    cacheWidth: 64,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, _, _) =>
-                                        const Icon(Icons.broken_image_outlined),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text('Ảnh ${i + 1}'),
-                              ],
-                            ),
+                            child: Text('Nhân vật ${i + 1}'),
                           ),
                       ],
                       onChanged: (name) => act(

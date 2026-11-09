@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+
+import '../data/asset_importer.dart';
 
 import '../../../app/controller.dart';
 import '../domain/companion.dart';
@@ -20,7 +24,6 @@ class CompanionCard extends StatelessWidget {
         width: MediaQuery.sizeOf(context).width,
         textScale: scale,
       );
-      final file = controller.importer.resolve(controller.companionAssetName);
       final portrait = SizedBox(
         key: const Key('companion-portrait'),
         width: size,
@@ -28,20 +31,12 @@ class CompanionCard extends StatelessWidget {
         child: Semantics(
           label:
               '${controller.companion.name}, bạn đồng hành 2D · ${companionExpressionLabels[controller.expression]}',
-          child: file != null && file.existsSync()
-              ? Image(
-                  image: ResizeImage(
-                    FileImage(file),
-                    width: layout.lowResource ? 128 : 256,
-                    height: layout.lowResource ? 128 : 256,
-                    policy: ResizeImagePolicy.fit,
-                    allowUpscaling: false,
-                  ),
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) =>
-                      MamMascot(expression: controller.expression),
-                )
-              : MamMascot(expression: controller.expression),
+          child: CompanionAssetImage(
+            importer: controller.importer,
+            name: controller.companionAssetName,
+            decodeSize: layout.lowResource ? 128 : 256,
+            expression: controller.expression,
+          ),
         ),
       );
       final words = Column(
@@ -97,6 +92,73 @@ class CompanionCard extends StatelessWidget {
                   ],
                 ),
         ),
+      );
+    },
+  );
+}
+
+class CompanionAssetImage extends StatefulWidget {
+  const CompanionAssetImage({
+    super.key,
+    required this.importer,
+    required this.name,
+    this.decodeSize = 256,
+    this.expression = CompanionExpression.neutral,
+  });
+  final StaticAssetImporter importer;
+  final String? name;
+  final int decodeSize;
+  final CompanionExpression expression;
+  @override
+  State<CompanionAssetImage> createState() => _CompanionAssetImageState();
+}
+
+class _CompanionAssetImageState extends State<CompanionAssetImage> {
+  late Future<File?> file;
+  late int revision;
+  @override
+  void initState() {
+    super.initState();
+    file = widget.importer.renderFile(widget.name);
+    revision = widget.importer.revision;
+  }
+
+  @override
+  void didUpdateWidget(CompanionAssetImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.name != widget.name ||
+        oldWidget.importer != widget.importer ||
+        revision != widget.importer.revision) {
+      revision = widget.importer.revision;
+      file = widget.importer.renderFile(widget.name);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<File?>(
+    future: file,
+    builder: (_, snapshot) {
+      final fallback = MamMascot(expression: widget.expression);
+      if (snapshot.hasError) {
+        return Tooltip(
+          message: 'Chưa tạo được ảnh xem trước. Hãy dọn thư viện hoặc nhập lại ảnh.',
+          child: fallback,
+        );
+      }
+      if (snapshot.connectionState != ConnectionState.done ||
+          snapshot.data == null) {
+        return fallback;
+      }
+      return Image(
+        image: ResizeImage(
+          FileImage(snapshot.data!),
+          width: widget.decodeSize,
+          height: widget.decodeSize,
+          policy: ResizeImagePolicy.fit,
+          allowUpscaling: false,
+        ),
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => fallback,
       );
     },
   );

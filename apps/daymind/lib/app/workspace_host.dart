@@ -254,7 +254,7 @@ class WorkspaceHost extends ChangeNotifier {
           }),
         );
       }
-      await c.load();
+      await c.load(greet: false);
     } catch (_) {
       c.dispose();
       await db.close();
@@ -325,6 +325,7 @@ class WorkspaceHost extends ChangeNotifier {
     c.attachReminders(reminders);
     reminders.onPrimaryRequest = notificationDevice;
     await reminders.start(zone);
+    if (zone.isNotEmpty) c.greetCompanion();
     if (next != null) {
       final service = SyncService(
         store: SyncStore(c.repository, next.uid),

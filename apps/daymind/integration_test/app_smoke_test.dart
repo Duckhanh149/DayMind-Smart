@@ -180,7 +180,9 @@ void main() {
       await tester.pumpAndSettle();
       await precacheImage(
         ResizeImage(
-          FileImage(controller.importer.resolve(images[i % images.length])!),
+          FileImage(
+            (await controller.importer.renderFile(images[i % images.length]))!,
+          ),
           width: 128,
           height: 128,
           policy: ResizeImagePolicy.fit,

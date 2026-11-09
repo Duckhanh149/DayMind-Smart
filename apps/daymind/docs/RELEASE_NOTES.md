@@ -4,6 +4,8 @@
 - Vị trí/kích thước an toàn, chế độ ít tài nguyên và ảnh biểu cảm lưu riêng trên từng máy.
 - Xem trước PNG/WebP trước khi nhập; giới hạn thư viện và chặn liên kết/tệp không hợp lệ.
 - Hồ sơ đồng bộ qua Emulator với phát hiện xung đột; ảnh không tự tải lên. Các máy cần bản0.5.0 để đồng bộ kiểu hồ sơ mới.
+- Ảnh hiển thị được thu nhỏ và cache riêng; giữ nguyên nguồn, tải thư viện theo vùng nhìn thấy, tính cả cache vào quota32MiB.
+- Lời chào khởi động dùng múi giờ/giờ yên lặng thực tế.
 - Gợi ý quá hạn không lặp khi restart cùng ngày; Companion tắt vẫn nhận nhắc trong ứng dụng.
 
 Chưa có animation/floating Windows hoặc Live2D. Chưa phải bản phát hành sản xuất; xem BUILD_STATUS.md trước khi dùng artifact.

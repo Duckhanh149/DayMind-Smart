@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:timezone/data/latest.dart' as zones;
+import 'package:daymind_smart/features/reminders/domain/reminder.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -152,6 +155,44 @@ void main() {
       expect(await db.select(db.reminderEvents).get(), isEmpty);
     },
   );
+  test('startup greeting waits for the active timezone and respects saved quiet settings', () async {
+    zones.initializeTimeZones();
+    await c.recurrence.records.put(
+      'companion_profile',
+      'primary',
+      CompanionProfile(templates: {'gentle:appOpen': 'Xin chào {name}.'})
+          .toJson(),
+    );
+    await c.recurrence.records.put(
+      'notifications',
+      'settings',
+      const NotificationPreferences(timezoneId: 'Asia/Ho_Chi_Minh').toJson(),
+    );
+    c.dispose();
+    c = WorkspaceController(
+      SqliteTaskRepository(db),
+      StaticAssetImporter(temp),
+      clock: () => DateTime.utc(2026, 1, 5, 16),
+    );
+    await c.load(); // 23:00 locally, even though UTC is outside quiet hours.
+    expect(c.expression, CompanionExpression.resting);
+    expect(c.dialogue, isNot(contains('Xin chào')));
+    c.dispose();
+    c = WorkspaceController(
+      SqliteTaskRepository(db),
+      StaticAssetImporter(temp),
+      clock: () => DateTime.utc(2026, 1, 5, 16),
+    );
+    await c.load(greet: false);
+    c.greetCompanion(
+      settings: const NotificationPreferences(
+        quietEnabled: false,
+        timezoneId: 'Asia/Ho_Chi_Minh',
+      ),
+    );
+    expect(c.dialogue, 'Xin chào Mầm.');
+    expect(await db.select(db.reminderEvents).get(), isEmpty);
+  });
   test('disabled companion still delivers foreground announcements and leaves tasks usable', () async {
     await c.configure((p) => p.copyWith(companionEnabled: false));
     final previous = c.dialogue;

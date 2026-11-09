@@ -60,9 +60,9 @@ void main() {
         );
         for (final name in names!) {
           await tester.runAsync(
-            () => precacheImage(
+            () async => precacheImage(
               ResizeImage(
-                FileImage(c.importer.resolve(name)!),
+                FileImage((await c.importer.renderFile(name))!),
                 width: low ? 128 : 256,
                 height: low ? 128 : 256,
                 policy: ResizeImagePolicy.fit,

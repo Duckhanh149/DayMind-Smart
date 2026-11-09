@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
+
+import '../integration_test/companion_fixtures.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:daymind_smart/features/companion/domain/companion.dart';
@@ -210,6 +213,61 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'a 128-image library builds a bounded visible set with large text',
+    (tester) async {
+      final (_, c) = await mount(tester, const Size(390, 844), scale: 2);
+      await c.updateCompanionLayout((v) => v.copy(lowResource: true));
+      final installed = await tester.runAsync(
+        () => c.importer.installBytes(
+          base64Decode(companionPngFixtures.first),
+          'fixture.png',
+        ),
+      );
+      final source = c.importer.resolve(installed)!;
+      final thumbnail = (await tester.runAsync(
+        () => c.importer.renderFile(installed),
+      ))!;
+      final names = <String>[];
+      for (var i = 0; i < 127; i++) {
+        final name = '${i.toRadixString(16).padLeft(64, '0')}.png';
+        source.copySync('${c.importer.directory.path}/$name');
+        thumbnail.copySync('${thumbnail.parent.path}/$name.png');
+        names.add(name);
+      }
+      expect(c.importer.installed(), hasLength(128));
+      // Warm only the first viewport/cache extent in the real async zone.
+      await tester.runAsync(() async {
+        for (final name in names.take(10)) {
+          await precacheImage(
+            ResizeImage(
+              FileImage((await c.importer.renderFile(name))!),
+              width: 64,
+              height: 64,
+              policy: ResizeImagePolicy.fit,
+              allowUpscaling: false,
+            ),
+            tester.element(find.byType(Scaffold).first),
+          );
+        }
+      });
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/companion');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('companion-library')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(CompanionAssetImage).evaluate().length,
+        lessThanOrEqualTo(10),
+      );
+      expect(
+        find.byKey(const Key('companion-library')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(find.text('Nhân vật 128'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'calendar browsing loads the adjacent month outside the rolling horizon',

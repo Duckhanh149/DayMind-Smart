@@ -265,7 +265,7 @@ class WorkspaceController extends ChangeNotifier {
   Future<void> refreshFromNative() => _write(() async {});
   Future<void> refreshFromSync() => _write(() async {}, localChange: false);
 
-  Future<void> load() async {
+  Future<void> load({bool greet = true}) async {
     tasks = await repository.list();
     await recurrence.materialize(tasks);
     categories = await repository.categories();
@@ -274,15 +274,31 @@ class WorkspaceController extends ChangeNotifier {
     dashboard = DashboardPreferences.fromJson(
       await recurrence.records.get('assistant', 'dashboard'),
     );
+    if (greet) {
+      final settings =
+          reminders?.preferences ??
+          NotificationPreferences.fromJson(
+            await recurrence.records.get('notifications', 'settings') ?? {},
+          );
+      greetCompanion(settings: settings, notify: false);
+    }
+    notifyListeners();
+  }
+
+  void greetCompanion({NotificationPreferences? settings, bool notify = true}) {
+    if (!preferences.companionEnabled) return;
     final reply = behavior.react(
       CompanionEvent.appOpen,
       companion,
-      quiet: (reminders?.preferences ?? const NotificationPreferences())
-          .quietAt(now()),
+      quiet:
+          (settings ??
+                  reminders?.preferences ??
+                  const NotificationPreferences())
+              .quietAt(now()),
     );
     dialogue = reply.text ?? 'Mầm đang nghỉ ngơi.';
     expression = reply.expression;
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   Future<T> _write<T>(Future<T> Function() action, {bool localChange = true}) {

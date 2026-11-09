@@ -1,6 +1,6 @@
 # Kiểm chứng bản native
 
-Cập nhật 09/11/2026 (Asia/Saigon). Nguồn native tại apps/daymind; web root độc lập.
+Cập nhật 09/11/2026 (UTC). Nguồn native tại apps/daymind; web root độc lập.
 
 ## Checkpoint hiện tại
 
@@ -11,7 +11,7 @@ Preview 0.4.0 / **giai đoạn 5 đã đạt cổng tự động** ở `c1e61c21
 - Windows: DPAPI, native SQLite/recurrence, real Auth/Firestore/profile/primary/logout/relogin/delete, close→tray/Mở/Thoát và installer đạt; không auto-start.
 - Artifact Android `13705550456`, Windows `13703957427` thuộc đúng source `c1e61c2`. Chưa có Firebase production, khóa ký sản xuất hoặc nghiệm thu phần cứng Android OEM/Doze/Windows 10/11.
 
-Giai đoạn 6 preview0.5.0: 144/144 Flutter tests và 16/16 Emulator cases đạt local; analyze sạch, Kotlin main/debug compile đạt. Đang kiểm chứng native: editor/personality/expressions/placement/low-resource, metadata sync và import quota. Integration mới đo RSS/cache khi đổi24 lượt qua bốn ảnh2048² trên cả hai nền tảng; chưa gán kết quả CI của c1e61c2 cho source mới.
+Giai đoạn 6 preview0.5.0: 147/147 Flutter tests và 16/16 Emulator cases đạt local; analyze sạch, Kotlin main/debug compile đạt. Đang kiểm chứng native: editor/personality/expressions/placement/low-resource, metadata sync và import quota. Integration mới đo RSS/cache khi đổi24 lượt qua bốn ảnh2048² trên cả hai nền tảng; chưa gán kết quả CI của c1e61c2 cho source mới.
 
 Giai đoạn 6 được triển khai sau checkpoint này. Các mục chờ CI ở nhật ký phía dưới là trạng thái lịch sử, không phải kết quả hiện tại.
 
@@ -53,3 +53,5 @@ Sửa tiếp theo cần CI mới: xóa alarm/nội dung thông báo của kho c�
 Windows trên source `4c8ceb8` / CI42665407040 đạt 121 tests, DPAPI và Auth/Firestore thật với profile/primary/logout/relogin/delete, tray/installer. Artifact `13697665534` đã kiểm CRC, runtime DLL và OFL: ZIP SHA256 `9124354b2bcf72cf397b135de2708f016d85e9a3e72791739060c36809cc810c`, installer SHA256 `0567159e733c1359c8e1d9f79ac7881ede5699e899ee64dd3bf55f29945c4de1`. Installer bootstrap x86 chứa payload x64; app chính có PE machine x64. Android ở workflow này vẫn cần kết quả cuối của cold-process/native account.
 
 CI42665407040 Android: 121 Flutter tests, APK release, 25 receiver cases và Keystore/cold-process/digest đều đạt. Native account integration build và cài APK xong nhưng không mở kết nối kiểm thử; job hết hạn ở phút 55. Chưa đánh dấu giai đoạn 5 đạt. Đã thêm driver deadline 600 giây, start debug session mới sau khi kết thúc bài cold-process (giữ SQLite), required success markers và log chẩn đoán đã che token/đường dẫn VM service; đang chờ vòng CI kế tiếp. Kiểm chứng driver tại local đạt cho success marker, thiếu marker và dừng tiến trình bị treo; không dùng force-stop để mô phỏng thông báo nền.
+
+Native giai đoạn6 sourcee5be376 / CI42712182080 đạt cả Android và Windows. Kiểm tra frame thật thay bộ đếm live-cache đã chạy thành công; native account/tray/installer/25 receiver/cold-process/digest giữ đạt. Đang tối ưu derivative256px và lazy library sau số đo Windows: nguồn9320ce9 RSS448167936→đỉnh645328896→sau dọn567029760bytes, cache131072bytes; Androide5be376 RSS553680896→đỉnh564011008→sau dọn536858624bytes. Tất cả là debug runner/emulator, không phải mức RAM bản release hoặc thiết bị yếu. Cần số đo source tối ưu mới trước khi chuyển7.
