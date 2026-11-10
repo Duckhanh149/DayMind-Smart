@@ -12,6 +12,7 @@ on:
       - apps/daymind/firebase/**
       - apps/daymind/tool/**
       - apps/daymind/pubspec.*
+      - apps/daymind/emulator_test/**
       - apps/daymind/analysis_options.yaml
       - .github/workflows/native-build.yml
   workflow_dispatch:
