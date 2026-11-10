@@ -38,6 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       DAYMIND_PRODUCTION_SIGNING: ${{ github.event_name == 'workflow_dispatch' && inputs.signing == 'production' && 'true' || 'false' }}
+      DAYMIND_INSTALL_EVIDENCE_PATH: ${{ runner.temp }}/daymind-install-evidence.json
     timeout-minutes: 55
     defaults:
       run:
@@ -194,6 +195,39 @@ jobs:
           $crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory | Sort-Object FullName | Select-Object -Last 1
           if (!$crt) { throw "Visual C++ runtime directory not found" }
           Copy-Item "$($crt.FullName)\*.dll" build/windows/x64/runner/Release/
+      - name: Build pinned 0.6.1 installer fixture before loading signing identities
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $baseline = Join-Path $env:RUNNER_TEMP 'daymind-baseline-061'
+          $current = (Get-Location).Path
+          $iscc = "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe"
+          if (!(Test-Path $iscc)) { choco install innosetup --yes --no-progress }
+          git -C ../.. fetch --depth 1 origin 213a820964dff4e0928a007b9404438b0f8f6725
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned installer baseline fetch failed' }
+          git -C ../.. worktree add --detach $baseline 213a820964dff4e0928a007b9404438b0f8f6725
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned installer worktree failed' }
+          try {
+            Push-Location (Join-Path $baseline 'apps/daymind')
+            try {
+              flutter pub get --enforce-lockfile
+              if ($LASTEXITCODE -ne 0) { throw 'Baseline dependency lock mismatch' }
+              python tool/precache_sqlite.py
+              if ($LASTEXITCODE -ne 0) { throw 'Baseline SQLite checksum gate failed' }
+              python tool/retry_native_assets.py flutter build windows --release
+              if ($LASTEXITCODE -ne 0) { throw 'Pinned baseline build failed' }
+              Copy-Item "$current/build/windows/x64/runner/Release/msvcp140*.dll" build/windows/x64/runner/Release/
+              Copy-Item "$current/build/windows/x64/runner/Release/vcruntime140*.dll" build/windows/x64/runner/Release/
+              Copy-Item "$current/build/windows/x64/runner/Release/concrt140.dll" build/windows/x64/runner/Release/
+              & "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe" windows/installer.iss
+              if ($LASTEXITCODE -ne 0) { throw 'Baseline installer build failed' }
+            } finally { Pop-Location }
+            Copy-Item (Join-Path $baseline 'apps/daymind/build/windows-installer/DayMind-Setup.exe') (Join-Path $env:RUNNER_TEMP 'DayMind-0.6.1-baseline.exe')
+          } finally {
+            git -C ../.. worktree remove --force $baseline
+          }
       - name: Prepare Windows production signing
         if: runner.os == 'Windows' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
         shell: pwsh
@@ -225,6 +259,12 @@ jobs:
         if: always() && runner.os == 'Windows' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
         shell: pwsh
         run: ./tool/production_signing.ps1 cleanup
+      - name: Verify Windows install, upgrade, uninstall and data retention
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python tool/windows_install_upgrade.py (Join-Path $env:RUNNER_TEMP 'DayMind-0.6.1-baseline.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'Actual installer upgrade/data gate failed' }
       - name: Cache verified Android build dependencies
         if: always() && !cancelled() && runner.os == 'Linux' && steps.gradle-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4

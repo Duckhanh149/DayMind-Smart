@@ -260,12 +260,26 @@ void main() {
       final owner = host.account!.uid;
       expect((await secure.read())?.uid, owner);
       final privateTitle = 'Native account ${const Uuid().v4()}';
+      final privateDay = tz.TZDateTime.now(tz.getLocation('Asia/Ho_Chi_Minh'));
       final privateId = await host.controller!.save(
         TaskDraft(
           title: privateTitle,
           dueAt: DateTime.now().add(const Duration(hours: 3)),
         ),
+        repetition: RepeatChange(
+          enabled: true,
+          spec: RepeatSpec(
+            frequency: RepeatFrequency.daily,
+            zone: 'Asia/Ho_Chi_Minh',
+            firstDate:
+                '${privateDay.year}-${privateDay.month.toString().padLeft(2, '0')}-${privateDay.day.toString().padLeft(2, '0')}',
+            minute: privateDay.hour * 60 + privateDay.minute + 1 < 1440
+                ? privateDay.hour * 60 + privateDay.minute + 1
+                : 1439,
+          ),
+        ),
       );
+      await host.controller!.toggle(host.controller!.visibleTasks.first);
       await host.controller!.saveCompanion(
         CompanionProfile(
           name: 'Mầm tài khoản',
@@ -330,6 +344,30 @@ void main() {
       debugPrint(
         'ACCOUNT_NATIVE_POC: real Auth/Firestore, encrypted session, isolated profile, primary device, logout/relogin and verified deletion passed.',
       );
+      final evidencePath =
+          Platform.environment['DAYMIND_INSTALL_EVIDENCE_PATH'];
+      if (Platform.isWindows && evidencePath != null) {
+        await host.controller!.save(
+          TaskDraft(
+            title: 'Installer upgrade fixture',
+            dueAt: DateTime.now().add(const Duration(days: 7)),
+          ),
+        );
+        final name = await host.controller!.importer.installBytes(
+          base64Decode(companionPngFixtures.first),
+          'installer-fixture.png',
+        );
+        await host.controller!.configure((p) => p.copyWith(assetName: name));
+        final evidence = File(evidencePath);
+        await evidence.parent.create(recursive: true);
+        await evidence.writeAsString(
+          jsonEncode({'support': host.support.path}),
+          flush: true,
+        );
+        debugPrint(
+          'INSTALL_DATA_POC: private CI task database and original artwork prepared for installer upgrade.',
+        );
+      }
     }
   });
 }

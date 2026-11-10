@@ -61,7 +61,7 @@ void main() {
         enabled: true,
         spec: RepeatSpec(
           frequency: RepeatFrequency.daily,
-          zone: 'UTC',
+          zone: 'Asia/Ho_Chi_Minh',
           firstDate: DateTime.now().toUtc().toIso8601String().substring(0, 10),
         ),
       ),

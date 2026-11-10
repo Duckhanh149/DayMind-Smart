@@ -5,6 +5,7 @@ starts a fresh debug session, preserves SQLite, and is not used to simulate
 background reminder delivery.
 """
 from collections import deque
+import json
 import os
 from pathlib import Path
 import re
@@ -12,6 +13,9 @@ import signal
 import subprocess
 import sys
 import threading
+import time
+from urllib.parse import urlencode, urlparse
+from urllib.request import ProxyHandler, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = 'dev.daymind.daymind_smart'
@@ -27,12 +31,12 @@ def sanitized(text):
         r'\1/[local-path]', text)
 
 
-def diagnostic(device):
+def diagnostic(device, vm_uri=None):
     commands = [
         ['adb', '-s', device, 'get-state'],
         ['adb', '-s', device, 'shell', 'pidof', PACKAGE],
         ['adb', '-s', device, 'forward', '--list'],
-        ['adb', '-s', device, 'logcat', '-d', '-t', '200', '-s', 'AndroidRuntime:E', 'flutter:V'],
+        ['adb', '-s', device, 'logcat', '-d', '-t', '4000', '-s', 'AndroidRuntime:E', 'flutter:V'],
     ]
     for command in commands:
         try:
@@ -42,6 +46,40 @@ def diagnostic(device):
             print(sanitized(result.stdout + result.stderr), flush=True)
         except (OSError, subprocess.TimeoutExpired) as error:
             print('DIAGNOSTIC unavailable:', type(error).__name__, flush=True)
+    if vm_uri:
+        try:
+            parsed = urlparse(vm_uri)
+            if parsed.scheme != 'http' or parsed.hostname not in ('127.0.0.1', 'localhost'):
+                return
+            opener = build_opener(ProxyHandler({}))
+            def rpc(method, params=None):
+                url = vm_uri.rstrip('/') + '/' + method
+                if params:
+                    url += '?' + urlencode(params)
+                with opener.open(url, timeout=5) as response:
+                    return json.loads(response.read(1024 * 1024))['result']
+            vm = rpc('getVM')
+            for ref in vm.get('isolates', [])[:8]:
+                isolate = rpc('getIsolate', {'isolateId':ref['id']})
+                root = isolate.get('rootLib', {}).get('uri', '')
+                extensions = isolate.get('extensionRPCs', [])
+                print('VM_DISCOVERY_DIAGNOSTIC:', json.dumps({
+                    'rootFile':urlparse(root).path.replace('\\','/').rsplit('/',1)[-1],
+                    'pauseKind':isolate.get('pauseEvent',{}).get('kind'),
+                    'runnable':isolate.get('runnable'),
+                    'integrationExtension':'ext.flutter.integrationTest' in extensions,
+                    'extensionCount':len(extensions),
+                    'exceptionClass':isolate.get('pauseEvent',{}).get('exception',{}).get('class',{}).get('name'),
+                }), flush=True)
+                if isolate.get('pauseEvent',{}).get('kind') == 'PauseException':
+                    stack = rpc('getStack', {'isolateId':ref['id'],'limit':3})
+                    frames = [{
+                        'function':frame.get('function',{}).get('name'),
+                        'file':urlparse(frame.get('location',{}).get('script',{}).get('uri','')).path.replace('\\','/').rsplit('/',1)[-1],
+                    } for frame in stack.get('frames',[])[:3]]
+                    print('VM_DISCOVERY_STACK:',json.dumps(frames),flush=True)
+        except Exception as error:
+            print('VM_DISCOVERY_DIAGNOSTIC unavailable:', type(error).__name__, flush=True)
 
 
 def stop_group(process):
@@ -59,16 +97,24 @@ def stop_group(process):
         process.wait(timeout=5)
 
 
-def run_bounded(command, deadline, required=()):
+def run_bounded(command, deadline, required=(), device=None):
     """A zero exit is insufficient without the expected native assertions."""
     seen = set()
     tail = deque(maxlen=40)
+    discovery = {'at':None, 'vm':None, 'started':False}
     process = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT, text=True, errors='replace',
                                start_new_session=True)
 
     def output():
         for line in process.stdout:
+            uri = re.search(r'Dart Development Service started at (http://(?:127\.0\.0\.1|localhost):\d+/[^\s,]+)',line)
+            if uri:
+                discovery['vm'] = uri.group(1)
+            if 'Finding the correct isolate with the integration test service extension' in line:
+                discovery['at'] = time.monotonic()
+            if 'NATIVE_INTEGRATION_STAGE:' in line:
+                discovery['started'] = True
             clean = sanitized(line)
             tail.append(clean)
             for marker in required:
@@ -79,9 +125,29 @@ def run_bounded(command, deadline, required=()):
     reader = threading.Thread(target=output, daemon=True)
     reader.start()
     try:
-        code = process.wait(timeout=deadline)
+        end = time.monotonic() + deadline
+        diagnosed = False
+        while True:
+            try:
+                code = process.wait(timeout=min(5,max(.1,end-time.monotonic())))
+                break
+            except subprocess.TimeoutExpired:
+                now = time.monotonic()
+                waiting = now - discovery['at'] if discovery['at'] else 0
+                if device and waiting > 45 and not discovery['started'] and not diagnosed:
+                    diagnostic(device, discovery['vm'])
+                    diagnosed = True
+                if waiting > 120 and not discovery['started']:
+                    print('NATIVE_DISCOVERY_TIMEOUT: no integration extension/test entry after 120s; zero tests cannot pass.',flush=True)
+                    stop_group(process)
+                    code = 125
+                    break
+                if now >= end:
+                    raise
     except subprocess.TimeoutExpired:
         print(f'NATIVE_INTEGRATION_TIMEOUT: exceeded {deadline}s; stopping the test process group.', flush=True)
+        if device:
+            diagnostic(device, discovery['vm']) # Before Flutter cleanup force-stops the app.
         stop_group(process)
         code = 124
     except BaseException:
@@ -105,7 +171,7 @@ def main():
     subprocess.run(['adb', '-s', device, 'logcat', '-c'], check=True, timeout=30)
     command = ['flutter', '--verbose', 'test', 'integration_test/app_smoke_test.dart',
                '--no-pub', '-d', device, '--dart-define=RUN_ACCOUNT_EMULATOR=true']
-    code = run_bounded(command, 600, required=(
+    code = run_bounded(command, 600, device=device, required=(
         'SECURE_STORAGE_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:',
     ))
     if code:

@@ -1,3 +1,4 @@
+param([string]$AppDirectory='build/windows/x64/runner/Release', [switch]$Baseline)
 $ErrorActionPreference = 'Stop'
 Add-Type @'
 using System;
@@ -7,7 +8,7 @@ public static class DayMindWindowTest {
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
 }
 '@
-$directory = (Resolve-Path 'build/windows/x64/runner/Release').Path
+$directory = (Resolve-Path $AppDirectory).Path
 $process = Start-Process (Join-Path $directory 'daymind_smart.exe') -WorkingDirectory $directory -PassThru
 try {
   $deadline = (Get-Date).AddSeconds(45)
@@ -23,6 +24,7 @@ try {
   Start-Sleep -Milliseconds 600
   $process.Refresh()
   if ($process.HasExited -or [DayMindWindowTest]::IsWindowVisible($handle)) { throw 'WM_CLOSE did not keep app alive in tray' }
+  if (-not $Baseline) {
   $second = Start-Process (Join-Path $directory 'daymind_smart.exe') -WorkingDirectory $directory -PassThru
   try {
     if (-not $second.WaitForExit(12000) -or $second.ExitCode -ne 0) { throw 'Second launch did not hand over to the existing process' }
@@ -33,6 +35,7 @@ try {
     if ($process.HasExited) { throw 'Second launch replaced the original process' }
     Write-Host 'PASS: second launch opens the original tray window and exits without another engine/workspace.'
   } finally { if (-not $second.HasExited) { Stop-Process -Id $second.Id -Force } }
+  }
   [DayMindWindowTest]::PostMessage($handle, 0x0111, [IntPtr]801, [IntPtr]::Zero) | Out-Null
   Start-Sleep -Milliseconds 600
   if (-not [DayMindWindowTest]::IsWindowVisible($handle)) { throw 'Open command did not restore window' }

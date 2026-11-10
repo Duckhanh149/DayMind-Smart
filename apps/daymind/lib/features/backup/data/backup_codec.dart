@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/dart.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
 
 import '../domain/backup_snapshot.dart';
 
@@ -101,6 +102,9 @@ abstract final class BackupCodec {
           }
         }
         if (depth != 0 || inString) invalidBackup();
+        // Isolate.run has its own timezone database. Recurrence validation
+        // must recognize IANA zones outside UTC before constructing records.
+        tzdata.initializeTimeZones();
         return BackupSnapshot.fromJson(jsonDecode(utf8.decode(clear)));
       } on SecretBoxAuthenticationError {
         throw const BackupFailure(
