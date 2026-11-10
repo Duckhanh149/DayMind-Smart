@@ -4,21 +4,17 @@ Cập nhật 10/11/2026 (UTC). Nguồn native tại apps/daymind; web root độ
 
 ## Checkpoint hiện tại
 
-Preview **0.5.0 / giai đoạn0–6 đã qua cổng tự động** tại `67c4a433b76c62a7cdae36b2760a29c5a896a2e1`, [Native CI42716570760](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42716570760) và [Emulator CI42716570825](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42716570825).
+Preview **0.6.0, giai đoạn0–7 qua cổng tự động** tại e99303392f476fa842a793bbd28c09f538f94c27, [Native42757179906](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42757179906).
 
-- Phân tích mã sạch; 150 Flutter tests Android/Linux. Windows149 đạt, một ca tạo symlink cần quyền host được skip (đã chạy trên Linux).
-- Android: APK release ARM64,25 receiver/recovery cases, Keystore, OS notification sau cold close/digest, frame Companion thật và real account sync đều đạt.
-- Windows: DPAPI, SQLite/recurrence/account, renderer/resource probe, close→tray/Mở/Thoát, không autostart và installer đều đạt.
-- Emulator:16 cases thật +7 Auth/payload AOT đạt trên cùng source.
-- Kiểm tra gói tải từ đúng run: CRC ZIP/APK, PE x64/runtimes/OFL, minSdk24/target36/ARM64 và APK signature v2 đạt. Version0.5.0, Android versionCode2005. APK vẫn ký Android Debug, Windows chưa ký sản xuất; chưa xác minh đường cập nhật cùng chứng thư.
-- Android artifact13719286315; Windows13719600362. Hash/package metadata tại [PHASE6_PACKAGES.json](qa/PHASE6_PACKAGES.json); số đo debug tại [PHASE6_RESOURCES.json](qa/PHASE6_RESOURCES.json). Cache đỉnh131072bytes hai nền tảng; Windows sau dọn461877248bytes so453828608 trước, Android528637952 so547864576 trước.
+- Android:199 tests,25 receiver/recovery, release ARM64/Keystore/cold-process/digest, real account/artwork isolation, renderer và max-atlas120×6 đạt.
+- Windows:197 tests+2 symlink guards cần quyền host được skip (Linux chạy); build/DPAPI/account,12 policy, component94+window probes15/7/7/7, tray/Open/Quit/không startup/installer đạt.
+- Emulator42752885523/source99ee91b:16 real+7 AOT đạt. lib/firebase/emulator_test/pubspec trees giống e993033; không có thay đổi backend sau đó.14 Python guards đạt trên native CI.
+- Package reports [PHASE7_PACKAGES.json](qa/PHASE7_PACKAGES.json), [PHASE7_RESOURCES.json](qa/PHASE7_RESOURCES.json). Android artifact13736237923: ZIP11284344bytes SHA bb39c6c0f74d50e8b997a4027d64e13991dc16216b932ece0b6c060ca36b561e; APK23751875bytes SHA41ccfaa0305d45cfe225a8064e3a8c90e2e1a6591a2c8e522cde45b47abc22d3,0.6.0/code2006/min24/target36/ARM64, CRC/OFL/v2 và không DebugReceiver đạt. Vẫn certificate Android Debug; production upgrade-chain chưa xác minh.
+- Windows artifact13735829615: ZIP28560777bytes SHA92a15ac95101a4de6f7c1fae16ced2746125334cf571dfc1cdbb761e399dd72e, CRC/PE x64/runtime/OFL/0.6.0 đạt; không probe/userdata. Installer SHA dd1a18f173f27c616c7437699d1e7e3a7a2432d2b4076812e66678eb707093aa, bootstrap x86/payload x64, chưa ký sản xuất.
+- Actual Windows OS state6/quiet-time: app ẩn đúng, zero surface/render. Component executable dùng chính C++ class với controlled notification reader và real Win32/GDI+ (không engine) để test visible/fullscreen/noactivate/click-through/max atlas. Component20 vòng GDI14→14, RSS14.8→25.9MB; app GDI18→18 khi bị chặn. Đây không là kiểm thử bật/tắt Windows10/11 DND thật.
+- Mọi handle max-atlas dispose; Windows RSS461660160→đỉnh564637696→sau pause559857664, Android540454912→564314112→539529216bytes. Debug runner/emulator không thay cho release/GPU hoặc phần cứng yếu. Phone200%/desktop screenshots là headless UI evidence.
 
-Source0a3fa46 / CI42750776757: Windows195 tests+2 symlink skip, GDI+ build,12 native policy cases đạt. Frame3 thật/RSS debug đạt:455655424→đỉnh469032960→sau pause456605696 bytes; max-atlas kiểm dừng tại dialog chưa hoàn tất exit sau400ms, chưa tính cổng7. Android197 tests/25 receiver/APK/Keystore đạt nhưng cold-smoke adb dumpsys255 dừng, không suy diễn đã đạt OS notification. Emulator42750777094 đạt16+7. Source097ba5a đã có Android cold-process/account/3-frame animation đạt trước đó.
-
-Source99ee91b (tree5fb5001), Native CI42752885734: Windows chặn bởi SQLite upstream API403 rate-limit trước tests; Android99ee91b đạt toàn bộ native, job129620412536:199/25 receiver/cold-process/digest/120-frame dispose/account-artwork. Emulator42752885523 đạt16+7. Local199 Flutter tests/analyze sạch; source660465f / CI42753733764 dùng Actions read token đã qua precache Windows/Linux, không chuyển auth sang CDN và vẫn kiểm SHA256;10 Python guards đạt; chờ DialogRoute.completed trước kiểm dispose, thêm sprite crop/letterbox/license thật và native account-artwork isolation. Chẩn đoán adb không retry/khởi động lại, lỗi transport không được tính là process đã đóng. Ảnh phone200% và desktop ở docs/ui/phase7-*.png được xem lại, là headless Flutter rendering. Chưa đánh dấu7 đạt; Live2D tắt. Production Firebase/signing, backup/restore và phần cứng Android OEM/Doze/Windows10/11 còn trong cổng cuối. Kết quả debug runner/emulator không thay máy yếu thật. Các đoạn phía dưới là nhật ký lịch sử.
-
-Source660465f Windows: build/policy12 và120-frame cleanup đạt, nhưng actual OS state6/QUIET_TIME giữ pet ẩn đúng (surface0/renders0); fixture đòi visible dừng. Harness mới đang thêm controlled-reader component executable (C++ production class, real Win32/GDI+, no engine) và app thật vẫn kiểm OS policy/one engine; chưa build/run. Android source660 dừng ở full notification dumpsys255; driver mới target exact package bằng read-only cmd list/get, không retry/khởi động lại.14 Python guards đạt; source99ee91b đã đạt Android trọn bộ199/25/cold/digest/atlas/account. Chưa đánh dấu cổng7.
-
+Live2D vẫn khóa, chưa SDK/model hoặc technical POC/license approval. Giai đoạn8 đánh giá tiếp;9 còn backup/restore, migration/signing/install/upgrade/privacy và hardware acceptance. Không nói hoàn thành0–9. Bằng chứng0–6 tại67c4a43 / Native42716570760 / Emulator42716570825 và qa/PHASE6_*; các đoạn phía dưới là lịch sử.
 
 ## Bằng chứng preview 0.1.0 trước đây
 

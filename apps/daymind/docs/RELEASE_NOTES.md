@@ -1,4 +1,4 @@
-# Preview 0.6.0 — giai đoạn7 đang kiểm chứng
+# Preview 0.6.0 — giai đoạn7 qua cổng tự động
 
 - Nhập GIF/WebP động và ZIP DayMind chứa sprite/manifest; xem trước, tiến độ/hủy và xác nhận quyền sử dụng.
 - Atlas tối đa120 khung,128px/khung; nguồn giữ nguyên byte/checksum. Không tải ảnh lên cloud.
@@ -6,7 +6,7 @@
 - Windows có Companion nổi tùy chọn, mặc định tắt; kéo/resize, khôi phục vị trí, topmost/click-through tường minh. Cùng tiến trình, không thêm Flutter engine hoặc lịch nhắc.
 - Cửa sổ nổi tự ẩn khi fullscreen, giờ yên lặng và các trạng thái công khai của Windows notification API. Cần nghiệm thu Focus Assist/DND trên Windows10/11 thật.
 
-Đây là source kiểm chứng, chưa đánh dấu cổng7 đạt. Live2D tắt; production Firebase, ký phát hành, backup và nghiệm thu thiết bị còn ở các cổng sau. Xem BUILD_STATUS.md cho commit/CI cụ thể. Android vẫn dùng chứng thư debug của preview; không coi là đường nâng cấp sản xuất.
+Sourcee993033 đã đạt native CI42757179906; xem BUILD_STATUS.md/qa/PHASE7_* cho kiểm chứng và số đo. Live2D tắt; production Firebase, ký phát hành, backup và nghiệm thu thiết bị còn ở các cổng sau. Xem BUILD_STATUS.md cho commit/CI cụ thể. Android vẫn dùng chứng thư debug của preview; không coi là đường nâng cấp sản xuất.
 
 # Preview 0.5.0 — giai đoạn6 qua cổng tự động
 

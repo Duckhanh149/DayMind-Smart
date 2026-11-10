@@ -1,6 +1,6 @@
 # Gói nhân vật DayMind v1
 
-Giai đoạn7 đang kiểm chứng native; chưa coi cổng7 đạt chỉ từ unit tests. Không chứa Live2D hoặc mã thực thi. Chỉ nhập tài sản có quyền sử dụng; ứng dụng không xác nhận thay chủ sở hữu về giấy phép. Không tải tài nguyên qua mạng.
+Giai đoạn7 đã đạt native CI42757179906/sourcee993033; xem BUILD_STATUS.md cho bằng chứng và giới hạn thiết bị. Không chứa Live2D hoặc mã thực thi. Chỉ nhập tài sản có quyền sử dụng; ứng dụng không xác nhận thay chủ sở hữu về giấy phép. Không tải tài nguyên qua mạng.
 
 Có thể chọn trực tiếp PNG/WebP tĩnh (≤4 MiB), GIF/WebP động (≤8 MiB) hoặc ZIP DayMind (≤16 MiB). Phần xem trước nêu tác giả/ghi chú quyền, số khung và cho phép hủy. Cần xác nhận quyền trước “Nhập & sử dụng”. ZIP không tự trở thành model Live2D.
 

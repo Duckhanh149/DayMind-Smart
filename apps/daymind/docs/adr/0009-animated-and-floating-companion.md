@@ -1,6 +1,6 @@
 # ADR0009 — Hoạt ảnh giới hạn và cửa sổ nổi Windows
 
-Trạng thái: đang kiểm chứng giai đoạn7.0a3fa46 build GDI+ và12 policy cases đạt; resource probe dừng ở dialog exit, đang sửa chờ route.completed. Chưa qua cổng native. Giai đoạn0–6 giữ bằng chứng tại67c4a43. Định dạng và giới hạn xem [CHARACTER_PACKAGE.md](../CHARACTER_PACKAGE.md).
+Trạng thái: giai đoạn7 đạt cổng tự động tại e993033 / Native42757179906, Emulator99ee91b/42752885523 (lib/backend/package trees giống nhau). Component94 checks, policy12 và actual app/tray/account đạt; xem qa/PHASE7_RESOURCES.json, PHASE7_PACKAGES.json.
 
 GIF/WebP/sprite được preflight trước codec và chuẩn hóa thành atlas128px/tile. Giữ nguồn nguyên byte; preview, atlas, checksum/provenance và motion metadata ở thiết bị. Parser ZIP chạy trong isolate, không trích đường dẫn ra thư mục đích. Decode UI luôn dispose codec/buffer/picture/image khi hủy hoặc đổi generation; đọc/lưu được drain trước khi xóa workspace.
 
