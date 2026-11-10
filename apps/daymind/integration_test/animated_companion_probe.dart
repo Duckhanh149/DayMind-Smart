@@ -88,6 +88,7 @@ Future<void> animatedCompanionProbe(
     debugPrint(
       'ANIMATION_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'frames': 3, 'atlasWidth': 384, 'atlasHeight': 128, 'observedFrames': positions.length, 'observationMs': watch.elapsedMilliseconds, 'rssBefore': rssBefore, 'rssSamplePeak': peakRss, 'rssAfterPause': ProcessInfo.currentRss, 'imageCacheBytes': PaintingBinding.instance.imageCache.currentSizeBytes})}',
     );
+    await maximumAtlasProbe(tester, c, page, folder);
     if (Platform.isWindows) {
       await floatingCompanionProbe(tester, c, prepared.animation!);
     }
@@ -98,6 +99,75 @@ Future<void> animatedCompanionProbe(
     await c.removeCompanionAsset(name);
     await folder.delete(recursive: true);
     await tester.pump(const Duration(milliseconds: 200));
+  }
+}
+
+Future<void> maximumAtlasProbe(
+  WidgetTester tester,
+  WorkspaceController c,
+  BuildContext page,
+  Directory folder,
+) async {
+  final source = await File(p.join(folder.path, 'max.gif'))
+      .writeAsBytes(base64Decode(companionMaxGifFixture));
+  final before = ProcessInfo.currentRss;
+  var peak = before;
+  final prepared = await c.importer.prepareCharacter(source, 'max.gif');
+  final meta = prepared.animation!.metadata;
+  expect((meta.frames.length, meta.width, meta.height), (120, 2048, 1024));
+  final name = await c.importer.installPrepared(
+    prepared,
+    rightsConfirmed: true,
+  );
+  final frames = find.byWidgetPredicate(
+    (w) => w is CustomPaint && w.painter is CharacterFramePainter,
+  );
+  try {
+    for (var cycle = 0; cycle < 6; cycle++) {
+      final dialog = showDialog<void>(
+        context: page,
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(disableAnimations: false, accessibleNavigation: false),
+          child: AlertDialog(
+            content: SizedBox(
+              width: 128,
+              height: 128,
+              child: CharacterAnimationView(
+                importer: c.importer,
+                name: name,
+                expression: CompanionExpression.neutral,
+                fallback: const Text('Nạp atlas tối đa'),
+              ),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 60 && frames.evaluate().isEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(frames, findsOneWidget);
+      final paint =
+          tester.widget<CustomPaint>(frames).painter! as CharacterFramePainter;
+      expect((paint.atlas.width, paint.atlas.height), (2048, 1024));
+      await tester.pump(const Duration(milliseconds: 100));
+      peak = peak < ProcessInfo.currentRss ? ProcessInfo.currentRss : peak;
+      Navigator.of(tester.element(find.byType(AlertDialog))).pop();
+      await tester.pump(const Duration(milliseconds: 400));
+      await dialog;
+      expect(frames, findsNothing);
+      expect(paint.atlas.debugDisposed, isTrue);
+    }
+    expect(
+      peak - before,
+      lessThan(256 * 1024 * 1024),
+      reason: 'Maximum-atlas debug probe exceeded the extra-RSS guard.',
+    );
+    debugPrint(
+      'MAX_ATLAS_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'frames': 120, 'cycles': 6, 'atlasWidth': 2048, 'atlasHeight': 1024, 'atlasRgbaBytes': 2048 * 1024 * 4, 'rssBefore': before, 'rssSamplePeak': peak, 'rssAfterPause': ProcessInfo.currentRss, 'allTextureHandlesDisposed': true})}',
+    );
+  } finally {
+    await c.removeCompanionAsset(name);
   }
 }
 

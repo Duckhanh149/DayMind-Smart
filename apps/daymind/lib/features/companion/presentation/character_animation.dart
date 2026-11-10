@@ -153,7 +153,7 @@ class _CharacterAnimationViewState extends State<CharacterAnimationView>
     try {
       final character = await widget.importer.character(widget.name);
       if (stale() || character == null) return;
-      final bytes = await character.atlas.readAsBytes();
+      final bytes = await widget.importer.atlasBytes(character);
       if (stale()) return;
       if (bytes.length > 8 * 1024 * 1024) throw StateError('Atlas quá lớn.');
       buffer = await ui.ImmutableBuffer.fromUint8List(bytes);

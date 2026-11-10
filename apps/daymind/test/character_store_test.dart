@@ -120,6 +120,34 @@ void main() {
     );
     await cold.drain();
   });
+  test('cached render metadata cannot bypass a later bounded atlas read or its checksum', () async {
+    final name = await importer.installPrepared(
+      await importer.prepareCharacter(
+        File('test/fixtures/three_frames.gif'),
+        'leaf.gif',
+      ),
+      rightsConfirmed: true,
+    );
+    final character = (await importer.character(name))!;
+    expect(await importer.atlasBytes(character), isNotEmpty);
+    final bytes = await character.atlas.readAsBytes();
+    await character.atlas.writeAsBytes(
+      await File('test/fixtures/metadata.png').readAsBytes(),
+    );
+    await expectLater(importer.atlasBytes(character), throwsA(anything));
+    final file = await character.atlas.open(mode: FileMode.write);
+    await file.truncate(8 * 1024 * 1024 + 1);
+    await file.close();
+    await expectLater(importer.atlasBytes(character), throwsA(anything));
+    await character.atlas.writeAsBytes(bytes);
+    expect(await importer.atlasBytes(character), bytes);
+    final reading = importer.atlasBytes(character);
+    final closed = importer.drain();
+    await expectLater(reading, throwsA(isA<CharacterImportCancelled>()));
+    await closed;
+    await library.delete(recursive: true);
+    expect(library.existsSync(), isFalse);
+  });
   test('profile asset/expression references survive restart and closing drains image work before deletion', () async {
     final name = await importer.installPrepared(
       await importer.prepareCharacter(

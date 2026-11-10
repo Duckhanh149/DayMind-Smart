@@ -139,7 +139,9 @@ class FloatingCompanionService with WidgetsBindingObserver {
       data['frames'] = m.frames.map((f) => f.toJson()).toList();
       data['sequence'] = motion.frames;
       data['loop'] = motion.loop;
-      if (art != _sentArt) data['image'] = await _bounded(character.atlas);
+      if (art != _sentArt) {
+        data['image'] = await c.importer.atlasBytes(character);
+      }
     } else if (name != null) {
       final file = await c.importer.renderFile(name);
       if (file == null) throw StateError('Không đọc được ảnh nhân vật.');

@@ -1124,7 +1124,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.5.0',
+          applicationVersion: '0.6.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),

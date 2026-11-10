@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -8,8 +9,46 @@ import 'package:daymind_smart/features/companion/data/character_preparer.dart';
 import 'package:daymind_smart/features/companion/data/image_preflight.dart';
 import 'package:daymind_smart/features/companion/domain/character_package.dart';
 
+import '../integration_test/animation_fixture.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('120 original frames normalize within the maximum atlas and preserve the final composited pixels', () async {
+    final plan = await CharacterBlueprint.inspect(
+      base64Decode(companionMaxGifFixture),
+      'gif',
+      'Atlas tối đa',
+    );
+    final result = await CharacterNormalizer.build(plan);
+    expect(
+      (
+        result.metadata.frames.length,
+        result.metadata.width,
+        result.metadata.height,
+      ),
+      (120, 2048, 1024),
+    );
+    final codec = await ui.instantiateImageCodec(result.atlasBytes);
+    final image = (await codec.getNextFrame()).image;
+    try {
+      final rgba = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
+          .buffer
+          .asUint8List();
+      for (final i in [0, 59, 119]) {
+        final frame = result.metadata.frames[i];
+        final pixel = ((frame.y + 64) * image.width + frame.x + 64) * 4;
+        expect(rgba.sublist(pixel, pixel + 4), [
+          (i * 53) % 256,
+          (i * 79 + 40) % 256,
+          (i * 113 + 80) % 256,
+          255,
+        ]);
+      }
+    } finally {
+      image.dispose();
+      codec.dispose();
+    }
+  });
   test('ZIP inspection runs in an isolate and normalizes a sprite without exposing archive paths', () async {
     final source = await File('test/fixtures/valid_character.zip')
         .readAsBytes();

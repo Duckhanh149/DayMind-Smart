@@ -568,6 +568,29 @@ class StaticAssetImporter {
     });
   }
 
+  /// Cached metadata never authorizes an unbounded later read. Tracking the
+  /// file handle also lets workspace deletion wait for all readers to close.
+  Future<Uint8List> atlasBytes(InstalledCharacter character) =>
+      _trackRead(_atlasBytes(character));
+
+  Future<Uint8List> _atlasBytes(InstalledCharacter character) async {
+    final bytes = await _readSource(character.atlas, limit: 8 * 1024 * 1024);
+    final meta = character.metadata;
+    await Isolate.run(() {
+      final probe = CharacterImageProbe.inspect(bytes, expectedFormat: 'png');
+      if (probe.frameCount != 1 ||
+          probe.width != meta.width ||
+          probe.height != meta.height ||
+          sha256.convert(bytes).toString() != meta.atlasHash) {
+        throw const ValidationException(
+          'Atlas đã thay đổi; hãy nhập lại gói nhân vật.',
+        );
+      }
+    });
+    _checkOpen();
+    return bytes;
+  }
+
   Future<InstalledCharacter> _loadCharacter(String name) async {
     final root = _packageDirectory(name)!;
     final metaBytes = await _readSource(

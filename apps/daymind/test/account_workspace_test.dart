@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:async';
+
+import 'package:daymind_smart/platform/floating_companion.dart';
 
 import 'package:uuid/uuid.dart';
 
@@ -155,6 +158,13 @@ void main() {
   late TestCloud cloud;
   late TestAuth auth;
   setUp(() async {
+    // Flutter unit tests have no native runner. Real GDI+/close assertions are
+    // exercised by the Windows integration job, without this channel stub.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          FloatingCompanionService.channel,
+          (_) async => null,
+        );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('flutter_timezone'),
@@ -168,6 +178,8 @@ void main() {
   });
   tearDown(() async {
     await host.shutdown();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(FloatingCompanionService.channel, null);
     host.dispose();
     await dir.delete(recursive: true);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -331,6 +343,73 @@ void main() {
     expect(await Directory(accountPath).exists(), isFalse);
     expect(host.account, isNull);
     expect(host.controller!.tasks.single.title, 'Giữ bản cục bộ');
+  });
+  test('deleting an account waits for native artwork disposal before removing its library', () async {
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final closed = Completer<void>(), closeStarted = Completer<void>();
+    var blockClose = false;
+    final calls = <String>[];
+    messenger.setMockMethodCallHandler(FloatingCompanionService.channel, (
+      call,
+    ) async {
+      calls.add(call.method);
+      if (call.method == 'close' && blockClose) {
+        if (!closeStarted.isCompleted) closeStarted.complete();
+        await closed.future;
+      }
+      return null;
+    });
+    addTearDown(() async {
+      if (!closed.isCompleted) closed.complete();
+      await host.floating?.stop();
+      host.floating = null;
+      messenger.setMockMethodCallHandler(
+        FloatingCompanionService.channel,
+        null,
+      );
+    });
+    await host.signIn(
+      'art-owner@example.invalid',
+      'correct',
+      create: true,
+      copyLocal: false,
+    );
+    await host.sync!.sync();
+    await host.floating?.stop();
+    final old = host.controller!;
+    final name = await old.importer.installPrepared(
+      await old.importer.prepareCharacter(
+        File('test/fixtures/three_frames.gif'),
+        'private.gif',
+      ),
+      rightsConfirmed: true,
+    );
+    await old.configure((p) => p.copyWith(assetName: name));
+    await old.updateFloating((s) => s.copy(enabled: true));
+    host.floating = FloatingCompanionService(old)..start();
+    for (var i = 0; i < 100 && !calls.contains('configure'); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(calls, contains('configure'));
+    blockClose = true;
+    final directory = Directory(workspacePath(dir.path, 'art-owner'));
+    final deletion = host.deleteAccount('correct');
+    await closeStarted.future.timeout(const Duration(seconds: 5));
+    expect(directory.existsSync(), isTrue);
+    expect(old.importer.resolve(name)!.existsSync(), isTrue);
+    expect(host.controller, same(old));
+    closed.complete();
+    await deletion;
+    expect(directory.existsSync(), isFalse);
+    expect(host.account, isNull);
+    expect(host.controller!.preferences.assetName, isNull);
+    expect(host.controller!.floatingSettings.enabled, isFalse);
+    expect(host.controller!.importer.installed(), isEmpty);
+    // A late listener from the old owner cannot recreate art in the new profile.
+    final count = calls.length;
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+    expect(calls.length, count);
   });
   test('lost account-deletion reply can be retried without resurrecting data or losing local profile', () async {
     await host.controller!.save(const TaskDraft(title: 'Giữ cục bộ khi xóa'));
