@@ -38,7 +38,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       DAYMIND_PRODUCTION_SIGNING: ${{ github.event_name == 'workflow_dispatch' && inputs.signing == 'production' && 'true' || 'false' }}
-      DAYMIND_INSTALL_EVIDENCE_PATH: ${{ runner.temp }}/daymind-install-evidence.json
     timeout-minutes: 55
     defaults:
       run:
@@ -181,6 +180,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Companion policy tests failed' }
       - name: Windows native integration smoke test
         if: runner.os == 'Windows'
+        env:
+          DAYMIND_INSTALL_EVIDENCE_PATH: ${{ runner.temp }}/daymind-install-evidence.json
         working-directory: apps/daymind/firebase
         run: npx firebase emulators:exec --config firebase.json --project demo-daymind --only auth,firestore "node native_verify.mjs"
       - name: Windows close, tray, restore and quit process test
@@ -261,6 +262,8 @@ jobs:
         run: ./tool/production_signing.ps1 cleanup
       - name: Verify Windows install, upgrade, uninstall and data retention
         if: runner.os == 'Windows'
+        env:
+          DAYMIND_INSTALL_EVIDENCE_PATH: ${{ runner.temp }}/daymind-install-evidence.json
         shell: pwsh
         run: |
           python tool/windows_install_upgrade.py (Join-Path $env:RUNNER_TEMP 'DayMind-0.6.1-baseline.exe')
