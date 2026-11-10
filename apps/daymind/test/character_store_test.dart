@@ -8,7 +8,11 @@ import 'package:daymind_smart/app/controller.dart';
 import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/companion/data/character_preparer.dart';
 import 'package:daymind_smart/features/companion/domain/companion.dart';
+import 'package:daymind_smart/features/companion/domain/character_package.dart';
+import 'package:daymind_smart/features/companion/domain/companion_renderer.dart';
 import 'package:daymind_smart/features/tasks/data/database.dart';
+
+import 'character_zip_test.dart' show zip, Entry;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +26,65 @@ void main() {
   tearDown(() async {
     await importer.drain();
     await temp.delete(recursive: true);
+  });
+  test('Live2D files and model packages fail before install while the raster renderer remains usable', () async {
+    final previous = await importer.installPrepared(
+      await importer.prepareCharacter(
+        File('test/fixtures/three_frames.gif'),
+        'leaf.gif',
+      ),
+      rightsConfirmed: true,
+    );
+    final model = File('${temp.path}/not-a-texture.bin');
+    await model.writeAsString('{"Version":3}');
+    final locked = throwsA(
+      isA<CharacterPackageFailure>().having(
+        (e) => e.toString(),
+        'reason',
+        contains('Live2D chưa được bật'),
+      ),
+    );
+    for (final name in [
+      'avatar.model3.json',
+      'avatar.moc3',
+      'avatar.MOC',
+      'avatar.model.json',
+    ]) {
+      await expectLater(importer.prepareCharacter(model, name), locked);
+    }
+    for (final name in ['avatar/avatar.model3.json', 'avatar/AVATAR.MOC3']) {
+      final package = File('${temp.path}/model.zip');
+      await package.writeAsBytes(
+        zip([
+          Entry(name, [1, 2, 3]),
+        ]),
+      );
+      await expectLater(
+        importer.prepareCharacter(package, 'model.zip'),
+        locked,
+      );
+    }
+    expect(importer.installed(), [previous]);
+    expect(
+      library.listSync().any((e) => e.path.contains('.install-')),
+      isFalse,
+    );
+    final installed = (await importer.character(previous))!;
+    final CompanionRenderer<SpriteFrame> renderer = AtlasCompanionRenderer(
+      installed.metadata,
+      CompanionExpression.neutral,
+    );
+    expect(renderer.frame!.x, 0);
+    expect(renderer.nextFrameDelay, const Duration(milliseconds: 125));
+    renderer.advance();
+    expect(renderer.frame!.x, 128);
+    renderer.selectExpression(CompanionExpression.happy, restart: true);
+    expect(renderer.frame!.x, 0); // Unmapped expression uses the idle clip.
+    renderer.dispose();
+    renderer.advance();
+    expect(renderer.frame, isNull);
+    expect(renderer.nextFrameDelay, isNull);
+    expect((await importer.renderFile(previous))!.existsSync(), isTrue);
   });
   test('preview has no side effects, rights confirmation precedes atomic install and source stays exact', () async {
     final source = File('test/fixtures/three_frames.gif'),

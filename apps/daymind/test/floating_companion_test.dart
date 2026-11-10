@@ -36,6 +36,7 @@ void main() {
   late DaymindDatabase db;
   late WorkspaceController c;
   late FloatingCompanionService service;
+  late DateTime now;
   final calls = <MethodCall>[];
   Future<void> until(bool Function() condition) async {
     for (var i = 0; i < 100 && !condition(); i++) {
@@ -48,9 +49,11 @@ void main() {
     calls.clear();
     temp = await Directory.systemTemp.createTemp('daymind-floating-');
     db = DaymindDatabase(NativeDatabase.memory());
+    now = DateTime.utc(2026, 11, 10, 10);
     c = WorkspaceController(
       SqliteTaskRepository(db),
       StaticAssetImporter(temp),
+      clock: () => now,
     );
     await c.load();
     binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -125,5 +128,39 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 30));
     expect(calls.length, count);
     expect(c.importer.installed(), isEmpty);
+  });
+  test('accepted same-expression cues replay natively while cooldown and sync reload do not', () async {
+    await c.updateFloating((s) => s.copy(enabled: true));
+    await until(() => calls.any((v) => v.method == 'configure'));
+    const cue = CompanionCue(
+      CompanionEvent.reminderDue,
+      'Đến giờ',
+      task: 'Đọc sách',
+    );
+    now = now.add(
+      const Duration(seconds: 31),
+    ); // Initial greeting has cooled down.
+    c.foregroundReminder(cue);
+    await until(
+      () =>
+          (calls.last.arguments as Map)['motionRevision'] ==
+          c.companionMotionSequence,
+    );
+    final first = c.companionMotionSequence;
+    expect(c.companionAnnouncementSequence, c.inAppSequence);
+    expect((calls.last.arguments as Map).containsKey('image'), isFalse);
+    c.foregroundReminder(cue);
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+    expect(c.companionMotionSequence, first);
+    expect(c.companionAnnouncementSequence, -1);
+    await c.refreshFromSync();
+    expect(c.companionMotionSequence, first);
+    now = now.add(const Duration(seconds: 31));
+    c.foregroundReminder(cue);
+    expect(c.companionMotionSequence, first + 1);
+    await until(
+      () => (calls.last.arguments as Map)['motionRevision'] == first + 1,
+    );
+    expect((calls.last.arguments as Map).containsKey('image'), isFalse);
   });
 }

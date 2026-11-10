@@ -43,6 +43,7 @@ class FloatingCompanionWindow {
   std::vector<Frame> frames_;
   std::vector<int> sequence_;
   size_t step_ = 0;
+  int motion_revision_ = -1;
   bool loop_ = false, quiet_ = false, low_ = false, topmost_ = false, click_ = false;
   bool moving_ = false, resizing_ = false, policy_hidden_ = true;
   POINT drag_{};

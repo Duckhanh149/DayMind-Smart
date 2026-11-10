@@ -104,8 +104,9 @@ bool FloatingCompanionWindow::Configure(const M& value, std::string* error) {
   const uint64_t renders_before = rendered_;
   auto fail = [&]() { *error = "Invalid bounded companion configuration."; return false; };
   const int size = Int(value, "size", 112);
+  const int motion_revision = Int(value, "motionRevision", 0);
   const std::string art = Text(value, "artKey"), expression = Text(value, "expression");
-  if (size < 80 || size > 256 || art.empty() || art.size() > 200 ||
+  if (size < 80 || size > 256 || motion_revision < 0 || art.empty() || art.size() > 200 ||
       (expression != "neutral" && expression != "happy" && expression != "focused" && expression != "resting")) return fail();
   const auto* raw_frames = Field(value, "frames");
   const auto* frame_list = raw_frames ? std::get_if<flutter::EncodableList>(raw_frames) : nullptr;
@@ -142,9 +143,11 @@ bool FloatingCompanionWindow::Configure(const M& value, std::string* error) {
           f.y + f.height > static_cast<int>(image->GetHeight())) return fail();
     }
   }
-  const bool change_motion = art != art_key_ || expression != expression_ || steps != sequence_;
+  const bool change_motion = art != art_key_ || expression != expression_ || steps != sequence_ ||
+      motion_revision != motion_revision_ || Bool(value,"loop") != loop_;
   if (bytes) image_ = std::move(next_image);
   art_key_ = art; expression_ = expression; frames_ = std::move(frames); sequence_ = std::move(steps);
+  motion_revision_ = motion_revision;
   loop_ = Bool(value,"loop"); quiet_ = Bool(value,"quiet"); low_ = Bool(value,"lowResource");
   topmost_ = Bool(value,"topmost"); click_ = Bool(value,"clickThrough"); size_dp_ = size;
   if (change_motion) step_ = 0;

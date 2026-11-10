@@ -24,9 +24,13 @@ Artifact13736237923 Android ZIP bb39c6c0f74d50e8b997a4027d64e13991dc16216b932ece
 
 Artifact13735829615 Windows ZIP92a15ac95101a4de6f7c1fae16ced2746125334cf571dfc1cdbb761e399dd72e; CRC/app PE x64/runtime/OFL/embedded0.6.0 đạt, không có probe hoặc userdata. Installer SHA256 dd1a18f173f27c616c7437699d1e7e3a7a2432d2b4076812e66678eb707093aa; bootstrap x86, payload x64, chưa ký sản xuất. Local ZIP/APK ở /workspace/work/evidence/phase7-*.
 
-## Tiếp tục:8, rồi9
+## Đang thực hiện:8 — nhánh không Live2D
 
-Trước khi đổi code, đọc MASTER_SPEC.reference.md phần8/9. Giai đoạn8 đánh giá kỹ thuật/giấy phép Live2D; chưa có SDK/model và giữ khóa. Spec cho phép ship không Live2D khi chưa qua cổng và giữ interface mở rộng; không giả PNG là model, không tự chấp nhận hợp đồng/giấy phép hoặc nói đã POC khi chưa render thật. Chốt tài liệu/bằng chứng7 trên nhánh/PR bằng expected SHA sau kiểm remote; không merge main.
+Không có worker code khác hoặc CI đang chạy khi tiếp tục tại42eedc1; giữ toàn bộ test/doc chưa commit. Đã tái hiện lỗi cooldown: lời nhắc foreground thứ hai biến mất khi lời thoại cũ còn hiện; regression thất bại trước sửa. Controller đánh dấu chính cue được nhận thành lời thoại, UI hiện fallback nếu cooldown chặn, không thêm OS alert. Motion revision chỉ tăng khi nhận cue mới; cùng biểu cảm chạy lại one-shot, reload/cooldown không tự chạy. Flutter giữ nguyên atlas, Windows không gửi lại bitmap; component có thêm bài tile/replay/dừng timer.
+
+Đã đọc nguồn Live2D chính thức: Core/Components/wrapper/model tách giấy phép; nhập model ngoài có thể cần chấp thuận Expandable Application. Chưa tải/cài SDK, chấp nhận hợp đồng hoặc liên hệ vendor. LIVE2D_GATE.md, ADR0010 và qa/PHASE8_LICENSE_SOURCES.json ghi quyết định **giữ tắt**, theo fallback rõ trong spec. Không có POC model thật hay quyền bật Live2D. Contract CompanionRenderer Dart thuần được dùng bởi atlas renderer thật; import model trực tiếp/trong ZIP bị chặn trước lưu, thư viện raster cũ giữ nguyên. Preview tăng0.6.1+7.
+
+Local đã đạt203/203 Flutter tests, analyze sạch,14 Python driver guards và16 ca Firebase Emulator thật; logs ở /workspace/work/evidence/phase8-*. Regression CI source mới còn chờ và phải đạt trước chuyển9. Bằng chứng0–7 ở trên vẫn là lịch sử của e993033, không gán cho source8 chưa được CI kiểm. Tiếp theo kiểm analyze/full tests/driver, xuất commit lên đúng nhánh bằng expected SHA và cập nhật PR; theo dõi cả native và Emulator, sửa root cause nếu lỗi. Không merge main.
 
 Sau quyết định8:9 backup có mật khẩu/atomic restore/user isolation/no old alarms, migration/rollback, release privacy/signing/install/upgrade, accessibility và phần cứng. Nhớ migration companionSize cũ→layout (giá trị cũ còn trong prefs), single-instance và crash-staging recovery không xóa tiến trình đang dùng. Bổ sung caption lý do OS đang ẩn pet để toggle bật không gây hiểu nhầm.
 

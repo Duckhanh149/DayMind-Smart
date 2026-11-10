@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import '../data/asset_importer.dart';
 import '../domain/character_package.dart';
 import '../domain/companion.dart';
+import '../domain/companion_renderer.dart';
 
 /// Owns one bounded atlas. Hidden, covered, reduced-motion and background
 /// portraits release it, rather than merely stopping a ticker with a live GPU image.
@@ -18,12 +19,14 @@ class CharacterAnimationView extends StatefulWidget {
     required this.expression,
     required this.fallback,
     this.active = true,
+    this.motionRevision = 0,
   });
   final StaticAssetImporter importer;
   final String name;
   final CompanionExpression expression;
   final Widget fallback;
   final bool active;
+  final int motionRevision;
   @override
   State<CharacterAnimationView> createState() => _CharacterAnimationViewState();
 }
@@ -31,15 +34,13 @@ class CharacterAnimationView extends StatefulWidget {
 class _CharacterAnimationViewState extends State<CharacterAnimationView>
     with WidgetsBindingObserver {
   ui.Image? _atlas;
-  CharacterRenderData? _metadata;
+  CompanionRenderer<SpriteFrame>? _renderer;
   Timer? _timer;
   ScrollPosition? _scroll;
-  int _generation = 0, _step = 0, _revision = 0;
+  int _generation = 0, _revision = 0;
   bool _visible = false, _foreground = true, _allowed = false;
   bool _loading = false, _failed = false, _visibilityScheduled = false;
   bool get _running => widget.active && _allowed && _foreground && _visible;
-  CharacterMotion? get _motion =>
-      _metadata?.motions[_metadata!.motionName(widget.expression)];
 
   @override
   void initState() {
@@ -78,10 +79,11 @@ class _CharacterAnimationViewState extends State<CharacterAnimationView>
       _revision = widget.importer.revision;
       _release();
       _failed = false;
-    } else if (oldWidget.expression != widget.expression) {
+    } else if (oldWidget.expression != widget.expression ||
+        oldWidget.motionRevision != widget.motionRevision) {
       _timer?.cancel();
       _timer = null;
-      _step = 0;
+      _renderer?.selectExpression(widget.expression, restart: true);
     }
     _scheduleVisibility();
     _sync();
@@ -126,9 +128,9 @@ class _CharacterAnimationViewState extends State<CharacterAnimationView>
     _timer = null;
     _atlas?.dispose();
     _atlas = null;
-    _metadata = null;
+    _renderer?.dispose();
+    _renderer = null;
     _loading = false;
-    _step = 0;
   }
 
   void _sync() {
@@ -170,8 +172,7 @@ class _CharacterAnimationViewState extends State<CharacterAnimationView>
       setState(() {
         _atlas = image;
         image = null; // Ownership transfers only after the generation check.
-        _metadata = meta;
-        _step = 0;
+        _renderer = AtlasCompanionRenderer(meta, widget.expression);
         _loading = false;
         _scheduleFrame();
       });
@@ -191,29 +192,20 @@ class _CharacterAnimationViewState extends State<CharacterAnimationView>
   }
 
   void _scheduleFrame() {
-    final motion = _motion;
-    if (_timer != null ||
-        !_running ||
-        motion == null ||
-        motion.frames.length < 2 ||
-        (!motion.loop && _step == motion.frames.length - 1)) {
+    final delay = _renderer?.nextFrameDelay;
+    if (_timer != null || !_running || delay == null) {
       return;
     }
     // Timings are validated/clamped to 84–5000ms, so delayed frames never catch
     // up in a burst or exceed twelve updates per second.
-    _timer = Timer(
-      Duration(
-        milliseconds: _metadata!.frames[motion.frames[_step]].durationMs,
-      ),
-      () {
-        _timer = null;
-        if (!mounted || !_running) return;
-        setState(() {
-          _step = (_step + 1) % motion.frames.length;
-          _scheduleFrame();
-        });
-      },
-    );
+    _timer = Timer(delay, () {
+      _timer = null;
+      if (!mounted || !_running) return;
+      setState(() {
+        _renderer?.advance();
+        _scheduleFrame();
+      });
+    });
   }
 
   @override
@@ -226,16 +218,11 @@ class _CharacterAnimationViewState extends State<CharacterAnimationView>
 
   @override
   Widget build(BuildContext context) {
-    final motion = _motion, atlas = _atlas;
+    final frame = _renderer?.frame, atlas = _atlas;
     return RepaintBoundary(
-      child: atlas == null || motion == null
+      child: atlas == null || frame == null
           ? widget.fallback
-          : CustomPaint(
-              painter: CharacterFramePainter(
-                atlas,
-                _metadata!.frames[motion.frames[_step]],
-              ),
-            ),
+          : CustomPaint(painter: CharacterFramePainter(atlas, frame)),
     );
   }
 }

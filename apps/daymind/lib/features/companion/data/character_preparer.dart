@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 
 import '../domain/character_package.dart';
 import '../domain/companion.dart' show CompanionExpression;
+import '../domain/live2d_gate.dart';
 import 'image_preflight.dart';
 import 'safe_zip.dart';
 
@@ -58,6 +59,7 @@ class CharacterBlueprint {
     String name, {
     CharacterProvenance? provenance,
   }) {
+    Live2DGate.requireRasterFiles([name]);
     final hash = sha256.convert(bytes).toString();
     CharacterManifest? manifest;
     Uint8List? license;
@@ -65,6 +67,7 @@ class CharacterBlueprint {
     String mediaFormat = format;
     if (format == 'zip') {
       final files = CharacterZip.read(bytes).files;
+      Live2DGate.requireRasterFiles(files.keys);
       final root = files['manifest.json'];
       if (root == null) {
         throw const CharacterPackageFailure(

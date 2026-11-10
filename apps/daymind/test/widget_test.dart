@@ -306,6 +306,48 @@ void main() {
     );
   }
 
+  testWidgets(
+    'visible companion cooldown preserves required foreground announcements',
+    (tester) async {
+      final (_, c) = await mount(
+        tester,
+        const Size(390, 844),
+        seed: true,
+        notifications: true,
+      );
+      await c.reminders!.configure({'quietEnabled': false});
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(c.dialogue));
+      c.foregroundReminder(
+        const CompanionCue(
+          CompanionEvent.reminderDue,
+          'Lời nhắc đầu',
+          task: 'Việc đầu',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(c.dialogue, contains('Việc đầu'));
+      await tester.ensureVisible(find.text(c.dialogue));
+      await tester.pumpAndSettle();
+      const second = 'Nhắc việc mới trong thời gian nghỉ lời thoại';
+      c.foregroundReminder(
+        const CompanionCue(
+          CompanionEvent.reminderDue,
+          second,
+          task: 'Việc tiếp theo',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        c.dialogue,
+        contains('Việc đầu'),
+      ); // Companion cooldown still applies.
+      expect(find.text(second), findsOneWidget);
+      expect(find.text('Xem'), findsOneWidget);
+      expect((c.reminders!.engine.scheduler as FakeScheduler).shown, isEmpty);
+    },
+  );
+
   testWidgets('visible companion dialogue is the only foreground cue', (
     tester,
   ) async {

@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import '../../tasks/domain/task.dart';
 import '../domain/character_package.dart';
 import '../domain/companion.dart' show isCharacterAssetName;
+import '../domain/live2d_gate.dart';
 import 'character_preparer.dart';
 import 'image_preflight.dart';
 
@@ -177,6 +178,7 @@ class StaticAssetImporter {
     void Function(int, int)? progress,
   }) async {
     _checkOpen();
+    Live2DGate.requireRasterFiles([displayName]);
     final format = p.extension(displayName).toLowerCase().replaceFirst('.', '');
     if (!{'png', 'webp', 'gif', 'zip'}.contains(format) ||
         p.basename(displayName) != displayName ||

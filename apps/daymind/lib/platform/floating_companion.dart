@@ -111,6 +111,7 @@ class FloatingCompanionService with WidgetsBindingObserver {
       'enabled': enabled,
       'art': art,
       'expression': c.expression.name,
+      'motionRevision': c.companionMotionSequence,
       'quiet': quiet,
     });
     if (signature == _signature) return;
@@ -126,6 +127,7 @@ class FloatingCompanionService with WidgetsBindingObserver {
       'quiet': quiet,
       'lowResource': low,
       'expression': c.expression.name,
+      'motionRevision': c.companionMotionSequence,
       'artKey': art,
       'frames': <Map<String, int>>[],
       'sequence': <int>[],

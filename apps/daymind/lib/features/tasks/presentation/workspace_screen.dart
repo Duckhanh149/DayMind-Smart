@@ -1124,7 +1124,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.6.0',
+          applicationVersion: '0.6.1',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1140,6 +1140,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     ) {
       final c = ref.read(workspaceProvider);
       if (!c.preferences.companionEnabled ||
+          c.companionAnnouncementSequence != next ||
           !{'today', 'companion'}.contains(widget.page) ||
           !dialogueVisible) {
         final message = c.inAppAnnouncement;

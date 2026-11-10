@@ -137,7 +137,7 @@ class _CharacterImportDialogState extends State<CharacterImportDialog> {
                   ],
                   const SizedBox(height: 12),
                   const Text(
-                    'Chỉ lưu trên thiết bị này. Ít tài nguyên: dùng ảnh tĩnh. Hoạt ảnh dừng khi bị che hoặc ra nền.',
+                    'Chỉ lưu trên thiết bị này. Ít tài nguyên: dùng ảnh tĩnh. Hoạt ảnh dừng khi bị che hoặc ra nền. Model Live2D chưa được hỗ trợ.',
                   ),
                   CheckboxListTile(
                     key: const Key('character-rights'),

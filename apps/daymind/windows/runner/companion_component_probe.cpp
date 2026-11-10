@@ -146,6 +146,21 @@ int wmain(int argc, wchar_t** argv) {
     check(observed.size() >= 2, "native timer advances distinct frames");
     check(renders >= 2, "real layered-window updates succeed for multiple frames");
     check(renders <= static_cast<int64_t>((GetTickCount64()-start)/84+4), "native cadence stays below twelve updates per second");
+    M cue = config;
+    cue.erase(V("image")); // Replays must reuse the currently owned bitmap.
+    cue[V("sequence")] = V(flutter::EncodableList{V(2),V(1)});
+    cue[V("loop")] = V(false);
+    cue[V("motionRevision")] = V(1);
+    check(pet.Configure(cue,&error) && Number(pet.State(),"frame") == 2, "one-shot cue starts on its first tile");
+    check(Until([&] { return Number(pet.State(),"frame") == 1; }), "one-shot reaches its final tile");
+    const auto final_renders = Number(pet.State(),"renders");
+    Pump(400);
+    check(Number(pet.State(),"frame") == 1 && Number(pet.State(),"renders") == final_renders,
+        "completed one-shot stops native rendering");
+    check(pet.Configure(cue,&error) && Number(pet.State(),"frame") == 1, "unchanged cue does not replay on geometry refresh");
+    cue[V("motionRevision")] = V(2);
+    check(pet.Configure(cue,&error) && Number(pet.State(),"frame") == 2, "same-expression accepted cue replays without another bitmap");
+    check(pet.Configure(config,&error), "looping fixture restores after one-shot checks");
     for (const auto state : {QUNS_NOT_PRESENT,QUNS_BUSY,QUNS_RUNNING_D3D_FULL_SCREEN,QUNS_PRESENTATION_MODE,QUNS_QUIET_TIME}) {
       notification = state;
       check(Until([&] { return !Flag(pet.State(), "visible"); }), "notification fixture hides the real window");

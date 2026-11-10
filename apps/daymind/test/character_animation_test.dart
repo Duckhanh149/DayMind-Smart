@@ -70,6 +70,7 @@ void main() {
   Widget portrait({
     bool active = true,
     CompanionExpression expression = CompanionExpression.neutral,
+    int motionRevision = 0,
   }) => SizedBox(
     width: 80,
     height: 80,
@@ -78,6 +79,7 @@ void main() {
       name: name,
       expression: expression,
       active: active,
+      motionRevision: motionRevision,
       fallback: const Text('static'),
     ),
   );
@@ -151,6 +153,46 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(painter(tester).frame.x, 128);
       await tester.pump(const Duration(seconds: 10));
+      expect(painter(tester).frame.x, 128);
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(atlas.debugDisposed, isTrue);
+    },
+  );
+
+  testWidgets(
+    'a new accepted cue replays the same one-shot clip without decoding a second atlas',
+    (tester) async {
+      var revision = 1;
+      late StateSetter update;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (_, set) {
+                update = set;
+                return portrait(
+                  expression: CompanionExpression.happy,
+                  motionRevision: revision,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await loaded(tester);
+      final atlas = painter(tester).atlas;
+      expect(painter(tester).frame.x, 256);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(painter(tester).frame.x, 128);
+      update(() {}); // A routine reload is not another behavioral event.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(painter(tester).frame.x, 128);
+      update(() => revision++);
+      await tester.pump();
+      expect(painter(tester).frame.x, 256);
+      expect(painter(tester).atlas, same(atlas));
+      await tester.pump(const Duration(milliseconds: 200));
       expect(painter(tester).frame.x, 128);
       await tester.pumpWidget(const SizedBox.shrink());
       expect(atlas.debugDisposed, isTrue);

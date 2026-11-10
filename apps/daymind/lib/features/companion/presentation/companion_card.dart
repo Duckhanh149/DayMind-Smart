@@ -34,6 +34,7 @@ class CompanionCard extends StatelessWidget {
       name: name,
       expression: c.expression,
       active: c.window?.visible != false,
+      motionRevision: c.companionMotionSequence,
       fallback: fallback,
     );
   }

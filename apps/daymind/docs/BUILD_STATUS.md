@@ -4,6 +4,8 @@ Cập nhật 10/11/2026 (UTC). Nguồn native tại apps/daymind; web root độ
 
 ## Checkpoint hiện tại
 
+Source0.6.1+7 đang kiểm nhánh không Live2D: contract atlas renderer, chặn model trước lưu và sửa regression cooldown/replay. Local203/203 Flutter tests, analyze sạch,14 Python guards và16 ca Emulator thật đạt. Xem LIVE2D_GATE.md/ADR0010. Chưa gán CI0.6.0 cho thay đổi này; cần cả native và Emulator mới trước giai đoạn9.
+
 Preview **0.6.0, giai đoạn0–7 qua cổng tự động** tại e99303392f476fa842a793bbd28c09f538f94c27, [Native42757179906](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42757179906).
 
 - Android:199 tests,25 receiver/recovery, release ARM64/Keystore/cold-process/digest, real account/artwork isolation, renderer và max-atlas120×6 đạt.

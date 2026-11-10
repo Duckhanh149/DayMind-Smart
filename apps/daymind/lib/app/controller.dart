@@ -58,6 +58,8 @@ class WorkspaceController extends ChangeNotifier {
   String? companionError;
   int inAppSequence = 0;
   String? inAppAnnouncement;
+  int companionAnnouncementSequence = -1;
+  int companionMotionSequence = 0;
 
   String? get companionAssetName =>
       expressionAssets[expression] ?? preferences.assetName;
@@ -93,8 +95,8 @@ class WorkspaceController extends ChangeNotifier {
     }
   }
 
-  void reactCompanion(CompanionEvent event, {String? task, String? summary}) {
-    if (!preferences.companionEnabled) return;
+  bool reactCompanion(CompanionEvent event, {String? task, String? summary}) {
+    if (!preferences.companionEnabled) return false;
     final settings = reminders?.preferences ?? const NotificationPreferences();
     final reply = behavior.react(
       event,
@@ -105,15 +107,19 @@ class WorkspaceController extends ChangeNotifier {
       day: localDay(now(), settings.timezoneId),
     );
     expression = reply.expression;
-    if (reply.text != null) dialogue = reply.text!;
+    if (reply.text == null) return false;
+    dialogue = reply.text!;
+    companionMotionSequence++;
+    return true;
   }
 
   void foregroundReminder(CompanionCue cue) {
     inAppAnnouncement = cue.announcement;
     inAppSequence++;
-    if (preferences.companionEnabled) {
-      reactCompanion(cue.event, task: cue.task, summary: cue.summary);
-    }
+    companionAnnouncementSequence =
+        reactCompanion(cue.event, task: cue.task, summary: cue.summary)
+        ? inAppSequence
+        : -1;
     notifyListeners();
   }
 
@@ -148,6 +154,7 @@ class WorkspaceController extends ChangeNotifier {
       if (reply.text == null) return;
       dialogue = reply.text!;
       expression = reply.expression;
+      companionMotionSequence++;
       await recurrence.records.put('companion_local', 'overdue', {'day': day});
     }, localChange: false);
   }
@@ -186,6 +193,7 @@ class WorkspaceController extends ChangeNotifier {
     });
     dialogue = value.messageFor(CompanionEvent.appOpen);
     expression = value.expressionFor(CompanionEvent.appOpen);
+    companionMotionSequence++;
   });
   Future<void> configureCompanionLayout(CompanionLayout value) => _write(
     () async {
@@ -323,6 +331,7 @@ class WorkspaceController extends ChangeNotifier {
     );
     dialogue = reply.text ?? 'Mầm đang nghỉ ngơi.';
     expression = reply.expression;
+    if (reply.text != null) companionMotionSequence++;
     if (notify) notifyListeners();
   }
 
