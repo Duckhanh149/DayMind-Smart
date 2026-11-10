@@ -6,6 +6,7 @@ import '../data/asset_importer.dart';
 
 import '../../../app/controller.dart';
 import '../domain/companion.dart';
+import 'character_animation.dart';
 
 class CompanionCard extends StatelessWidget {
   const CompanionCard({
@@ -17,6 +18,26 @@ class CompanionCard extends StatelessWidget {
   final WorkspaceController controller;
   final bool compact;
   final Key? dialogueKey;
+  Widget _portrait(WorkspaceController c, bool lowResource) {
+    final fallback = CompanionAssetImage(
+      importer: c.importer,
+      name: c.companionAssetName,
+      decodeSize: lowResource ? 128 : 256,
+      expression: c.expression,
+    );
+    final name = c.companionAssetName;
+    if (lowResource || name == null || !name.endsWith('.character')) {
+      return fallback;
+    }
+    return CharacterAnimationView(
+      importer: c.importer,
+      name: name,
+      expression: c.expression,
+      active: c.window?.visible != false,
+      fallback: fallback,
+    );
+  }
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -33,12 +54,7 @@ class CompanionCard extends StatelessWidget {
         child: Semantics(
           label:
               '${controller.companion.name}, bạn đồng hành 2D · ${companionExpressionLabels[controller.expression]}',
-          child: CompanionAssetImage(
-            importer: controller.importer,
-            name: controller.companionAssetName,
-            decodeSize: layout.lowResource ? 128 : 256,
-            expression: controller.expression,
-          ),
+          child: _portrait(controller, layout.lowResource),
         ),
       );
       final words = Column(

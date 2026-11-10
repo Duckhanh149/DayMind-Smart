@@ -14,6 +14,7 @@ import '../../../app/workspace_host.dart';
 import '../../account_sync/presentation/account_page.dart';
 import '../../companion/presentation/companion_card.dart';
 import '../../companion/presentation/companion_settings.dart';
+import '../../companion/presentation/character_import_dialog.dart';
 import '../../reminders/presentation/notification_pages.dart';
 import '../domain/task.dart';
 import 'task_editor.dart';
@@ -835,7 +836,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: ['png', 'webp'],
+        allowedExtensions: ['png', 'webp', 'gif', 'zip'],
       );
       if (picked == null) return;
       if (picked.path == null) {
@@ -843,51 +844,16 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           'Không đọc được tệp đã chọn. Hãy chọn ảnh trên thiết bị.',
         );
       }
-      final prepared = await controller.importer.prepare(
-        File(picked.path!),
-        picked.name,
-      );
       if (!mounted) return;
-      final accepted = await showDialog<bool>(
+      await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Xem trước nhân vật'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 180,
-                  width: 220,
-                  child: Image.memory(
-                    prepared.bytes,
-                    cacheWidth: 256,
-                    cacheHeight: 256,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Ảnh chỉ lưu trên thiết bị này. Hãy dùng ảnh bạn sở hữu hoặc có quyền sử dụng.',
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Nhập & sử dụng'),
-            ),
-          ],
+        barrierDismissible: false,
+        builder: (_) => CharacterImportDialog(
+          controller: controller,
+          source: File(picked.path!),
+          fileName: picked.name,
         ),
       );
-      if (accepted != true || !mounted) return;
-      final name = await controller.importer.installPrepared(prepared);
-      await controller.configure((prefs) => prefs.copyWith(assetName: name));
     } catch (error) {
       notice(error);
     } finally {
@@ -1009,7 +975,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Chọn PNG/WebP tĩnh bạn có quyền sử dụng. Tối đa 4 MB và 2048 × 2048 px. Ảnh chỉ lưu cục bộ.',
+                        'PNG/WebP tĩnh ≤4 MiB, GIF/WebP động ≤8 MiB hoặc ZIP DayMind ≤16 MiB. Tối đa 120 khung; thư viện ≤32 MiB. Chỉ dùng tài sản bạn có quyền sử dụng.',
                       ),
                       const SizedBox(height: 16),
                       OutlinedButton.icon(

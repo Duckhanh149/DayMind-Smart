@@ -1,3 +1,7 @@
+bool isCharacterAssetName(String? name) =>
+    name != null &&
+    RegExp(r'^[a-f0-9]{64}\.(png|webp|character)$').hasMatch(name);
+
 enum Personality { gentle, practical, cheerful }
 
 enum CompanionEvent {
@@ -344,8 +348,7 @@ class AppPreferences {
         Personality.gentle,
     assetName:
         json['assetName'] is String &&
-            RegExp(r'^[a-f0-9]{64}\.(png|webp)$')
-                .hasMatch(json['assetName'] as String)
+            isCharacterAssetName(json['assetName'] as String)
         ? json['assetName'] as String
         : null,
     companionSize: json['companionSize'] is num

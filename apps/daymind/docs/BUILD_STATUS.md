@@ -1,6 +1,6 @@
 # Kiểm chứng bản native
 
-Cập nhật 09/11/2026 (UTC). Nguồn native tại apps/daymind; web root độc lập.
+Cập nhật 10/11/2026 (UTC). Nguồn native tại apps/daymind; web root độc lập.
 
 ## Checkpoint hiện tại
 
@@ -13,7 +13,7 @@ Preview **0.5.0 / giai đoạn0–6 đã qua cổng tự động** tại `67c4a4
 - Kiểm tra gói tải từ đúng run: CRC ZIP/APK, PE x64/runtimes/OFL, minSdk24/target36/ARM64 và APK signature v2 đạt. Version0.5.0, Android versionCode2005. APK vẫn ký Android Debug, Windows chưa ký sản xuất; chưa xác minh đường cập nhật cùng chứng thư.
 - Android artifact13719286315; Windows13719600362. Hash/package metadata tại [PHASE6_PACKAGES.json](qa/PHASE6_PACKAGES.json); số đo debug tại [PHASE6_RESOURCES.json](qa/PHASE6_RESOURCES.json). Cache đỉnh131072bytes hai nền tảng; Windows sau dọn461877248bytes so453828608 trước, Android528637952 so547864576 trước.
 
-Giai đoạn7 bắt đầu sau checkpoint này; animation/floating/Live2D chưa có trong0.5.0. Production Firebase/signing, backup/restore và kiểm chứng phần cứng Android OEM/Doze/Windows10/11 còn trong cổng cuối. Số đo runner/emulator debug và ảnh headless không thay cho máy cấu hình thấp thật. Các đoạn “chờ CI” trong nhật ký phía dưới là lịch sử, không phải trạng thái hiện tại.
+Source giai đoạn7 đang thêm animation/import package/floating, chưa build/runtime kiểm chứng; chưa có trong artifact0.5.0 được kiểm ở trên. Local193 tests đạt trước queue cuối;14 ca targeted đạt sau giới hạn queue. Phải dùng CI mới cho source7, không gán kết quả source67c4a43 cho code mới. Live2D vẫn tắt. Production Firebase/signing, backup/restore và kiểm chứng phần cứng Android OEM/Doze/Windows10/11 còn trong cổng cuối. Số đo runner/emulator debug và ảnh headless không thay cho máy cấu hình thấp thật. Các đoạn “chờ CI” trong nhật ký phía dưới là lịch sử, không phải trạng thái hiện tại.
 
 ## Bằng chứng preview 0.1.0 trước đây
 

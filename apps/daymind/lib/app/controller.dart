@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../features/tasks/domain/task.dart';
 import '../features/tasks/data/database.dart' show SqliteTaskRepository;
 import '../features/companion/domain/companion.dart';
+import '../features/companion/domain/floating_settings.dart';
 import '../features/companion/data/asset_importer.dart';
 import '../features/reminders/application/reminder_coordinator.dart';
 import '../features/reminders/domain/reminder.dart';
@@ -49,6 +50,9 @@ class WorkspaceController extends ChangeNotifier {
   AppPreferences preferences = const AppPreferences();
   CompanionProfile companion = CompanionProfile();
   CompanionLayout companionLayout = const CompanionLayout();
+  FloatingCompanionSettings floatingSettings =
+      const FloatingCompanionSettings();
+  String? floatingError;
   CompanionExpression expression = CompanionExpression.neutral;
   Map<CompanionExpression, String> expressionAssets = {};
   String? companionError;
@@ -67,13 +71,15 @@ class WorkspaceController extends ChangeNotifier {
       companionLayout = CompanionLayout.fromJson(
         await recurrence.records.get('companion_local', 'layout'),
       );
+      floatingSettings = FloatingCompanionSettings.fromJson(
+        await recurrence.records.get('companion_local', 'floating'),
+      );
       final art =
           await recurrence.records.get('companion_local', 'expressions') ?? {};
       expressionAssets = {
         for (final e in CompanionExpression.values)
           if (art[e.name] is String &&
-              RegExp(r'^[a-f0-9]{64}\.(png|webp)$')
-                  .hasMatch(art[e.name] as String))
+              isCharacterAssetName(art[e.name] as String))
             e: art[e.name] as String,
       };
       PaintingBinding.instance.imageCache.maximumSizeBytes =
@@ -81,6 +87,7 @@ class WorkspaceController extends ChangeNotifier {
     } catch (_) {
       companion = CompanionProfile(personality: preferences.personality);
       companionLayout = const CompanionLayout();
+      floatingSettings = const FloatingCompanionSettings();
       expressionAssets = {};
       companionError = 'Chưa đọc được hồ sơ Companion. Mầm dùng cấu hình mặc định; công việc vẫn được giữ.';
     }
@@ -229,6 +236,20 @@ class WorkspaceController extends ChangeNotifier {
         });
         PaintingBinding.instance.imageCache.clear();
       }, localChange: false);
+  Future<void> updateFloating(
+    FloatingCompanionSettings Function(FloatingCompanionSettings) update,
+  ) => _write(() async {
+    final value = update(floatingSettings);
+    value.validate();
+    await recurrence.records.put('companion_local', 'floating', value.toJson());
+  }, localChange: false);
+
+  void reportFloatingError(String? value) {
+    if (floatingError == value || _disposed) return;
+    floatingError = value;
+    notifyListeners();
+  }
+
   DashboardPreferences dashboard = const DashboardPreferences();
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
@@ -238,10 +259,14 @@ class WorkspaceController extends ChangeNotifier {
   Future<void> drain() async {
     _closed = true;
     await _tail;
+    await importer.drain();
   }
 
   void resumeWrites() {
-    if (!_disposed) _closed = false;
+    if (!_disposed) {
+      _closed = false;
+      importer.resume();
+    }
   }
 
   int notificationOpenRequest = 0;
@@ -474,6 +499,7 @@ class WorkspaceController extends ChangeNotifier {
     if (_disposed) return;
     _disposed = true;
     _closed = true;
+    importer.close();
     window?.removeListener(notifyListeners);
     reminders?.removeListener(notifyListeners);
     reminders?.dispose();

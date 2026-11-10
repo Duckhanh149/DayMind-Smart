@@ -11,6 +11,7 @@ namespace {
 constexpr UINT kTrayCallback = WM_APP + 71;
 constexpr UINT kOpenDayMind = 801;
 constexpr UINT kQuitDayMind = 802;
+constexpr UINT kRecoverCompanion = 803;
 }
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -38,6 +39,30 @@ bool FlutterWindow::OnCreate() {
       flutter_controller_->engine()->messenger(), "daymind/secure",
       &flutter::StandardMethodCodec::GetInstance());
   secure_channel_->SetMethodCallHandler(HandleSecureCall);
+  companion_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "daymind/companion",
+      &flutter::StandardMethodCodec::GetInstance());
+  companion_ = std::make_unique<FloatingCompanionWindow>(GetHandle(),
+      [this](const std::string& method, const flutter::EncodableValue& value) {
+        if (companion_channel_) companion_channel_->InvokeMethod(method,
+            std::make_unique<flutter::EncodableValue>(value));
+      });
+  companion_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    if (call.method_name() == "configure") {
+      const auto* value = call.arguments() ? std::get_if<flutter::EncodableMap>(call.arguments()) : nullptr;
+      std::string error;
+      if (!value || !companion_->Configure(*value, &error)) {
+        companion_->Close();
+        result->Error("INVALID_COMPANION", error.empty() ? "A configuration map is required." : error);
+      } else result->Success();
+    } else if (call.method_name() == "close") {
+      companion_->Close(); result->Success();
+    } else if (call.method_name() == "recover") {
+      companion_->Recover(); result->Success();
+    } else if (call.method_name() == "state") {
+      result->Success(flutter::EncodableValue(companion_->State()));
+    } else result->NotImplemented();
+  });
   taskbar_created_ = RegisterWindowMessageW(L"TaskbarCreated");
   lifecycle_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       flutter_controller_->engine()->messenger(), "daymind/window",
@@ -76,6 +101,11 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  companion_.reset();
+  if (companion_channel_) {
+    companion_channel_->SetMethodCallHandler(nullptr);
+    companion_channel_ = nullptr;
+  }
   if (secure_channel_) {
     secure_channel_->SetMethodCallHandler(nullptr);
     secure_channel_ = nullptr;
@@ -129,6 +159,10 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   if (message == WM_SHOWWINDOW && lifecycle_channel_) {
     lifecycle_channel_->InvokeMethod("visibility", std::make_unique<flutter::EncodableValue>(wparam != 0));
   }
+  if (message == WM_COMMAND && LOWORD(wparam) == kRecoverCompanion) {
+    if (companion_) companion_->Recover();
+    return 0;
+  }
   if (message == WM_COMMAND && (LOWORD(wparam) == kOpenDayMind || LOWORD(wparam) == kQuitDayMind)) {
     if (LOWORD(wparam) == kOpenDayMind) RestoreFromTray();
     else { tray_enabled_ = false;PostMessageW(hwnd, WM_CLOSE, 0, 0); }
@@ -153,6 +187,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       HMENU menu = CreatePopupMenu();
       if (menu) {
         AppendMenuW(menu, MF_STRING, kOpenDayMind, L"M\u1edf DayMind");
+        AppendMenuW(menu, MF_STRING, kRecoverCompanion, L"Kh\u00f4i ph\u1ee5c Companion / nh\u1eadn chu\u1ed9t");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING, kQuitDayMind, L"Tho\u00e1t h\u1eb3n");
         SetForegroundWindow(hwnd);

@@ -132,6 +132,12 @@ jobs:
           $session = (Get-Process -Id $PID).SessionId
           $shell = Get-Process explorer -ErrorAction SilentlyContinue | Where-Object SessionId -eq $session
           if (!$shell) { Start-Process explorer.exe; Start-Sleep -Seconds 3 }
+      - name: Windows Companion native policy cases
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./build/windows/x64/companion-tests/Release/daymind_companion_policy_tests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Companion policy tests failed' }
       - name: Windows native integration smoke test
         if: runner.os == 'Windows'
         working-directory: apps/daymind/firebase

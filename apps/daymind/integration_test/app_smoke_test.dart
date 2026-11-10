@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'companion_fixtures.dart';
+import 'animated_companion_probe.dart';
 
 import 'dart:io';
 import 'dart:convert';
@@ -229,6 +230,11 @@ void main() {
     await tester.pumpAndSettle();
     debugPrint(
       'COMPANION_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'sourcePixels': '2048x2048', 'images': 4, 'selections': 24, 'lowResourceDecode': 128, 'rssBefore': rssBefore, 'rssAfterImport': rssAfterImport, 'rssSamplePeak': peakRss, 'rssAfterCleanup': ProcessInfo.currentRss, 'imageCacheSamplePeak': peakCache, 'importElapsedMs': importElapsedMs, 'selectionElapsedMs': timer.elapsedMilliseconds})}',
+    );
+    await animatedCompanionProbe(
+      tester,
+      controller,
+      tester.element(find.byType(WorkspaceScreen)),
     );
     GoRouter.of(tester.element(find.byType(WorkspaceScreen))).go('/today');
     await tester.pumpAndSettle();

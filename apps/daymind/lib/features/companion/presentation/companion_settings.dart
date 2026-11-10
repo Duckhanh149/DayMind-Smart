@@ -143,6 +143,66 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ),
               ),
             ),
+            if (c.window != null) ...[
+              const Divider(),
+              SwitchListTile(
+                key: const Key('floating-enabled'),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Companion nổi trên Windows'),
+                subtitle: const Text(
+                  'Kéo nhân vật để di chuyển, kéo chấm góc phải để đổi cỡ. Tự ẩn khi toàn màn hình hoặc giờ yên lặng.',
+                ),
+                value: c.floatingSettings.enabled,
+                onChanged: (v) =>
+                    act(c.updateFloating((s) => s.copy(enabled: v))),
+              ),
+              if (c.floatingError != null)
+                Text(
+                  c.floatingError!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              if (c.floatingSettings.enabled) ...[
+                SwitchListTile(
+                  key: const Key('floating-topmost'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Luôn ở trên cửa sổ khác'),
+                  value: c.floatingSettings.topmost,
+                  onChanged: (v) =>
+                      act(c.updateFloating((s) => s.copy(topmost: v))),
+                ),
+                SwitchListTile(
+                  key: const Key('floating-click-through'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Cho chuột đi xuyên qua'),
+                  subtitle: const Text(
+                    'Khi bật sẽ không kéo được nhân vật. Dùng nút khôi phục bên dưới hoặc menu khay DayMind để nhận chuột lại.',
+                  ),
+                  value: c.floatingSettings.clickThrough,
+                  onChanged: (v) =>
+                      act(c.updateFloating((s) => s.copy(clickThrough: v))),
+                ),
+                Text('Kích thước cửa sổ nổi: ${c.floatingSettings.size} dp'),
+                Slider(
+                  key: const Key('floating-size'),
+                  min: 80,
+                  max: 256,
+                  divisions: 22,
+                  value: c.floatingSettings.size.toDouble(),
+                  onChanged: (v) =>
+                      act(c.updateFloating((s) => s.copy(size: v.round()))),
+                ),
+                OutlinedButton.icon(
+                  key: const Key('recover-floating'),
+                  icon: const Icon(Icons.my_location),
+                  onPressed: () => act(
+                    c.updateFloating(
+                      (s) => s.copy(resetPosition: true, clickThrough: false),
+                    ),
+                  ),
+                  label: const Text('Khôi phục vị trí & nhận chuột'),
+                ),
+              ],
+            ],
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
               title: const Text('Ảnh biểu cảm trên máy này'),

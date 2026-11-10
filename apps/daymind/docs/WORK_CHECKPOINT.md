@@ -8,7 +8,7 @@ Tác vụ “Tiếp tục DayMind” kiểm tra mỗi giờ (Asia/Saigon), nối
 
 ## Cổng đã qua: 0–6
 
-Source `67c4a433b76c62a7cdae36b2760a29c5a896a2e1`, tree `02ea0bbd5e224e546ca356faf7496503d71b0c53`; workspace đã soft-reset khớp remote sau khi kiểm tree. Các sửa còn sau source này hiện chỉ là tài liệu kết quả, chưa có code giai đoạn7.
+Source `67c4a433b76c62a7cdae36b2760a29c5a896a2e1`, tree `02ea0bbd5e224e546ca356faf7496503d71b0c53`; workspace đã soft-reset khớp remote sau khi kiểm tree. Remote b360a34 là checkpoint tài liệu giai đoạn6; code giai đoạn7 đang được lưu tiếp trên nhánh native/flutter-app. Không reset/ghi đè các thay đổi local.
 
 - [Native CI42716570760](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42716570760): **Android và Windows đều thành công**. Android job129499547665:150 Flutter tests,25 receiver/recovery, Keystore/cold-process/digest, frame thật và account integration. Windows129499547254:149 tests +1 symlink test cần quyền host được skip, DPAPI/account/renderer/tray/installer đạt.
 - [Emulator CI42716570825](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/42716570825), job129499547130:16 cases thật +7 Auth/payload AOT đạt trên cùng source.
@@ -20,7 +20,13 @@ Source `67c4a433b76c62a7cdae36b2760a29c5a896a2e1`, tree `02ea0bbd5e224e546ca356f
 
 Đọc lại `MASTER_SPEC.reference.md` phần Companion/phase7 và ADR0008 trước khi triển khai. Giai đoạn6 đã có editor tên/tính cách/18 mẫu/sáu sự kiện/bốn biểu cảm; preview ảnh, vị trí auto/manual, low-resource, metadata sync/CAS, cooldown/quiet hours và dấu ngày quá hạn qua restart. PNG/WebP nguồn giữ nguyên byte/hash; derivative≤256px và lazy library; quota128 nguồn/32MiB tính cả cache. Lời chào đợi múi giờ thực; cue foreground dùng lời thoại thấy được hoặc SnackBar khi tắt/cuộn khuất, không OS alert thứ hai.
 
-Chưa có animation/floating code. Bản nghiên cứu ngoài repo: `/workspace/work/PHASE7_PLAN.md` (không phải việc đã hoàn thành). Tiếp tục safe GIF/WebP động/sprite/ZIP, lifecycle/resource budgets và cửa sổ nổi Windows opt-in; cùng process, không thêm Reminder Engine hoặc Flutter engine. Default always-on-top/click-through đều tắt, ẩn fullscreen/focus mode, kéo/resize an toàn, phục hồi qua khay. Hoàn thiện/test/CI cả hai nền tảng trước8.
+Giai đoạn7 đang triển khai, chưa qua cổng native. Đã có SafeZip/preflight PNG/GIF/WebP, manifest/provenance/checksum/clip/expression, normalize atlas128px/tile (≤2048×1024), giữ nguồn nguyên byte, cài staging rename/quota, 2 lượt chuẩn bị tối đa và drain/cancel khi đổi tài khoản. UI có tiến độ/hủy/xem trước/xác nhận quyền; nhận PNG/WebP/GIF/ZIP. Renderer sở hữu một atlas, hủy generation cũ; modal/scroll/background/tray/TickerMode/reduced-motion dừng timer và dispose. Low-resource/static library vẫn dùng preview.
+
+Local: **193 tests toàn bộ đạt** trước giới hạn queue cuối; sau thay đổi queue,14 ca store/floating/import UI đạt (store thêm1 → tổng dự kiến194). Analyze sạch trước probe cuối; chạy lại analyze/full suite và xem log mới nhất trước coi source mới sạch. Hướng dẫn gói `CHARACTER_PACKAGE.md`, ADR0009. Không coi unit tests là cổng7.
+
+Windows native đã viết nhưng CHƯA build/runtime kiểm chứng: layered/tool/noactivate GDI+, cùng process/không thêm Flutter engine, mặc định nổi/topmost/click-through OFF; kéo/resize/clamp/DPI, khay phục hồi803, policy SHQueryUserNotificationState + RECT fullscreen + quiet. Native close được await trước drain/xóa workspace. Có policy12 cases và exe tác động Win32 thật không đóng gói vào app; integration mới có ANIMATION_RESOURCE_POC và FLOATING_RESOURCE_POC. API QUNS không chứng minh mọi cấu hình Focus Assist/DND trên Windows10/11 thật.
+
+Tiếp tục: đẩy source lên nhánh/PR bằng expected SHA (parent b360a34 nếu chưa có commit mới), kiểm tree, soft-reset sau fetch; kiểm native CI cả hai nền tảng. Cần sửa mọi lỗi compile/probe; đo atlas/RSS/GDI/timing/quiet/fullscreen/focus/click-through/tray. Cần thêm kiểm texture/floating khi đổi tài khoản, playback native ngoài low-resource, ảnh UI động/chữ lớn. Chưa đánh dấu7 đạt hoặc làm8. Crash staging recovery/single-instance còn cần rà trong release gate9; không xóa staging của tiến trình đang hoạt động.
 
 Sau7:8 kiểm chứng Live2D/giấy phép, chỉ bật khi qua cổng;9 backup có mật khẩu/atomic restore, privacy/signing/install/upgrade/hardware. Nhớ rà migration preference `companionSize` cũ sang layout mới ở cổng upgrade9 (giá trị cũ vẫn giữ trong preferences; bản mới dùng companion_local).
 
@@ -33,6 +39,6 @@ Sau7:8 kiểm chứng Live2D/giấy phép, chỉ bật khi qua cổng;9 backup c
 
 ## Chạy kiểm tra
 
-Workspace `/workspace/work/native-repo/apps/daymind`; source `/workspace/work/env.sh` để dùng Flutter/Dart ghim. `flutter analyze`, `flutter test` (150 cuối). Emulator package riêng `emulator_test/`: pub get --enforce-lockfile trước; `RUN_EMULATOR=true dart test --concurrency=1 --reporter expanded`; CI còn chạy7 Auth/payload AOT.
+Workspace `/workspace/work/native-repo/apps/daymind`; source `/workspace/work/env.sh` để dùng Flutter/Dart ghim. `flutter analyze`, `flutter test` (193 toàn bộ vừa đạt; tổng194 sau queue cuối, cần chạy đầy đủ/CI). Emulator package riêng `emulator_test/`: pub get --enforce-lockfile trước; `RUN_EMULATOR=true dart test --concurrency=1 --reporter expanded`; CI còn chạy7 Auth/payload AOT.
 
 Kiểm tra port trước khi mở Emulator mới: Auth9199, Firestore8180. Không chạy hai service trên cùng cổng; Java mồ côi không chứng minh Auth/CLI còn sống. Tránh full APK build local vì disk8GB/NDK đã dọn; dùng native CI, giữ checksum/TLS. Phần cứng Android OEM/Doze/reboot và Windows10/11 thật, production Firebase/signing vẫn là nghiệm thu cuối; chưa đánh dấu hoàn tất0–9 hoặc dừng automation.

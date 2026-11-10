@@ -8,6 +8,7 @@ project(runner LANGUAGES CXX)
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
+  "floating_companion.cpp"
   "secure_store.cpp"
   "main.cpp"
   "utils.cpp"
@@ -37,7 +38,21 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "shell32.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "crypt32.lib" "ole32.lib" "uuid.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "gdiplus.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+# Native gate probes are built for CI but stay outside the distributed bundle.
+add_executable(daymind_companion_policy_tests "companion_policy_test.cpp")
+apply_standard_settings(daymind_companion_policy_tests)
+target_compile_definitions(daymind_companion_policy_tests PRIVATE "NOMINMAX")
+set_target_properties(daymind_companion_policy_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")
+add_executable(daymind_companion_window_probe "companion_window_probe.cpp")
+apply_standard_settings(daymind_companion_window_probe)
+target_compile_definitions(daymind_companion_window_probe PRIVATE "NOMINMAX")
+target_link_libraries(daymind_companion_window_probe PRIVATE "user32.lib")
+set_target_properties(daymind_companion_window_probe PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")

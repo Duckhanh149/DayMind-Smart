@@ -25,6 +25,7 @@ import '../features/tasks/data/database.dart';
 import '../platform/notification_scheduler.dart';
 import '../platform/secure_session_store.dart';
 import '../platform/window_lifecycle.dart';
+import '../platform/floating_companion.dart';
 import 'controller.dart';
 
 final workspaceHostProvider = Provider<WorkspaceHost?>((ref) => null);
@@ -45,6 +46,7 @@ class WorkspaceHost extends ChangeNotifier {
   StreamSubscription<void>? _syncListener;
   AuthSession? account;
   WindowLifecycle? window;
+  FloatingCompanionService? floating;
   bool switching = false;
   int generation = 0;
   String? sessionError;
@@ -56,6 +58,7 @@ class WorkspaceHost extends ChangeNotifier {
     _editTimer?.cancel();
     await _tail;
     await sync?.stop();
+    await floating?.stop();
     await controller?.drain();
     await controller?.reminders?.stop();
     await _scheduler?.deactivate();
@@ -265,6 +268,8 @@ class WorkspaceHost extends ChangeNotifier {
     final oldOpen = _scheduler?.onOpen;
     try {
       await sync?.stop();
+      await floating?.stop();
+      floating = null;
       await old?.drain();
       await old?.reminders?.stop();
       // Never switch native database paths until old alarms are gone.
@@ -288,6 +293,9 @@ class WorkspaceHost extends ChangeNotifier {
         );
         await old.reminders?.resume(zone);
         if (sync != null) unawaited(sync!.resume());
+      }
+      if (old != null && Platform.isWindows) {
+        floating = FloatingCompanionService(old)..start();
       }
       throw const AccountFailure(
         'profile_switch',
@@ -326,6 +334,7 @@ class WorkspaceHost extends ChangeNotifier {
     reminders.onPrimaryRequest = notificationDevice;
     await reminders.start(zone);
     if (zone.isNotEmpty) c.greetCompanion();
+    if (Platform.isWindows) floating = FloatingCompanionService(c)..start();
     if (next != null) {
       final service = SyncService(
         store: SyncStore(c.repository, next.uid),
