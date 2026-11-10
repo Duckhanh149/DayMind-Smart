@@ -137,7 +137,7 @@ class _CharacterImportDialogState extends State<CharacterImportDialog> {
                   ],
                   const SizedBox(height: 12),
                   const Text(
-                    'Ảnh và gói nguồn chỉ lưu trên thiết bị này. Chế độ ít tài nguyên dùng ảnh tĩnh; hoạt ảnh tự dừng khi bị che hoặc ra nền.',
+                    'Chỉ lưu trên thiết bị này. Ít tài nguyên: dùng ảnh tĩnh. Hoạt ảnh dừng khi bị che hoặc ra nền.',
                   ),
                   CheckboxListTile(
                     key: const Key('character-rights'),

@@ -58,6 +58,8 @@ jobs:
           "$env:RUNNER_TEMP\daymind-flutter\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: flutter config --no-analytics
       - run: flutter --version
+      - name: Verify Android smoke driver failure guards
+        run: python tool/test_android_smoke_driver.py
       - run: flutter pub get --enforce-lockfile
       - run: flutter pub get --enforce-lockfile
         working-directory: apps/daymind/emulator_test

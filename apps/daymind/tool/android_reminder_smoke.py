@@ -4,15 +4,30 @@ Only uses the debug fixture endpoint. No production app data or cloud service.
 """
 import base64
 import json
+import os
 import re
 import subprocess
 import time
 
+from android_native_integration import diagnostic, sanitized
+
 PACKAGE = 'dev.daymind.daymind_smart'
+DEVICE = os.environ.get('ANDROID_SERIAL', 'emulator-5554')
 
 
 def adb(*args):
-    result = subprocess.run(['adb', *args], check=True, capture_output=True, text=True, timeout=40)
+    command = ['adb', '-s', DEVICE, *args]
+    try:
+        result = subprocess.run(command, check=False, capture_output=True,
+                                text=True, errors='replace', timeout=40)
+    except (OSError, subprocess.TimeoutExpired):
+        diagnostic(DEVICE)
+        raise
+    if result.returncode:
+        print('ADB_FAILURE:', result.returncode,
+              sanitized((result.stderr + result.stdout)[-3000:]), flush=True)
+        diagnostic(DEVICE)  # Read-only; never retries or restarts a failed case.
+        raise subprocess.CalledProcessError(result.returncode, command)
     return result.stdout
 
 
@@ -44,47 +59,61 @@ def cold_close():
 
 def kill_and_check():
     adb('shell', 'am', 'kill', PACKAGE)
-    result = subprocess.run(['adb', 'shell', 'pidof', PACKAGE], capture_output=True, text=True, timeout=10)
-    return not result.stdout.strip()
+    command = ['adb', '-s', DEVICE, 'shell', 'pidof', PACKAGE]
+    result = subprocess.run(command, capture_output=True, text=True,
+                            errors='replace', timeout=10)
+    if result.returncode == 0:
+        return not result.stdout.strip()
+    if result.returncode == 1 and not result.stdout.strip() and not result.stderr.strip():
+        return True  # Android pidof reports no process with an empty status 1.
+    print('ADB_PROCESS_CHECK_FAILURE:', sanitized(result.stderr[-3000:]), flush=True)
+    diagnostic(DEVICE)
+    raise subprocess.CalledProcessError(result.returncode, command)
 
 
-adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
-adb('shell', 'pm', 'grant', PACKAGE, 'android.permission.POST_NOTIFICATIONS')
-adb('shell', 'am', 'start', '-n', f'{PACKAGE}/.MainActivity')
-until(lambda: fixture('ready').get('ready'), 90, 'Flutter opens SQLite and initializes native path')
-assert fixture('secure')['securePassed'] is True
-print('PASS: Android Keystore encrypted write/read/replace/delete on the actual emulator.')
-fixture('seed')
-cold_close()
-# The process was absent at the scheduled time. Read-only adb dumps do not start it.
-until(lambda: 'DayMind device smoke cold' in adb('shell', 'dumpsys', 'notification', '--noredact'),
-      360, 'OS notification after cold process termination (inexact alarm)')
-observed = fixture()
-assert observed['state'] == 'unknown' and observed['notifications'] == 1, observed
-print('PASS: Android OS posted one notification after the application process exited.')
 
-fixture('seed', 'edited')
-fixture('seed', 'quiet')
-cold_close()
-until(lambda: fixture(name='edited').get('state') == 'cancelled', 360, 'obsolete event rejected')
-until(lambda: fixture(name='quiet').get('state') == 'suppressed', 360, 'quiet hours suppress event')
-assert fixture()['notifications'] <= 1
-print('PASS: edited task and quiet hours did not add notifications.')
+def main():
+    adb('install', '-r', 'build/app/outputs/flutter-apk/app-debug.apk')
+    adb('shell', 'pm', 'grant', PACKAGE, 'android.permission.POST_NOTIFICATIONS')
+    adb('shell', 'am', 'start', '-n', f'{PACKAGE}/.MainActivity')
+    until(lambda: fixture('ready').get('ready'), 90, 'Flutter opens SQLite and initializes native path')
+    assert fixture('secure')['securePassed'] is True
+    print('PASS: Android Keystore encrypted write/read/replace/delete on the actual emulator.')
+    fixture('seed')
+    cold_close()
+    # The process was absent at the scheduled time. Read-only adb dumps do not start it.
+    until(lambda: 'DayMind device smoke cold' in adb('shell', 'dumpsys', 'notification', '--noredact'),
+          360, 'OS notification after cold process termination (inexact alarm)')
+    observed = fixture()
+    assert observed['state'] == 'unknown' and observed['notifications'] == 1, observed
+    print('PASS: Android OS posted one notification after the application process exited.')
 
-fixture('seed', 'past')
-fixture('recover', 'past')
-until(lambda: fixture(name='past').get('state') == 'expired', 30, 'restart recovery skips historical reminder')
-assert fixture()['notifications'] <= 1
-print('PASS: recovery did not replay a past reminder. This is not an OEM/Doze/real reboot test.')
+    fixture('seed', 'edited')
+    fixture('seed', 'quiet')
+    cold_close()
+    until(lambda: fixture(name='edited').get('state') == 'cancelled', 360, 'obsolete event rejected')
+    until(lambda: fixture(name='quiet').get('state') == 'suppressed', 360, 'quiet hours suppress event')
+    assert fixture()['notifications'] <= 1
+    print('PASS: edited task and quiet hours did not add notifications.')
 
-fixture('seed', 'digest')
-cold_close()
-until(lambda: 'Nhịp ngày mới' in adb('shell', 'dumpsys', 'notification', '--noredact'),
-      360, 'opt-in daily digest after cold process termination')
-observed = fixture(name='digest')
-assert observed['state'] == 'unknown' and observed['digestNotifications'] == 1 and observed['digestActions'] == 0 and observed['attempts'] == 1, observed
-fixture('retime', 'digest')
-observed = fixture(name='digest')  # single native executor queues this read after recovery
-assert observed['state'] == 'unknown' and observed['attempts'] == 1, observed
-assert fixture(name='digest')['digestNotifications'] == 1
-print('PASS: opt-in digest posted after cold close, has no task actions, and time edit/recovery did not repeat it.')
+    fixture('seed', 'past')
+    fixture('recover', 'past')
+    until(lambda: fixture(name='past').get('state') == 'expired', 30, 'restart recovery skips historical reminder')
+    assert fixture()['notifications'] <= 1
+    print('PASS: recovery did not replay a past reminder. This is not an OEM/Doze/real reboot test.')
+
+    fixture('seed', 'digest')
+    cold_close()
+    until(lambda: 'Nhịp ngày mới' in adb('shell', 'dumpsys', 'notification', '--noredact'),
+          360, 'opt-in daily digest after cold process termination')
+    observed = fixture(name='digest')
+    assert observed['state'] == 'unknown' and observed['digestNotifications'] == 1 and observed['digestActions'] == 0 and observed['attempts'] == 1, observed
+    fixture('retime', 'digest')
+    observed = fixture(name='digest')  # single native executor queues this read after recovery
+    assert observed['state'] == 'unknown' and observed['attempts'] == 1, observed
+    assert fixture(name='digest')['digestNotifications'] == 1
+    print('PASS: opt-in digest posted after cold close, has no task actions, and time edit/recovery did not repeat it.')
+
+
+if __name__ == '__main__':
+    main()

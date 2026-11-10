@@ -36,3 +36,5 @@ ZIP tối đa64 entry (kể cả thư mục),8MiB/tệp,32MiB tổng giải nén
 Tối đa hai lượt chuẩn bị cùng lúc; normalize/lưu tuần tự và drain trước khi xóa tài khoản. Thư viện≤128 mục/32MiB tính cả nguồn, atlas, preview và metadata. Nguồn của gói được giữ byte/hash trong `source.bin`; không chỉnh sửa tại chỗ. Nhập trùng không nhân đôi quota. Dữ liệu ảnh/layout/chuyển động không được đưa vào cloud profile. Xóa gói dọn nguồn/atlas/cache và tham chiếu biểu cảm; thiếu/hỏng gói dùng Mầm, không tải bản thay thế trên mạng.
 
 Trong thẻ, hoạt ảnh chỉ sở hữu một atlas; ra nền, thu khay, dialog che, cuộn khuất, TickerMode tắt hoặc giảm chuyển động sẽ dừng timer và giải phóng atlas. Low-resource dùng preview tĩnh. Thumbnail thư viện không tự hoạt ảnh. Không có audio hoặc scheduler nhắc việc riêng.
+
+Gói thử nghiệm `test/fixtures/three_sprite_frames.zip` có ba panel chữ nhật, hai motion, ánh xạ biểu cảm và tệp ghi chú quyền. Kiểm thử xác nhận crop đúng panel, giữ tỷ lệ/viền trong suốt và pixel cuối; fixture không nằm trong bundle phát hành.

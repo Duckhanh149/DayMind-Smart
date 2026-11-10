@@ -8,11 +8,53 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daymind_smart/features/companion/data/character_preparer.dart';
 import 'package:daymind_smart/features/companion/data/image_preflight.dart';
 import 'package:daymind_smart/features/companion/domain/character_package.dart';
+import 'package:daymind_smart/features/companion/domain/companion.dart';
 
 import '../integration_test/animation_fixture.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('sprite crop coordinates preserve separate panels, transparent letterboxing, clips and license text', () async {
+    final plan = await CharacterBlueprint.inspect(
+      await File('test/fixtures/three_sprite_frames.zip').readAsBytes(),
+      'zip',
+      'Sprite',
+    );
+    final result = await CharacterNormalizer.build(plan);
+    expect((result.metadata.width, result.metadata.height), (384, 128));
+    expect(result.metadata.motions['cheer']!.frames, [2, 0]);
+    expect(result.metadata.motions['cheer']!.loop, isFalse);
+    expect(result.metadata.expressions[CompanionExpression.happy], 'cheer');
+    expect(
+      utf8.decode(result.licenseBytes!),
+      contains('no third-party character'),
+    );
+    final codec = await ui.instantiateImageCodec(result.atlasBytes);
+    final image = (await codec.getNextFrame()).image;
+    try {
+      final rgba = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
+          .buffer
+          .asUint8List();
+      const colors = [
+        [140, 170, 80, 255],
+        [80, 120, 180, 255],
+        [220, 150, 130, 255],
+      ];
+      for (var i = 0; i < 3; i++) {
+        final center = (64 * image.width + i * 128 + 64) * 4;
+        expect(rgba.sublist(center, center + 4), colors[i]);
+        final margin = (64 * image.width + i * 128 + 5) * 4;
+        expect(
+          rgba[margin + 3],
+          0,
+          reason: 'Portrait proportions must be preserved.',
+        );
+      }
+    } finally {
+      image.dispose();
+      codec.dispose();
+    }
+  });
   test('120 original frames normalize within the maximum atlas and preserve the final composited pixels', () async {
     final plan = await CharacterBlueprint.inspect(
       base64Decode(companionMaxGifFixture),

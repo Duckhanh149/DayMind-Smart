@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'companion_fixtures.dart';
 import 'animated_companion_probe.dart';
+import 'account_artwork_probe.dart';
 
 import 'dart:io';
 import 'dart:convert';
@@ -243,11 +244,13 @@ void main() {
         tester.element(find.byType(WorkspaceScreen)),
       ).read(workspaceHostProvider)!;
       final localIds = host.controller!.tasks.map((t) => t.id).toSet();
+      final artwork = await AccountArtworkProbe.start(tester, host);
       final email = '${const Uuid().v4()}@example.invalid',
           secret = const Uuid().v4();
       debugPrint('ACCOUNT_NATIVE_STAGE: create and open isolated workspace.');
       await host.signIn(email, secret, create: true, copyLocal: false);
       await tester.pumpAndSettle();
+      await artwork.freshAccount(tester, host);
       final service = host.sync!;
       debugPrint('ACCOUNT_NATIVE_STAGE: initial sync.');
       await service.sync();
@@ -274,6 +277,12 @@ void main() {
       final remote = await host.gateway.fetchAll(await host.session());
       expect(
         remote.any(
+          (r) => jsonEncode(r.record.toJson()).contains(artwork.privateName!),
+        ),
+        isFalse,
+      );
+      expect(
+        remote.any(
           (r) =>
               r.record.kind == SyncKind.task &&
               r.record.id == privateId &&
@@ -298,18 +307,24 @@ void main() {
       expect(await secure.read(), isNull);
       expect(host.controller!.tasks.map((t) => t.id).toSet(), localIds);
       expect(host.controller!.tasks.any((t) => t.id == privateId), isFalse);
+      await artwork.localRestored(tester, host);
       await host.signIn(email, secret, create: false, copyLocal: false);
       debugPrint('ACCOUNT_NATIVE_STAGE: account reopened.');
       await tester.pumpAndSettle();
       await host.sync!.sync();
       expect(host.account!.uid, owner);
       expect(host.controller!.companion.name, 'Mầm tài khoản');
+      await artwork.privateRestored(tester, host);
       expect(host.controller!.tasks.any((t) => t.id == privateId), isTrue);
       await host.deleteAccount(secret);
       debugPrint('ACCOUNT_NATIVE_STAGE: verified deletion completed.');
       await tester.pumpAndSettle();
       expect(host.account, isNull);
       expect(host.controller!.tasks.map((t) => t.id).toSet(), localIds);
+      await artwork.finish(tester, host);
+      debugPrint(
+        'ACCOUNT_ARTWORK_POC: local/isolated/reopened/deleted artwork and native bitmaps passed.',
+      );
       debugPrint(
         'ACCOUNT_NATIVE_POC: real Auth/Firestore, encrypted session, isolated profile, primary device, logout/relogin and verified deletion passed.',
       );

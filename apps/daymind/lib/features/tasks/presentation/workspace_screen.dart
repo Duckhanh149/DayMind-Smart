@@ -999,7 +999,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       characterLibrary(controller),
                       const SizedBox(height: 8),
                       const Text(
-                        'Mầm là nhân vật gốc của DayMind. Chưa bật hoạt ảnh, cửa sổ nổi trên desktop hoặc Live2D.',
+                        'Mầm là nhân vật gốc của DayMind. Hoạt ảnh dùng tệp bạn nhập; Companion nổi có trên Windows. Live2D chưa được bật.',
                         style: TextStyle(fontSize: 12),
                       ),
                     ],

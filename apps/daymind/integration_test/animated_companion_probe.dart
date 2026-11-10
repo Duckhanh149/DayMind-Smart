@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,29 @@ import 'package:daymind_smart/features/companion/presentation/character_animatio
 import 'package:daymind_smart/platform/floating_companion.dart';
 
 import 'animation_fixture.dart';
+
+Future<void> closeProbeDialog(
+  WidgetTester tester,
+  DialogRoute<void> route,
+) async {
+  var removed = false;
+  final completed = route.completed.then<void>((_) {
+    removed = true;
+  });
+  route.navigator!.pop();
+  // Navigator's popped future completes before the exit transition and overlay
+  // removal. Live native frames must reach completed before checking disposal.
+  for (var i = 0; i < 60 && !removed; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  expect(
+    removed,
+    isTrue,
+    reason: 'Probe dialog overlay did not finish removal.',
+  );
+  await completed;
+  await tester.pump();
+}
 
 Future<void> animatedCompanionProbe(
   WidgetTester tester,
@@ -38,7 +62,7 @@ Future<void> animatedCompanionProbe(
   try {
     // Exercise the real native renderer independently of emulator accessibility
     // settings. Product portraits still honor the user's reduced-motion setting.
-    final dialog = showDialog<void>(
+    final route = DialogRoute<void>(
       context: page,
       builder: (context) => MediaQuery(
         data: MediaQuery.of(context)
@@ -57,6 +81,7 @@ Future<void> animatedCompanionProbe(
         ),
       ),
     );
+    unawaited(Navigator.of(page, rootNavigator: true).push(route));
     for (var i = 0; i < 60 && framePaints.evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
@@ -79,9 +104,7 @@ Future<void> animatedCompanionProbe(
           : peakRss;
     }
     expect(positions.length, greaterThanOrEqualTo(2));
-    Navigator.of(tester.element(find.byType(AlertDialog))).pop();
-    await tester.pump(const Duration(milliseconds: 400));
-    await dialog;
+    await closeProbeDialog(tester, route);
     await c.updateCompanionLayout((s) => s.copy(lowResource: true));
     await tester.pump(const Duration(milliseconds: 200));
     expect(framePaints, findsNothing);
@@ -124,7 +147,7 @@ Future<void> maximumAtlasProbe(
   );
   try {
     for (var cycle = 0; cycle < 6; cycle++) {
-      final dialog = showDialog<void>(
+      final route = DialogRoute<void>(
         context: page,
         builder: (context) => MediaQuery(
           data: MediaQuery.of(context)
@@ -143,6 +166,7 @@ Future<void> maximumAtlasProbe(
           ),
         ),
       );
+      unawaited(Navigator.of(page, rootNavigator: true).push(route));
       for (var i = 0; i < 60 && frames.evaluate().isEmpty; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -152,9 +176,7 @@ Future<void> maximumAtlasProbe(
       expect((paint.atlas.width, paint.atlas.height), (2048, 1024));
       await tester.pump(const Duration(milliseconds: 100));
       peak = peak < ProcessInfo.currentRss ? ProcessInfo.currentRss : peak;
-      Navigator.of(tester.element(find.byType(AlertDialog))).pop();
-      await tester.pump(const Duration(milliseconds: 400));
-      await dialog;
+      await closeProbeDialog(tester, route);
       expect(frames, findsNothing);
       expect(paint.atlas.debugDisposed, isTrue);
     }

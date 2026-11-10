@@ -8,6 +8,9 @@ import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/companion/domain/companion.dart';
 import 'package:daymind_smart/features/companion/presentation/character_animation.dart';
 
+import '../integration_test/animated_companion_probe.dart'
+    show closeProbeDialog;
+
 final paints = find.byWidgetPredicate(
   (w) => w is CustomPaint && w.painter is CharacterFramePainter,
 );
@@ -77,6 +80,40 @@ void main() {
       active: active,
       fallback: const Text('static'),
     ),
+  );
+
+  testWidgets(
+    'native probe waits for a slow route exit and releases the overlay atlas',
+    (tester) async {
+      late BuildContext page;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              page = context;
+              return const Scaffold(body: Text('Workspace'));
+            },
+          ),
+        ),
+      );
+      final route = DialogRoute<void>(
+        context: page,
+        animationStyle: const AnimationStyle(
+          reverseDuration: Duration(seconds: 2),
+        ),
+        builder: (_) => AlertDialog(content: portrait()),
+      );
+      final popped = Navigator.of(page).push(route);
+      await tester.pump();
+      await loaded(tester);
+      final atlas = painter(tester).atlas;
+      await closeProbeDialog(tester, route);
+      await popped;
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(paints, findsNothing);
+      expect(atlas.debugDisposed, isTrue);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
   );
 
   testWidgets(
