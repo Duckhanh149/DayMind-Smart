@@ -2,6 +2,7 @@
 import contextlib
 import io
 import subprocess
+import shlex
 import unittest
 from unittest.mock import patch
 
@@ -9,6 +10,32 @@ import android_reminder_smoke as smoke
 
 
 class ColdProcessEvidence(unittest.TestCase):
+    def test_only_exact_app_records_are_read_with_literal_remote_keys(self):
+        key = "0|" + smoke.PACKAGE + "|1|tag'$(synthetic)|1000"
+        listing = '0|android|1|null|1000\n0|' + smoke.PACKAGE + '.other|1|null|1000\n' + key
+        with patch.object(smoke, 'adb', side_effect=[listing, 'DayMind device smoke cold']) as adb:
+            self.assertEqual(smoke.posted_notifications(), 'DayMind device smoke cold')
+        self.assertEqual(adb.call_count, 2)
+        args = adb.call_args.args
+        self.assertEqual(args[:4], ('shell', 'cmd', 'notification', 'get'))
+        self.assertEqual(shlex.split(args[4]), [key])
+
+    def test_no_app_record_does_not_read_other_notifications(self):
+        with patch.object(smoke, 'adb', return_value='0|android|1|null|1000\n') as adb:
+            self.assertEqual(smoke.posted_notifications(), '')
+        self.assertEqual(adb.call_count, 1)
+
+    def test_list_failure_is_never_treated_as_no_notifications(self):
+        with patch.object(smoke, 'adb', side_effect=subprocess.CalledProcessError(255, 'adb')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                smoke.posted_notifications()
+
+    def test_record_failure_is_not_silently_omitted(self):
+        listing = '0|' + smoke.PACKAGE + '|1|null|1000'
+        with patch.object(smoke, 'adb', side_effect=[listing, subprocess.CalledProcessError(1, 'adb')]):
+            with self.assertRaises(subprocess.CalledProcessError):
+                smoke.posted_notifications()
+
     def test_missing_process_requires_pidof_empty_status_one(self):
         missing = subprocess.CompletedProcess([], 1, '', '')
         with patch.object(smoke, 'adb') as adb, patch.object(smoke.subprocess, 'run', return_value=missing) as run:

@@ -6,6 +6,7 @@ import base64
 import json
 import os
 import re
+import shlex
 import subprocess
 import time
 
@@ -24,11 +25,28 @@ def adb(*args):
         diagnostic(DEVICE)
         raise
     if result.returncode:
-        print('ADB_FAILURE:', result.returncode,
-              sanitized((result.stderr + result.stdout)[-3000:]), flush=True)
+        print('ADB_FAILURE:', result.returncode, 'stderr:',
+              sanitized(result.stderr[-3000:]), flush=True)
+        print('ADB_STDOUT_HEAD:', sanitized(result.stdout[:2000]), flush=True)
+        print('ADB_STDOUT_TAIL:', sanitized(result.stdout[-2000:]), flush=True)
         diagnostic(DEVICE)  # Read-only; never retries or restarts a failed case.
         raise subprocess.CalledProcessError(result.returncode, command)
     return result.stdout
+
+
+def posted_notifications():
+    # Android 15 NotificationShellCmd's get dumps one NotificationRecord with
+    # redact=false. List/get are read-only and never start the application.
+    # Avoid dumping unrelated system ranking/settings records during startup.
+    keys = adb('shell', 'cmd', 'notification', 'list').splitlines()
+    records = []
+    for line in keys:
+        key = line.strip()
+        parts = key.split('|', 2)
+        if len(parts) >= 2 and parts[1] == PACKAGE:
+            # adb shell joins remote arguments; quote key separators literally.
+            records.append(adb('shell', 'cmd', 'notification', 'get', shlex.quote(key)))
+    return '\n'.join(records)
 
 
 def fixture(command='status', name='cold'):
@@ -82,7 +100,7 @@ def main():
     fixture('seed')
     cold_close()
     # The process was absent at the scheduled time. Read-only adb dumps do not start it.
-    until(lambda: 'DayMind device smoke cold' in adb('shell', 'dumpsys', 'notification', '--noredact'),
+    until(lambda: 'DayMind device smoke cold' in posted_notifications(),
           360, 'OS notification after cold process termination (inexact alarm)')
     observed = fixture()
     assert observed['state'] == 'unknown' and observed['notifications'] == 1, observed
@@ -104,7 +122,7 @@ def main():
 
     fixture('seed', 'digest')
     cold_close()
-    until(lambda: 'Nhịp ngày mới' in adb('shell', 'dumpsys', 'notification', '--noredact'),
+    until(lambda: 'Nhịp ngày mới' in posted_notifications(),
           360, 'opt-in daily digest after cold process termination')
     observed = fixture(name='digest')
     assert observed['state'] == 'unknown' and observed['digestNotifications'] == 1 and observed['digestActions'] == 0 and observed['attempts'] == 1, observed

@@ -20,7 +20,7 @@ BOOL CALLBACK Find(HWND w,LPARAM data) {
   if(pid!=windows->pid) return TRUE;
   wchar_t name[128]{};GetClassNameW(w,name,128);
   if(wcscmp(name,L"DayMindCompanionWindow")==0) windows->pet=w;
-  if(wcscmp(name,L"FLUTTER_RUNNER_WIN32_WINDOW")==0) windows->main=w;
+  if(wcscmp(name,L"FLUTTER_RUNNER_WIN32_WINDOW")==0 || wcscmp(name,L"DayMindCompanionTestMain")==0) windows->main=w;
   EnumChildWindows(w,Child,data);return TRUE;
 }
 bool WaitVisible(HWND w,bool visible) {
@@ -45,16 +45,23 @@ int main(int argc,char** argv) {
   auto check=[&](bool value,const char* name) { ++checks;if(!value) { ++failures;std::cerr<<"FAIL: "<<name<<"\n"; } };
   check(windows.pet!=nullptr && windows.main!=nullptr,"main and companion windows belong to app process");
   if(!windows.pet || !windows.main) return 1;
-  check(windows.flutter_views==1,"exactly one Flutter view");
+  bool click=false,component=false,hidden=false;
+  for(int i=2;i<argc;i++) {
+    const std::string arg(argv[i]);
+    click=click || arg=="click-through";component=component || arg=="component";
+    hidden=hidden || arg=="policy-hidden";
+  }
+  check(windows.flutter_views==(component?0:1),component?"standalone component creates no Flutter engine":"exactly one app Flutter view");
   const LONG_PTR styles=GetWindowLongPtrW(windows.pet,GWL_EXSTYLE);
   check((styles&WS_EX_NOACTIVATE)!=0 && (styles&WS_EX_TOOLWINDOW)!=0 && (styles&WS_EX_LAYERED)!=0,"no-activate layered tool window");
-  const bool click=argc>2 && std::string(argv[2])=="click-through";
   check(((styles&WS_EX_TRANSPARENT)!=0)==click,"click-through matches explicit setting");
   check((styles&WS_EX_TOPMOST)==0,"topmost stays off by default");
   check(SendMessageW(windows.pet,WM_MOUSEACTIVATE,reinterpret_cast<WPARAM>(windows.main),MAKELPARAM(HTCLIENT,WM_LBUTTONDOWN))==MA_NOACTIVATE,"mouse activation refused");
   if(click) {
     RECT r{};GetWindowRect(windows.pet,&r);
     check(SendMessageW(windows.pet,WM_NCHITTEST,0,MAKELPARAM(r.left+20,r.top+20))==HTTRANSPARENT,"click-through hit test");
+  } else if(hidden) {
+    check(WaitVisible(windows.pet,false),"real OS policy keeps the app companion hidden");
   } else {
     check(WaitVisible(windows.pet,true),"companion visible in available desktop session");
     const HWND foreground=GetForegroundWindow();

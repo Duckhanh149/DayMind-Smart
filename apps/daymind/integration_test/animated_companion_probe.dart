@@ -111,9 +111,9 @@ Future<void> animatedCompanionProbe(
     debugPrint(
       'ANIMATION_RESOURCE_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'frames': 3, 'atlasWidth': 384, 'atlasHeight': 128, 'observedFrames': positions.length, 'observationMs': watch.elapsedMilliseconds, 'rssBefore': rssBefore, 'rssSamplePeak': peakRss, 'rssAfterPause': ProcessInfo.currentRss, 'imageCacheBytes': PaintingBinding.instance.imageCache.currentSizeBytes})}',
     );
-    await maximumAtlasProbe(tester, c, page, folder);
+    final maximum = await maximumAtlasProbe(tester, c, page, folder);
     if (Platform.isWindows) {
-      await floatingCompanionProbe(tester, c, prepared.animation!);
+      await floatingCompanionProbe(tester, c, maximum);
     }
   } finally {
     await c.updateFloating((s) => s.copy(enabled: false));
@@ -125,7 +125,7 @@ Future<void> animatedCompanionProbe(
   }
 }
 
-Future<void> maximumAtlasProbe(
+Future<PreparedCharacterAnimation> maximumAtlasProbe(
   WidgetTester tester,
   WorkspaceController c,
   BuildContext page,
@@ -191,12 +191,13 @@ Future<void> maximumAtlasProbe(
   } finally {
     await c.removeCompanionAsset(name);
   }
+  return prepared.animation!;
 }
 
 Future<void> floatingCompanionProbe(
   WidgetTester tester,
   WorkspaceController c,
-  PreparedCharacterAnimation animation,
+  PreparedCharacterAnimation maximum,
 ) async {
   Future<Map<dynamic, dynamic>> state() async => (await FloatingCompanionService
       .channel
@@ -217,6 +218,50 @@ Future<void> floatingCompanionProbe(
     return current;
   }
 
+  // The component uses the same C++ class and real Win32/GDI+ messages, with
+  // controlled notification-state inputs. The app always keeps the real reader.
+  final exe = Directory(Platform.resolvedExecutable).parent;
+  final component = p.join(
+    exe.parent.parent.path,
+    'companion-tests',
+    p.basename(exe.path),
+    'daymind_companion_component_probe.exe',
+  );
+  final probe = p.join(
+    exe.parent.parent.path,
+    'companion-tests',
+    p.basename(exe.path),
+    'daymind_companion_window_probe.exe',
+  );
+  expect(
+    File(component).existsSync(),
+    isTrue,
+    reason: 'Native component gate must be built.',
+  );
+  expect(
+    File(probe).existsSync(),
+    isTrue,
+    reason: 'Native app window gate must be built.',
+  );
+  final folder = await Directory.systemTemp.createTemp(
+    'daymind-gdi-component-',
+  );
+  try {
+    final atlas = await File(p.join(folder.path, 'fixture.png'))
+        .writeAsBytes(maximum.atlasBytes);
+    final result = await Process.run(component, [
+      atlas.path,
+      '$pid',
+    ], workingDirectory: exe.path);
+    debugPrint('${result.stdout}'.trim());
+    expect(result.exitCode, 0, reason: '${result.stderr}');
+    expect('${result.stdout}', contains('COMPANION_COMPONENT:'));
+    expect('${result.stdout}', contains('COMPONENT_FLOATING_RESOURCE_POC:'));
+  } finally {
+    await folder.delete(recursive: true);
+  }
+  bool availableOrBlocked(Map<dynamic, dynamic> s) =>
+      s['exists'] == true && (s['visible'] == true || s['reason'] == 'focus');
   final settings = c.reminders!.preferences.toJson();
   final originalFloating = c.floatingSettings;
   try {
@@ -230,47 +275,41 @@ Future<void> floatingCompanionProbe(
         size: 112,
       ),
     );
-    final started = await until(
-      (s) => s['exists'] == true && s['visible'] == true,
-    );
+    final started = await until(availableOrBlocked);
     expect(
       started['atlasWidth'],
       128,
     ); // low-resource preview has no animation atlas.
-    final exe = Directory(Platform.resolvedExecutable).parent;
-    final probe = p.join(
-      exe.parent.parent.path,
-      'companion-tests',
-      p.basename(exe.path),
-      'daymind_companion_window_probe.exe',
-    );
-    expect(
-      File(probe).existsSync(),
-      isTrue,
-      reason: 'Native gate probe must be built, never skipped.',
-    );
-    final result = await Process.run(probe, ['$pid']);
+    final osBlocked = started['visible'] != true;
+    if (osBlocked) {
+      expect([1, 2, 3, 4, 6], contains(started['notificationState']));
+      expect(started['reason'], 'focus');
+      expect(started['surfaceBytes'], 0);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect((await state())['renders'], started['renders']);
+      debugPrint(
+        'OS_FOCUS_BLOCKED_POC: actual app honors Windows state ${started['notificationState']}; surface released and no frames rendered.',
+      );
+    }
+    final result = await Process.run(probe, [
+      '$pid',
+      if (osBlocked) 'policy-hidden',
+    ]);
     debugPrint('${result.stdout}'.trim());
     expect(result.exitCode, 0, reason: '${result.stderr}');
     await c.updateFloating((s) => s.copy(clickThrough: true));
     await until((s) => s['clickThrough'] == true);
-    final click = await Process.run(probe, ['$pid', 'click-through']);
+    final click = await Process.run(probe, [
+      '$pid',
+      'click-through',
+      if (osBlocked) 'policy-hidden',
+    ]);
     debugPrint('${click.stdout}'.trim());
     expect(click.exitCode, 0, reason: '${click.stderr}');
     await FloatingCompanionService.channel.invokeMethod<void>('recover');
     await until((s) => s['clickThrough'] == false);
-    final m = animation.metadata;
-    await FloatingCompanionService.channel.invokeMethod<void>('configure', {
-      ...c.floatingSettings.toJson(),
-      'quiet': false,
-      'lowResource': false,
-      'artKey': 'native-animation-probe',
-      'expression': 'neutral',
-      'image': animation.atlasBytes,
-      'frames': m.frames.map((f) => f.toJson()).toList(),
-      'sequence': [0, 1, 2],
-      'loop': true,
-    });
+    await c.updateCompanionLayout((s) => s.copy(lowResource: false));
+    await until((s) => availableOrBlocked(s) && s['atlasWidth'] == 384);
     final animBefore = await state(), observed = <int>{};
     final watch = Stopwatch()..start();
     for (var i = 0; i < 24; i++) {
@@ -278,19 +317,25 @@ Future<void> floatingCompanionProbe(
       observed.add((await state())['frame'] as int);
     }
     final animAfter = await state();
-    expect(observed.length, greaterThanOrEqualTo(2));
+    if (osBlocked) {
+      expect(animAfter['visible'], isFalse);
+      expect(animAfter['renders'], animBefore['renders']);
+      expect(animAfter['surfaceBytes'], 0);
+    } else {
+      expect(observed.length, greaterThanOrEqualTo(2));
+    }
     expect(animAfter['atlasWidth'], 384);
     expect(
       (animAfter['renders'] as int) - (animBefore['renders'] as int),
       lessThanOrEqualTo((watch.elapsedMilliseconds / 84).ceil() + 3),
     );
     debugPrint(
-      'FLOATING_ANIMATION_POC: ${jsonEncode({'observedFrames': observed.length, 'elapsedMs': watch.elapsedMilliseconds, 'renders': (animAfter['renders'] as int) - (animBefore['renders'] as int), 'cpuMs': (animAfter['cpuMs'] as int) - (animBefore['cpuMs'] as int)})}',
+      'FLOATING_ANIMATION_POC: ${jsonEncode({'osBlocked': osBlocked, 'observedFrames': observed.length, 'elapsedMs': watch.elapsedMilliseconds, 'renders': (animAfter['renders'] as int) - (animBefore['renders'] as int), 'cpuMs': (animAfter['cpuMs'] as int) - (animBefore['cpuMs'] as int)})}',
     );
     await c.window!.hide();
     await tester.pump(const Duration(milliseconds: 600));
     expect((await state())['exists'], isTrue);
-    expect((await state())['visible'], isTrue);
+    expect((await state())['visible'], !osBlocked);
     await c.window!.show();
     final minute = c.now().hour * 60 + c.now().minute;
     await c.reminders!.configure({
@@ -304,13 +349,13 @@ Future<void> floatingCompanionProbe(
     expect((await state())['renders'], hidden['renders']);
     expect(hidden['surfaceBytes'], 0);
     await c.reminders!.configure({'quietEnabled': false});
-    await until((s) => s['visible'] == true);
+    await until(availableOrBlocked);
     final baseline = await state();
     for (var i = 0; i < 20; i++) {
       await c.updateFloating((s) => s.copy(enabled: false));
       await until((s) => s['exists'] == false);
       await c.updateFloating((s) => s.copy(enabled: true));
-      await until((s) => s['exists'] == true && s['visible'] == true);
+      await until(availableOrBlocked);
     }
     final after = await state();
     expect(
@@ -319,7 +364,7 @@ Future<void> floatingCompanionProbe(
     );
     expect(after['surfaceBytes'] as int, lessThanOrEqualTo(2048 * 2048 * 4));
     debugPrint(
-      'FLOATING_RESOURCE_POC: ${jsonEncode({'cycles': 20, 'gdiBefore': baseline['gdiObjects'], 'gdiAfter': after['gdiObjects'], 'surfaceBytes': after['surfaceBytes'], 'cpuMs': (after['cpuMs'] as int) - (baseline['cpuMs'] as int), 'rssAfterCycles': ProcessInfo.currentRss})}',
+      'FLOATING_RESOURCE_POC: ${jsonEncode({'osBlocked': osBlocked, 'cycles': 20, 'gdiBefore': baseline['gdiObjects'], 'gdiAfter': after['gdiObjects'], 'surfaceBytes': after['surfaceBytes'], 'cpuMs': (after['cpuMs'] as int) - (baseline['cpuMs'] as int), 'rssAfterCycles': ProcessInfo.currentRss})}',
     );
   } finally {
     await c.reminders!.configure(settings);

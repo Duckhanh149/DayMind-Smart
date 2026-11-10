@@ -56,3 +56,11 @@ target_compile_definitions(daymind_companion_window_probe PRIVATE "NOMINMAX")
 target_link_libraries(daymind_companion_window_probe PRIVATE "user32.lib")
 set_target_properties(daymind_companion_window_probe PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")
+add_executable(daymind_companion_component_probe
+  "companion_component_probe.cpp" "floating_companion.cpp")
+apply_standard_settings(daymind_companion_component_probe)
+target_compile_definitions(daymind_companion_component_probe PRIVATE "NOMINMAX")
+target_link_libraries(daymind_companion_component_probe PRIVATE
+  flutter flutter_wrapper_app "gdiplus.lib" "shell32.lib" "ole32.lib" "psapi.lib")
+set_target_properties(daymind_companion_component_probe PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")

@@ -13,7 +13,10 @@
 class FloatingCompanionWindow {
  public:
   using Event = std::function<void(const std::string&, const flutter::EncodableValue&)>;
-  FloatingCompanionWindow(HWND main_window, Event event);
+  using NotificationReader = std::function<HRESULT(QUERY_USER_NOTIFICATION_STATE*)>;
+  // Production always uses the default OS reader. Standalone native tests can
+  // supply deterministic states without adding a bypass to the app channel.
+  FloatingCompanionWindow(HWND main_window, Event event, NotificationReader reader = {});
   ~FloatingCompanionWindow();
   bool Configure(const flutter::EncodableMap& value, std::string* error);
   void Close();
@@ -33,6 +36,7 @@ class FloatingCompanionWindow {
   void Moved();
   HWND main_, window_ = nullptr;
   Event event_;
+  NotificationReader notification_reader_;
   ULONG_PTR gdiplus_ = 0;
   std::unique_ptr<Gdiplus::Bitmap> image_;
   std::string art_key_, expression_ = "neutral", hidden_reason_ = "disabled";

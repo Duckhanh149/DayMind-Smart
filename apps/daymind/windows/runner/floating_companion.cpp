@@ -37,8 +37,9 @@ std::string Text(const M& m, const char* name) {
 int Dpi(HWND w) { return static_cast<int>(GetDpiForWindow(w)); }
 }
 
-FloatingCompanionWindow::FloatingCompanionWindow(HWND main_window, Event event)
-    : main_(main_window), event_(std::move(event)) {}
+FloatingCompanionWindow::FloatingCompanionWindow(HWND main_window, Event event, NotificationReader reader)
+    : main_(main_window), event_(std::move(event)),
+      notification_reader_(reader ? std::move(reader) : NotificationReader{SHQueryUserNotificationState}) {}
 FloatingCompanionWindow::~FloatingCompanionWindow() {
   Close(); if (gdiplus_) Gdiplus::GdiplusShutdown(gdiplus_);
 }
@@ -100,6 +101,7 @@ bool FloatingCompanionWindow::LoadImage(const std::vector<uint8_t>& bytes,
 }
 
 bool FloatingCompanionWindow::Configure(const M& value, std::string* error) {
+  const uint64_t renders_before = rendered_;
   auto fail = [&]() { *error = "Invalid bounded companion configuration."; return false; };
   const int size = Int(value, "size", 112);
   const std::string art = Text(value, "artKey"), expression = Text(value, "expression");
@@ -163,6 +165,9 @@ bool FloatingCompanionWindow::Configure(const M& value, std::string* error) {
       pixels, pixels, SWP_NOACTIVATE);
   ClampBounds(); KillTimer(window_, kFrame); Policy();
   if (!policy_hidden_) { Draw(); ScheduleFrame(); }
+  if (!policy_hidden_ && rendered_ == renders_before) {
+    *error = "Cannot render the companion on this desktop."; return false;
+  }
   return true;
 }
 
@@ -198,8 +203,8 @@ void FloatingCompanionWindow::Draw() {
       const float w = static_cast<float>(f.width) * scale, h = static_cast<float>(f.height) * scale;
       const float output_size = static_cast<float>(size);
       g.SetInterpolationMode(Gdiplus::InterpolationModeBilinear);
-      g.DrawImage(image_.get(), Gdiplus::RectF((output_size-w)/2,(output_size-h)/2,w,h),
-          static_cast<float>(f.x),static_cast<float>(f.y),static_cast<float>(f.width),static_cast<float>(f.height),Gdiplus::UnitPixel);
+      if (g.DrawImage(image_.get(), Gdiplus::RectF((output_size-w)/2,(output_size-h)/2,w,h),
+          static_cast<float>(f.x),static_cast<float>(f.y),static_cast<float>(f.width),static_cast<float>(f.height),Gdiplus::UnitPixel) != Gdiplus::Ok) return;
     } else {
       g.ScaleTransform(static_cast<float>(size)/100,static_cast<float>(size)/100);
       Gdiplus::SolidBrush body(Gdiplus::Color(255,219,232,185)), leaf(Gdiplus::Color(255,111,152,87));
@@ -227,8 +232,7 @@ void FloatingCompanionWindow::Draw() {
   }
   POINT destination{rect.left,rect.top}, source{0,0}; SIZE dimensions{size,size};
   BLENDFUNCTION blend{AC_SRC_OVER,0,255,AC_SRC_ALPHA};
-  UpdateLayeredWindow(window_, nullptr, &destination,&dimensions,dc_,&source,0,&blend,ULW_ALPHA);
-  rendered_++;
+  if (UpdateLayeredWindow(window_, nullptr, &destination,&dimensions,dc_,&source,0,&blend,ULW_ALPHA)) rendered_++;
 }
 
 void FloatingCompanionWindow::ScheduleFrame() {
@@ -240,7 +244,7 @@ void FloatingCompanionWindow::ScheduleFrame() {
 void FloatingCompanionWindow::Policy() {
   if (!window_) return;
   QUERY_USER_NOTIFICATION_STATE state = QUNS_ACCEPTS_NOTIFICATIONS;
-  if (SUCCEEDED(SHQueryUserNotificationState(&state))) notification_state_ = state;
+  if (SUCCEEDED(notification_reader_(&state))) notification_state_ = state;
   std::string reason;
   if (quiet_) reason = "quiet";
   else if (CompanionFocusBlocked(state)) reason = "focus";
