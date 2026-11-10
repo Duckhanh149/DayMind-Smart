@@ -13,6 +13,12 @@ class InstallerGuards(unittest.TestCase):
             connection = sqlite3.connect(support / "daymind.sqlite")
             connection.execute("CREATE TABLE tasks(id TEXT PRIMARY KEY,title TEXT)")
             connection.execute("INSERT INTO tasks VALUES('fixture','synthetic-private-content')")
+            connection.execute("CREATE TABLE categories(id TEXT PRIMARY KEY,name TEXT)")
+            connection.execute("INSERT INTO categories VALUES('fixture','synthetic-category')")
+            connection.execute("CREATE TABLE extension_records(area TEXT,id TEXT,value TEXT)")
+            connection.execute("INSERT INTO extension_records VALUES('recurrence','fixture','{}')")
+            connection.execute("INSERT INTO extension_records VALUES('occurrences','fixture',?)",
+                               ('{"status":"completed","completedAt":"2026-11-10T00:00:00Z"}',))
             connection.commit(); connection.close()
             library = support / "characters"; library.mkdir()
             source = library / "fixture.png"; source.write_bytes(b"synthetic-image-fixture")
@@ -27,6 +33,12 @@ class InstallerGuards(unittest.TestCase):
             connection.commit(); connection.close()
             with self.assertRaises(AssertionError):
                 gate.same(before, gate.snapshot(support))
+            connection = sqlite3.connect(support / "daymind.sqlite")
+            connection.execute("UPDATE tasks SET title='synthetic-private-content'")
+            connection.execute("UPDATE extension_records SET value='{}' WHERE area='occurrences'")
+            connection.commit(); connection.close()
+            with self.assertRaises(AssertionError):
+                gate.snapshot(support)
 
     def test_empty_fixtures_cannot_count_as_a_successful_upgrade(self):
         with tempfile.TemporaryDirectory() as folder:

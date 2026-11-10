@@ -6,6 +6,14 @@ Hoàn thiện Android ARM64 và Windows10/11 x64 theo0–9, kiểm thử/cổng 
 
 Automation kiểm tra mỗi giờ, nối tiếp khi môi trường/hạn mức cho phép; không hứa chạy ngay khi hết giới hạn. Không chạy thêm worker code nếu lượt hiện tại còn hoạt động. Đọc checkpoint/PHASE_STATUS/BUILD_STATUS, git status/process/CI/remote mới nhất; giữ thay đổi chưa commit, không hard-reset.
 
+## Tiếp tục sau khi môi trường phục hồi — 10/11/2026
+
+Đã fetch/fast-forward981→eb954d7 (chỉ remote checkpoint), giữ đủ các sửa local/UI/ảnh/checklist, không worker khác. Native42792153884/source981 kết thúc thất bại: Windows129748018355 đã vào native, DPAPI/tray/recurrence/resource/account initial sync đạt nhưng backup precondition không thấy scheduled event; installer bị skip. Android129748018096 đạt217 tests/25 receiver/Keystore/cold notification/digest, debug APK cài thành công nhưng DDS khởi động thất bại trước entrypoint; diagnostic sau cleanup có adb offline, không kết luận app crash. Không retry mù hoặc đổi SDK/JIT.
+
+Nguồn tiếp theo giữ nguyên assertion actual scheduled/cancel/no replay, thêm bounded10s đọc persisted engine.events thay UI cache vì refresh có thể được coalesce bởi native/sync poll; in cờ/count không task/UID/path để chẩn đoán nếu vẫn thất bại. Đây là thay đổi harness đang chờ native xác minh, chưa kết luận nguyên nhân Windows. Android dùng flutter test --no-dds được CLI ghim hỗ trợ: đi thẳng authenticated VM, giữ deadline/markers/diagnostic, không hạ kiểm tra transport/SDK. Driver giữ URI riêng và ánh xạ port adb để diagnostic khi không DDS.
+
+UI chưa publish từ lượt trước đã giữ và kiểm: sidebar14px/w600/header12px đạt4 guideline light/dark phone/desktop, Focus autofocus sửa Ctrl+N/Escape, full222 local đạt;25 Python guards và analyze sạch sau cập nhật harness. Installer probe bảo vệ thêm category/recurrence/completed occurrence/reminder/profile ngoài task/ảnh, yêu cầu lịch sử fixture không rỗng. Hai screenshot sáng/tối headless đã xem, checklist link đã sửa, ADR0011 đã viết. Tiếp tục publish bằng expected SHA eb954d7 rồi kiểm native/Emulator đúng source, package hashes và installer thực tế; chưa đạt giai đoạn9.
+
 ## Cổng đã qua:0–7
 
 Source e99303392f476fa842a793bbd28c09f538f94c27, tree a01a082368fe3bd592703b53469a5ff37b466a0f; local đã fetch/kiểm tree và soft-reset khớp remote. Các sửa tiếp theo hiện là tài liệu kết quả, chưa có code giai đoạn8.

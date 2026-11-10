@@ -28,6 +28,13 @@ class NativeLaunchGuards(unittest.TestCase):
         for private in ['synthetic-debug-auth','synthetic-token','synthetic-bearer']:
             self.assertNotIn(private,output)
 
+    def test_direct_vm_diagnostic_uses_the_forwarded_host_port(self):
+        state = {}
+        driver.observe_vm_uri(state, 'VM Service URL on device: http://127.0.0.1:1234/synthetic-auth=/')
+        driver.observe_vm_uri(state, 'Forwarded host port 5678 to device port 1234 for VM Service')
+        self.assertEqual(state['vm'], 'http://127.0.0.1:5678/synthetic-auth=/')
+        self.assertNotIn('synthetic-auth', driver.sanitized(state['vm']))
+
 
 if __name__ == '__main__':
     unittest.main()

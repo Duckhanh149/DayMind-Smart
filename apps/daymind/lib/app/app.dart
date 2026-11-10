@@ -61,6 +61,16 @@ class _DaymindAppState extends ConsumerState<DaymindApp> {
         backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
       ),
+      listTileTheme: ListTileThemeData(
+        titleTextStyle: TextStyle(
+          fontFamily: 'BeVietnamPro',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurface,
+        ),
+        textColor: scheme.onSurface,
+        selectedColor: scheme.onSecondaryContainer,
+      ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         elevation: 0,
         focusElevation: 0,

@@ -34,6 +34,20 @@ def snapshot(support):
         assert connection.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         rows = connection.execute("SELECT * FROM tasks ORDER BY id").fetchall()
         assert rows, "Installer fixture must contain real tasks"
+        categories = connection.execute("SELECT * FROM categories ORDER BY id").fetchall()
+        domain = {}
+        for area, record_id, value in connection.execute(
+                "SELECT area,id,value FROM extension_records WHERE area IN "
+                "('recurrence','occurrences','reminder_rules','task_reminders','companion_profile') "
+                "ORDER BY area,id"):
+            data = json.loads(value)
+            # Rolling materialization may add future todo occurrences. Completed
+            # history and every existing series/reminder/profile must survive.
+            if area != 'occurrences' or data.get('status') == 'completed':
+                domain[(area, record_id)] = data
+        assert any(key[0] == 'recurrence' for key in domain), "Require a real recurrence fixture"
+        assert any(key[0] == 'occurrences' and value.get('completedAt')
+                   for key, value in domain.items()), "Require completed occurrence history"
     finally:
         connection.close()
     images = {}
@@ -44,12 +58,14 @@ def snapshot(support):
         if path.is_file():
             images[str(path.relative_to(library))] = digest(path)
     assert images, "Installer fixture must contain original artwork"
-    return rows, images
+    return rows, images, categories, domain
 
 
 def same(before, after):
     assert before[0] == after[0], "Installer changed persistent task rows"
     assert all(after[1].get(name) == value for name, value in before[1].items()), "Installer changed original artwork"
+    assert before[2] == after[2], "Installer changed categories"
+    assert all(after[3].get(key) == value for key, value in before[3].items()), "Installer changed recurrence/history/reminder/profile data"
 
 
 def main():
@@ -105,6 +121,7 @@ def main():
         exercise(version)
         print("INSTALL_UPGRADE_POC: " + json.dumps({"baseline":"0.6.1", "current":version,
               "taskRows":len(before[0]), "preservedArtworkFiles":len(before[1]),
+              "preservedDomainRecords":len(before[3]),
               "upgradePreservedData":True, "uninstallPreservedData":True, "reinstallPassed":True}))
     finally:
         uninstaller = install / "unins000.exe"

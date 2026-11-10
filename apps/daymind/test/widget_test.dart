@@ -116,6 +116,57 @@ void main() {
     return (db, controller);
   }
 
+  for (final size in [const Size(390, 844), const Size(1440, 960)]) {
+    for (final theme in ['light', 'dark']) {
+      testWidgets('accessible dashboard and task form ${size.width}px $theme', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          final (_, controller) = await mount(tester, size, seed: true);
+          await controller.configure((p) => p.copyWith(theme: theme));
+          await tester.pumpAndSettle();
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          if (const bool.fromEnvironment('GENERATE_GOLDENS') &&
+              size.width > 1000) {
+            await expectLater(
+              find.byType(DaymindApp),
+              matchesGoldenFile('previews/phase9-desktop-$theme.png'),
+            );
+          }
+          await tester.tap(find.byKey(const Key('add-task')));
+          await tester.pumpAndSettle();
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          expect(tester.takeException(), isNull);
+        } finally {
+          semantics.dispose();
+        }
+      });
+    }
+  }
+
+  testWidgets(
+    'desktop keyboard opens and dismisses a task without mouse or data changes',
+    (tester) async {
+      final (_, controller) = await mount(tester, const Size(1440, 960));
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('task-title')), findsOneWidget);
+      expect(find.byKey(const Key('save-task')), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+      expect(controller.tasks, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final scenario in [
     (const Size(360, 800), 1.0),
     (const Size(390, 844), 2.0),

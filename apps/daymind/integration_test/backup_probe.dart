@@ -24,16 +24,35 @@ Future<void> backupProbe(WidgetTester tester, WorkspaceHost host) async {
   await c.reminders!.configure({'quietEnabled': false});
   await host.notificationDevice(true);
   await c.reminders!.refresh();
+  // A refresh coalesced with the native/sync poll returns before that poll's
+  // queued replan. Wait for persisted scheduling, rather than the UI cache.
+  final ready = Stopwatch()..start();
+  var events = await c.reminders!.engine.events();
+  bool scheduled() => events.any(
+    (e) => e.state == 'scheduled' && originalIds.contains(e.taskId),
+  );
+  while (!scheduled() && ready.elapsed < const Duration(seconds: 10)) {
+    await tester.pump(const Duration(milliseconds: 100));
+    events = await c.reminders!.engine.events();
+  }
+  final prefs = await c.reminders!.engine.preferences();
+  debugPrint(
+    'BACKUP_SCHEDULING_PRECONDITION: ${jsonEncode({
+      'primary': prefs.primaryDevice,
+      'granted': await c.reminders!.engine.scheduler.granted(),
+      'quiet': prefs.quietEnabled,
+      'preset': prefs.preset.name,
+      'projectedTasks': c.visibleTasks.length,
+      'eventStates': {for (final state in events.map((e) => e.state).toSet()) state: events.where((e) => e.state == state).length},
+      'coordinatorError': c.reminders!.error != null,
+    })}',
+  );
   expect(
-    c.reminders!.events.any(
-      (e) => e.state == 'scheduled' && originalIds.contains(e.taskId),
-    ),
+    scheduled(),
     isTrue,
     reason: 'The restore probe must start with an actual future reminder to cancel.',
   );
-  final scheduledBefore = c.reminders!.events
-      .where((e) => e.state == 'scheduled')
-      .length;
+  final scheduledBefore = events.where((e) => e.state == 'scheduled').length;
   final rss = ProcessInfo.currentRss, clock = Stopwatch()..start();
   final snapshot = await host.captureBackup();
   expect(snapshot.owner, owner);

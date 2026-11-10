@@ -294,7 +294,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                         padding: EdgeInsets.only(left: 14),
                         child: Text(
                           'DANH MỤC',
-                          style: TextStyle(fontSize: 10, letterSpacing: 1),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -1303,7 +1307,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
             navigate('all'),
       },
-      child: scaffold,
+      child: Focus(autofocus: true, child: scaffold),
     );
   }
 }

@@ -31,6 +31,23 @@ def sanitized(text):
         r'\1/[local-path]', text)
 
 
+def observe_vm_uri(discovery, line):
+    # Keep authenticated service paths private. Without DDS, map the device VM
+    # URL to the host port that Flutter actually forwarded through adb.
+    direct = re.search(r'VM Service URL on device: (http://127\.0\.0\.1:\d+/[^\s,]+)', line)
+    if direct:
+        discovery['deviceVm'] = direct.group(1)
+    forwarded = re.search(r'Forwarded host port (\d+) to device port (\d+) for VM Service', line)
+    if forwarded and discovery.get('deviceVm'):
+        parsed = urlparse(discovery['deviceVm'])
+        host_port, device_port = map(int, forwarded.groups())
+        if parsed.port == device_port and 1 <= host_port <= 65535:
+            discovery['vm'] = parsed._replace(netloc=f'127.0.0.1:{host_port}').geturl()
+    dds = re.search(r'Dart Development Service started at (http://(?:127\.0\.0\.1|localhost):\d+/[^\s,]+)', line)
+    if dds:
+        discovery['vm'] = dds.group(1)
+
+
 def diagnostic(device, vm_uri=None):
     commands = [
         ['adb', '-s', device, 'get-state'],
@@ -108,9 +125,7 @@ def run_bounded(command, deadline, required=(), device=None):
 
     def output():
         for line in process.stdout:
-            uri = re.search(r'Dart Development Service started at (http://(?:127\.0\.0\.1|localhost):\d+/[^\s,]+)',line)
-            if uri:
-                discovery['vm'] = uri.group(1)
+            observe_vm_uri(discovery, line)
             if 'Finding the correct isolate with the integration test service extension' in line:
                 discovery['at'] = time.monotonic()
             if 'NATIVE_INTEGRATION_STAGE:' in line:
@@ -169,7 +184,10 @@ def main():
     subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', PACKAGE],
                    check=True, timeout=30)
     subprocess.run(['adb', '-s', device, 'logcat', '-c'], check=True, timeout=30)
-    command = ['flutter', '--verbose', 'test', 'integration_test/app_smoke_test.dart',
+    # The CI host failed inside DDS startup before a Dart test was discovered.
+    # Connect directly to the same authenticated VM service; no SDK/transport
+    # security changes, test retries or missing-marker exceptions are involved.
+    command = ['flutter', '--verbose', 'test', '--no-dds', 'integration_test/app_smoke_test.dart',
                '--no-pub', '-d', device, '--dart-define=RUN_ACCOUNT_EMULATOR=true']
     code = run_bounded(command, 600, device=device, required=(
         'SECURE_STORAGE_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:',
