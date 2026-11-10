@@ -2,7 +2,8 @@
 
 Some proxies return HTTP504 for browser download URLs. No mirror or alternate
 binary is used: the pinned package's SHA256 is checked here AND by its own hook.
-No authentication, TLS override or pubspec override is needed.
+Actions uses its built-in read token for API quota; no token follows an asset
+redirect. TLS, binary versions and checksum verification remain unchanged.
 """
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -11,7 +12,9 @@ from pathlib import Path
 import platform
 import re
 from urllib.parse import urljoin, urlparse
-from urllib.request import Request, urlopen, url2pathname
+from urllib.request import url2pathname
+
+from upstream_github import download
 
 config_path = Path('.dart_tool/package_config.json').resolve()
 config = json.loads(config_path.read_text())
@@ -22,17 +25,6 @@ package_root = Path(url2pathname(urlparse(root_uri).path))
 assert re.search(r'^version:\s*3\.9\.1\s*$', (package_root / 'pubspec.yaml').read_text(), re.M)
 hashes = dict(re.findall(r"'([^']+)':\s*'([a-f0-9]{64})'", (package_root / 'lib/src/hook/asset_hashes.dart').read_text()))
 base = 'https://api.github.com/repos/simolus3/sqlite3.dart/releases'
-
-
-def download(url, accept):
-    for attempt in range(3):
-        try:
-            request = Request(url, headers={'Accept': accept, 'User-Agent': 'DayMind pinned dependency precache'})
-            with urlopen(request, timeout=45) as response:
-                return response.read()
-        except Exception:
-            if attempt == 2:
-                raise
 
 
 release = json.loads(download(f'{base}/tags/sqlite3-3.9.1', 'application/vnd.github+json'))
