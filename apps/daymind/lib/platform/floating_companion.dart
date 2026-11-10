@@ -69,6 +69,7 @@ class FloatingCompanionService with WidgetsBindingObserver {
           await channel.invokeMethod<void>('close');
         } catch (_) {}
         if (!_stopped) {
+          controller.reportFloatingStatus(null);
           controller.reportFloatingError(
             'Chưa mở được Companion nổi. Hãy tắt rồi bật lại hoặc dùng nhân vật trong ứng dụng.',
           );
@@ -114,12 +115,16 @@ class FloatingCompanionService with WidgetsBindingObserver {
       'motionRevision': c.companionMotionSequence,
       'quiet': quiet,
     });
-    if (signature == _signature) return;
+    if (signature == _signature) {
+      if (enabled) await _readStatus();
+      return;
+    }
     if (!enabled) {
       await channel.invokeMethod<void>('close');
       _signature = signature;
       _sentArt = null;
       c.reportFloatingError(null);
+      c.reportFloatingStatus(null);
       return;
     }
     final data = <String, dynamic>{
@@ -156,6 +161,19 @@ class FloatingCompanionService with WidgetsBindingObserver {
     _signature = signature;
     _sentArt = art;
     c.reportFloatingError(null);
+    await _readStatus();
+  }
+
+  Future<void> _readStatus() async {
+    final state = await channel.invokeMapMethod<dynamic, dynamic>('state');
+    if (_stopped || state == null) return;
+    final message = switch (state['reason']) {
+      'quiet' => 'Đang ẩn theo giờ yên lặng của DayMind.',
+      'focus' => 'Windows đang hạn chế thông báo (chế độ tập trung, nghỉ hoặc trình chiếu); nhân vật tạm ẩn.',
+      'fullscreen' => 'Đang ẩn khi ứng dụng khác dùng toàn màn hình.',
+      _ => state['visible'] == true ? 'Nhân vật nổi đang hiển thị.' : null,
+    };
+    controller.reportFloatingStatus(message);
   }
 
   Future<void> recover() => channel.invokeMethod<void>('recover');

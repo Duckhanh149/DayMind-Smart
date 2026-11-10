@@ -26,7 +26,10 @@ import '../platform/notification_scheduler.dart';
 import '../platform/secure_session_store.dart';
 import '../platform/window_lifecycle.dart';
 import '../platform/floating_companion.dart';
+import '../platform/picker_cache.dart';
 import 'controller.dart';
+import '../features/backup/application/backup_service.dart';
+import '../features/backup/domain/backup_snapshot.dart';
 
 final workspaceHostProvider = Provider<WorkspaceHost?>((ref) => null);
 
@@ -70,6 +73,7 @@ class WorkspaceHost extends ChangeNotifier {
   }
 
   Future<void> start() async {
+    await clearAndroidPickerCache();
     try {
       deviceId = await secure.installationId();
       account = await secure.read();
@@ -147,7 +151,81 @@ class WorkspaceHost extends ChangeNotifier {
         : null;
     await _switch(next, copy: source);
   });
-  Future<void> signOut() => _serial(() => _switch(null));
+  Future<void> signOut() => _serial(() async {
+    if (account != null) await _switch(null);
+  });
+
+  Future<BackupSnapshot> captureBackup() => _serial(
+    () => _backupOperation(
+      restoring: false,
+      action: (c) =>
+          BackupService.capture(c.repository, c.importer, account?.uid),
+    ),
+  );
+
+  Future<void> restoreBackup(
+    BackupSnapshot snapshot, {
+    required bool companionSettings,
+  }) => _serial(
+    () => _backupOperation(
+      restoring: true,
+      action: (c) async {
+        await BackupService.restore(
+          snapshot,
+          c.repository,
+          c.importer,
+          account?.uid,
+          companionSettings: companionSettings,
+        );
+        sync?.markLocalChange();
+      },
+    ),
+  );
+
+  Future<T> _backupOperation<T>({
+    required bool restoring,
+    required Future<T> Function(WorkspaceController) action,
+  }) async {
+    final c = controller!;
+    final onOpen = _scheduler?.onOpen;
+    var remindersStopped = false;
+    var platformPaused = false;
+    _editTimer?.cancel();
+    try {
+      await sync?.stop();
+      await c.drain();
+      remindersStopped = true;
+      await c.reminders?.stop();
+      if (restoring) {
+        platformPaused = true;
+        await floating?.stop();
+        floating = null;
+        await _scheduler?.deactivate();
+      }
+      c.importer.resume();
+      return await action(c);
+    } finally {
+      c.resumeWrites();
+      await c.load(greet: false);
+      if (restoring) await window?.configure(c.preferences.windowsTrayEnabled);
+      if (_scheduler != null && remindersStopped) {
+        final zone = platformPaused
+            ? await _scheduler!.initialize(
+                p.join(
+                  workspacePath(support.path, account?.uid),
+                  'daymind.sqlite',
+                ),
+              )
+            : c.reminders?.preferences.timezoneId ?? '';
+        _scheduler!.onOpen = onOpen;
+        await c.reminders?.resume(zone);
+      }
+      if (platformPaused && Platform.isWindows) {
+        floating = FloatingCompanionService(c)..start();
+      }
+      if (sync != null) unawaited(sync!.resume());
+    }
+  }
 
   Future<void> deleteAccount(String password) => _serial(() async {
     final current = account;
@@ -257,6 +335,11 @@ class WorkspaceHost extends ChangeNotifier {
           }),
         );
       }
+      await BackupService.recover(
+        c.repository,
+        c.importer,
+        removeOrphans: true,
+      );
       await c.load(greet: false);
     } catch (_) {
       c.dispose();

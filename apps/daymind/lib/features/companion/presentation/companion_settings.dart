@@ -162,6 +162,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               if (c.floatingSettings.enabled) ...[
+                if (c.floatingStatus != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(c.floatingStatus!),
+                  ),
                 SwitchListTile(
                   key: const Key('floating-topmost'),
                   contentPadding: EdgeInsets.zero,

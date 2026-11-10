@@ -16,6 +16,16 @@ on:
       - apps/daymind/analysis_options.yaml
       - .github/workflows/native-build.yml
   workflow_dispatch:
+    inputs:
+      signing:
+        description: 'Preview uses development signing. Production requires configured Android and Windows signing secrets.'
+        type: choice
+        options: [preview, production]
+        default: preview
+      publish:
+        description: 'Publish a prerelease from main after both native jobs pass; default off.'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -26,6 +36,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      DAYMIND_PRODUCTION_SIGNING: ${{ github.event_name == 'workflow_dispatch' && inputs.signing == 'production' && 'true' || 'false' }}
     timeout-minutes: 55
     defaults:
       run:
@@ -60,6 +72,10 @@ jobs:
       - run: flutter --version
       - name: Verify native CI driver failure guards
         run: python -m unittest discover -s tool -p "test_*driver.py"
+      - name: Parse optional Windows signing script without loading credentials
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: '[void][scriptblock]::Create((Get-Content tool/production_signing.ps1 -Raw))'
       - run: flutter pub get --enforce-lockfile
       - run: flutter pub get --enforce-lockfile
         working-directory: apps/daymind/emulator_test
@@ -99,9 +115,28 @@ jobs:
       - run: npm ci --no-audit --no-fund
         working-directory: apps/daymind/firebase
       - run: python tool/retry_native_assets.py flutter test
+      - name: Prepare Android production signing
+        if: runner.os == 'Linux' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        env:
+          DAYMIND_ANDROID_KEYSTORE_BASE64: ${{ secrets.DAYMIND_ANDROID_KEYSTORE_BASE64 }}
+          DAYMIND_ANDROID_STORE_PASSWORD: ${{ env.DAYMIND_PRODUCTION_SIGNING == 'true' && secrets.DAYMIND_ANDROID_STORE_PASSWORD || '' }}
+          DAYMIND_ANDROID_KEY_PASSWORD: ${{ env.DAYMIND_PRODUCTION_SIGNING == 'true' && secrets.DAYMIND_ANDROID_KEY_PASSWORD || '' }}
+          DAYMIND_ANDROID_KEY_ALIAS: ${{ env.DAYMIND_PRODUCTION_SIGNING == 'true' && secrets.DAYMIND_ANDROID_KEY_ALIAS || '' }}
+          DAYMIND_ANDROID_CERT_SHA256: ${{ vars.DAYMIND_ANDROID_CERT_SHA256 }}
+        run: python tool/production_signing.py prepare-android
       - name: Build Android APK
         if: runner.os == 'Linux'
+        env:
+          DAYMIND_REQUIRE_RELEASE_SIGNING: ${{ env.DAYMIND_PRODUCTION_SIGNING }}
+          DAYMIND_ANDROID_STORE_PASSWORD: ${{ env.DAYMIND_PRODUCTION_SIGNING == 'true' && secrets.DAYMIND_ANDROID_STORE_PASSWORD || '' }}
+          DAYMIND_ANDROID_KEY_PASSWORD: ${{ env.DAYMIND_PRODUCTION_SIGNING == 'true' && secrets.DAYMIND_ANDROID_KEY_PASSWORD || '' }}
+          DAYMIND_ANDROID_KEY_ALIAS: ${{ env.DAYMIND_PRODUCTION_SIGNING == 'true' && secrets.DAYMIND_ANDROID_KEY_ALIAS || '' }}
         run: python tool/retry_native_assets.py flutter build apk --release --target-platform android-arm64 --split-per-abi
+      - name: Verify Android production signature
+        if: runner.os == 'Linux' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        env:
+          DAYMIND_ANDROID_CERT_SHA256: ${{ vars.DAYMIND_ANDROID_CERT_SHA256 }}
+        run: python tool/production_signing.py verify-android
       - name: Android receiver and recovery tests
         if: runner.os == 'Linux'
         run: python tool/android_receiver_tests.py
@@ -159,6 +194,18 @@ jobs:
           $crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory | Sort-Object FullName | Select-Object -Last 1
           if (!$crt) { throw "Visual C++ runtime directory not found" }
           Copy-Item "$($crt.FullName)\*.dll" build/windows/x64/runner/Release/
+      - name: Prepare Windows production signing
+        if: runner.os == 'Windows' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        shell: pwsh
+        env:
+          DAYMIND_WINDOWS_PFX_BASE64: ${{ secrets.DAYMIND_WINDOWS_PFX_BASE64 }}
+          DAYMIND_WINDOWS_PFX_PASSWORD: ${{ secrets.DAYMIND_WINDOWS_PFX_PASSWORD }}
+          DAYMIND_WINDOWS_CERT_SHA256: ${{ vars.DAYMIND_WINDOWS_CERT_SHA256 }}
+        run: ./tool/production_signing.ps1 prepare
+      - name: Sign Windows application
+        if: runner.os == 'Windows' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        shell: pwsh
+        run: ./tool/production_signing.ps1 app
       - name: Build Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
@@ -167,6 +214,17 @@ jobs:
           if (!(Test-Path $iscc)) { choco install innosetup --yes --no-progress }
           & $iscc windows/installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
+      - name: Sign Windows installer
+        if: runner.os == 'Windows' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        shell: pwsh
+        run: ./tool/production_signing.ps1 installer
+      - name: Remove Android signing material
+        if: always() && runner.os == 'Linux' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        run: python tool/production_signing.py cleanup
+      - name: Remove Windows signing material
+        if: always() && runner.os == 'Windows' && env.DAYMIND_PRODUCTION_SIGNING == 'true'
+        shell: pwsh
+        run: ./tool/production_signing.ps1 cleanup
       - name: Cache verified Android build dependencies
         if: always() && !cancelled() && runner.os == 'Linux' && steps.gradle-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -192,7 +250,7 @@ jobs:
   preview-release:
     name: Publish installable preview
     needs: native
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -209,6 +267,9 @@ jobs:
       - name: Prepare packages and checksums
         shell: bash
         run: |
+          version=$(python3 -c "from pathlib import Path; print(next(l.split(':',1)[1].strip().split('+')[0] for l in Path('apps/daymind/pubspec.yaml').read_text().splitlines() if l.startswith('version:')))")
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$version-preview" >> "$GITHUB_ENV"
           cp release/android/app-arm64-v8a-release.apk release/DayMind-Android-ARM64.apk
           cp release/windows/windows-installer/DayMind-Setup.exe release/DayMind-Windows-Setup.exe
           (cd release/windows/windows/x64/runner/Release && zip -qr "$GITHUB_WORKSPACE/release/DayMind-Windows-Portable.zip" .)
@@ -220,8 +281,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
-          if gh release view v0.1.0-preview >/dev/null 2>&1; then
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "Preview release already exists; preserving its assets."
             exit 0
           fi
-          gh release create v0.1.0-preview --prerelease --target "$GITHUB_SHA" --title "DayMind SMART 0.1.0 Preview" --notes-file apps/daymind/docs/RELEASE_NOTES.md release/DayMind-Android-ARM64.apk release/DayMind-Windows-Setup.exe release/DayMind-Windows-Portable.zip release/SHA256SUMS.txt
+          gh release create "$RELEASE_TAG" --prerelease --target "$GITHUB_SHA" --title "DayMind SMART $RELEASE_VERSION Preview" --notes-file apps/daymind/docs/RELEASE_NOTES.md release/DayMind-Android-ARM64.apk release/DayMind-Windows-Setup.exe release/DayMind-Windows-Portable.zip release/SHA256SUMS.txt

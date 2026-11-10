@@ -11,6 +11,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/controller.dart';
 import '../../../app/workspace_host.dart';
+import '../../../platform/picker_cache.dart';
+import '../../backup/presentation/backup_page.dart';
+import '../../backup/presentation/privacy_section.dart';
 import '../../account_sync/presentation/account_page.dart';
 import '../../companion/presentation/companion_card.dart';
 import '../../companion/presentation/companion_settings.dart';
@@ -35,6 +38,7 @@ const pageLabels = {
   'companion': 'Companion',
   'settings': 'Cài đặt',
   'notifications': 'Thông báo',
+  'backup': 'Sao lưu',
 };
 const pageIcons = {
   'today': Icons.wb_sunny_outlined,
@@ -48,6 +52,7 @@ const pageIcons = {
   'companion': Icons.eco_outlined,
   'settings': Icons.settings_outlined,
   'notifications': Icons.notifications_outlined,
+  'backup': Icons.backup_outlined,
 };
 
 class WorkspaceScreen extends ConsumerStatefulWidget {
@@ -857,6 +862,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     } catch (error) {
       notice(error);
     } finally {
+      final cleaned = await clearAndroidPickerCache();
+      if (!cleaned && mounted) {
+        notice(
+          'Chưa dọn được bản tệp tạm của bộ chọn. Hãy mở lại ứng dụng để thử dọn cache.',
+        );
+      }
       if (mounted) setState(() => importing = false);
     }
   }
@@ -1110,21 +1121,31 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               ),
               SizedBox(height: 10),
               Text(
-                'Gỡ ứng dụng hoặc xóa dữ liệu có thể làm mất công việc chưa đồng bộ. Sao lưu bằng mật khẩu sẽ được bổ sung ở giai đoạn đóng gói.',
+                'Gỡ ứng dụng hoặc xóa dữ liệu có thể làm mất công việc chưa đồng bộ. Hãy tạo bản sao lưu có mật khẩu và giữ ở nơi an toàn.',
               ),
             ],
           ),
         ),
       ),
       const SizedBox(height: 20),
+      if (ref.read(workspaceHostProvider) != null) ...[
+        OutlinedButton.icon(
+          onPressed: () => navigate('backup'),
+          icon: const Icon(Icons.backup_outlined),
+          label: const Text('Sao lưu & khôi phục bằng mật khẩu'),
+        ),
+        const SizedBox(height: 20),
+      ],
       if (controller.reminders != null)
         NotificationSettingsSection(reminders: controller.reminders!),
+      const SizedBox(height: 20),
+      PrivacySection(controller: controller),
       const SizedBox(height: 20),
       OutlinedButton(
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.6.1',
+          applicationVersion: '0.7.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1164,9 +1185,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       'notifications',
       'analytics',
       'account',
+      'backup',
     ].contains(widget.page);
     final content =
-        widget.page == 'account' && ref.read(workspaceHostProvider) != null
+        widget.page == 'backup' && ref.read(workspaceHostProvider) != null
+        ? BackupPage(host: ref.read(workspaceHostProvider)!)
+        : widget.page == 'account' && ref.read(workspaceHostProvider) != null
         ? AccountPage(host: ref.read(workspaceHostProvider)!)
         : widget.page == 'companion'
         ? companionContent(controller)

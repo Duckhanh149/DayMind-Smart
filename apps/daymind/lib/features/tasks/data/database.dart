@@ -104,17 +104,24 @@ class DaymindDatabase extends _$DaymindDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      if (from == 1) {
-        await m.addColumn(tasks, tasks.scheduledStartAt);
-        await m.addColumn(tasks, tasks.scheduledEndAt);
-        await m.addColumn(tasks, tasks.revision);
-        await m.createTable(preferences);
+      if (from < 1 || from > to || to != schemaVersion) {
+        throw StateError(
+          'Phiên bản dữ liệu chưa được hỗ trợ. Hãy dùng phiên bản DayMind mới hơn; dữ liệu vẫn được giữ.',
+        );
       }
-      if (from < 3) {
-        await m.createTable(extensionRecords);
-        await m.createTable(reminderEvents);
-        await m.createTable(deliveryLogs);
-      }
+      await transaction(() async {
+        if (from == 1) {
+          await m.addColumn(tasks, tasks.scheduledStartAt);
+          await m.addColumn(tasks, tasks.scheduledEndAt);
+          await m.addColumn(tasks, tasks.revision);
+          await m.createTable(preferences);
+        }
+        if (from < 3) {
+          await m.createTable(extensionRecords);
+          await m.createTable(reminderEvents);
+          await m.createTable(deliveryLogs);
+        }
+      });
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

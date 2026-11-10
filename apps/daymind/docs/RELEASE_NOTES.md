@@ -1,3 +1,13 @@
+# Preview0.7.0 — đang kiểm giai đoạn9
+
+- Sao lưu có mật khẩu, gồm dữ liệu công việc/lịch lặp/cấu hình/thư viện; restore thêm bản sao và giữ dữ liệu hiện tại. Nhắc việc tạm dừng sau restore, không phát lịch cũ. Xem BACKUP_FORMAT.md.
+- Khôi phục ảnh/recurrence/history nguyên tử, journal xử lý gián đoạn; không chuyển phiên đăng nhập.
+- Bảo vệ migration/downgrade; giữ kích thước Companion cũ. Windows mở lần hai trả về cửa sổ đang chạy.
+- Hiển thị lý do Windows đang ẩn pet; chẩn đoán chỉ xuất khi opt-in, không tự gửi.
+- Phân tách preview/production signing, manual publish mặc định tắt. Bản này chưa có identity ký sản xuất hoặc nghiệm thu thiết bị, không hướng dẫn gỡ app cũ để cài đè khác chữ ký.
+
+0–8 qua cổng tự động ở213a820 / Native42762621177 / Emulator42762620985. Live2D giữ tắt theo fallback đã đánh giá, chưa SDK/model/license approval. Source0.7.0 phải qua CI riêng; chưa coi hoàn thành0–9. Android/Windows chỉ tải artifact được BUILD_STATUS xác nhận.
+
 # Preview 0.6.0 — giai đoạn7 qua cổng tự động
 
 - Nhập GIF/WebP động và ZIP DayMind chứa sprite/manifest; xem trước, tiến độ/hủy và xác nhận quyền sử dụng.

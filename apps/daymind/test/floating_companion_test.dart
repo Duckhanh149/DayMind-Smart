@@ -38,6 +38,7 @@ void main() {
   late FloatingCompanionService service;
   late DateTime now;
   final calls = <MethodCall>[];
+  var nativeState = <String, dynamic>{};
   Future<void> until(bool Function() condition) async {
     for (var i = 0; i < 100 && !condition(); i++) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -47,6 +48,7 @@ void main() {
 
   setUp(() async {
     calls.clear();
+    nativeState = {'visible': true, 'reason': ''};
     temp = await Directory.systemTemp.createTemp('daymind-floating-');
     db = DaymindDatabase(NativeDatabase.memory());
     now = DateTime.utc(2026, 11, 10, 10);
@@ -59,6 +61,7 @@ void main() {
     binding.defaultBinaryMessenger.setMockMethodCallHandler(
       FloatingCompanionService.channel,
       (call) async {
+        if (call.method == 'state') return nativeState;
         calls.add(call);
         return null;
       },
@@ -163,4 +166,18 @@ void main() {
     );
     expect((calls.last.arguments as Map).containsKey('image'), isFalse);
   });
+  test(
+    'unchanged artwork still refreshes the real OS hide reason for settings',
+    () async {
+      await c.updateFloating((s) => s.copy(enabled: true));
+      await until(() => c.floatingStatus == 'Nhân vật nổi đang hiển thị.');
+      final count = calls.where((v) => v.method == 'configure').length;
+      nativeState = {'visible': false, 'reason': 'focus'};
+      await c.refreshFromSync();
+      await until(
+        () => c.floatingStatus?.contains('Windows đang hạn chế') == true,
+      );
+      expect(calls.where((v) => v.method == 'configure'), hasLength(count));
+    },
+  );
 }

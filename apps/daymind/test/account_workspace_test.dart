@@ -18,6 +18,8 @@ import 'package:daymind_smart/features/account_sync/data/workspace_records.dart'
 import 'package:daymind_smart/features/tasks/domain/task.dart';
 import 'package:daymind_smart/features/recurrence/application/recurrence_service.dart';
 import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
+import 'package:daymind_smart/features/backup/domain/backup_snapshot.dart';
+import 'package:daymind_smart/features/backup/presentation/backup_page.dart';
 
 class MemorySecure extends NativeSessionStore {
   final values = <String, String>{};
@@ -218,6 +220,75 @@ void main() {
     expect(host.account!.uid, 'owner-a');
     expect(host.controller!.tasks, isEmpty);
   });
+  test('backup capture and restore resume writes, enforce account isolation and never copy the session', () async {
+    await host.controller!.save(const TaskDraft(title: 'Keep original'));
+    final backup = await host.captureBackup();
+    expect(backup.owner, isNull);
+    expect(backup.toJson().toString(), isNot(contains('refreshToken')));
+    await host.restoreBackup(backup, companionSettings: false);
+    expect(host.controller!.tasks, hasLength(2));
+    expect(host.controller!.reminders!.preferences.primaryDevice, isFalse);
+    await host.controller!.save(const TaskDraft(title: 'Still editable'));
+    await host.signIn(
+      'owner-a@example.invalid',
+      'correct',
+      create: true,
+      copyLocal: false,
+    );
+    await expectLater(
+      host.restoreBackup(backup, companionSettings: false),
+      throwsA(isA<BackupFailure>()),
+    );
+    expect(host.controller!.tasks, isEmpty);
+    await host.controller!.save(
+      const TaskDraft(title: 'Account remains usable'),
+    );
+    expect(host.controller!.tasks, hasLength(1));
+  });
+  testWidgets(
+    'backup form remains scrollable with 200 percent text and the keyboard',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              textScaler: TextScaler.linear(2),
+              viewInsets: EdgeInsets.only(bottom: 280),
+            ),
+            child: Scaffold(body: BackupPage(host: host)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final save = find.text('Tạo bản sao lưu mã hóa');
+      await tester.scrollUntilVisible(
+        save,
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('ít nhất 10 ký tự'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Khôi phục'),
+        -250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Khôi phục'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Chọn & mở bản sao lưu'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   test('account switch isolates tasks, private asset metadata and notification ledger; logout restores local', () async {
     final local = host.controller!;
     await local.save(const TaskDraft(title: 'Chỉ thuộc cục bộ'));

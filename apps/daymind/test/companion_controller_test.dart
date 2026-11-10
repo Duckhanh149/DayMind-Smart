@@ -13,6 +13,7 @@ import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/companion/domain/companion.dart';
 import 'package:daymind_smart/features/account_sync/data/workspace_records.dart';
 import 'package:daymind_smart/features/account_sync/domain/sync_record.dart';
+import 'package:daymind_smart/features/backup/presentation/privacy_section.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +65,39 @@ void main() {
       );
     },
   );
+  test('legacy portrait size migrates once and cannot overwrite a newer local layout', () async {
+    await c.repository.writePreferences(
+      const AppPreferences(companionSize: 104).toJson(),
+    );
+    await c.repository.db.customStatement(
+      "DELETE FROM extension_records WHERE area='companion_local' AND id='layout'",
+    );
+    await c.load(greet: false);
+    expect(c.companionLayout.size, 104);
+    await c.updateCompanionLayout(
+      (layout) => layout.copy(size: 136, placement: CompanionPlacement.right),
+    );
+    await c.load(greet: false);
+    expect(c.companionLayout.size, 136);
+    expect(c.companionLayout.placement, CompanionPlacement.right);
+  });
+  test('diagnostic consent is local opt-in and its summary cannot disclose raw errors or user content', () async {
+    var cloudWrites = 0;
+    c.onLocalChange = () => cloudWrites++;
+    expect(c.diagnosticsConsent, isFalse);
+    await c.configureDiagnostics(true);
+    await c.load(greet: false);
+    expect(c.diagnosticsConsent, isTrue);
+    expect(cloudWrites, 0);
+    c.companionError = 'private/path and sensitive task content';
+    final summary = diagnosticSummary(c).toString();
+    expect(summary, isNot(contains('private/path')));
+    expect(summary, isNot(contains('sensitive task')));
+    expect(summary, contains('companion: true'));
+    await c.configureDiagnostics(false);
+    await c.load(greet: false);
+    expect(c.diagnosticsConsent, isFalse);
+  });
   test('queued local layout changes preserve independent fields and do not trigger cloud writes', () async {
     var uploads = 0;
     c.onLocalChange = () => uploads++;

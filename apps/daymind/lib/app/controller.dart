@@ -53,11 +53,13 @@ class WorkspaceController extends ChangeNotifier {
   FloatingCompanionSettings floatingSettings =
       const FloatingCompanionSettings();
   String? floatingError;
+  String? floatingStatus;
   CompanionExpression expression = CompanionExpression.neutral;
   Map<CompanionExpression, String> expressionAssets = {};
   String? companionError;
   int inAppSequence = 0;
   String? inAppAnnouncement;
+  bool diagnosticsConsent = false;
   int companionAnnouncementSequence = -1;
   int companionMotionSequence = 0;
 
@@ -70,9 +72,12 @@ class WorkspaceController extends ChangeNotifier {
       companion = data == null
           ? CompanionProfile(personality: preferences.personality)
           : CompanionProfile.fromJson(data);
-      companionLayout = CompanionLayout.fromJson(
-        await recurrence.records.get('companion_local', 'layout'),
-      );
+      var layout = await recurrence.records.get('companion_local', 'layout');
+      if (layout == null) {
+        layout = CompanionLayout(size: preferences.companionSize).toJson();
+        await recurrence.records.put('companion_local', 'layout', layout);
+      }
+      companionLayout = CompanionLayout.fromJson(layout);
       floatingSettings = FloatingCompanionSettings.fromJson(
         await recurrence.records.get('companion_local', 'floating'),
       );
@@ -258,6 +263,12 @@ class WorkspaceController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reportFloatingStatus(String? value) {
+    if (floatingStatus == value || _disposed) return;
+    floatingStatus = value;
+    notifyListeners();
+  }
+
   DashboardPreferences dashboard = const DashboardPreferences();
   String dialogue = 'Không cần làm tất cả. Bắt đầu bằng một việc nhỏ thôi.';
   Future<void> _tail = Future.value();
@@ -297,6 +308,12 @@ class WorkspaceController extends ChangeNotifier {
 
   Future<void> refreshFromNative() => _write(() async {});
   Future<void> refreshFromSync() => _write(() async {}, localChange: false);
+  Future<void> configureDiagnostics(bool enabled) => _write(() async {
+    await recurrence.records.put('privacy', 'diagnostics', {
+      'enabled': enabled,
+    });
+    diagnosticsConsent = enabled;
+  }, localChange: false);
 
   Future<void> load({bool greet = true}) async {
     tasks = await repository.list();
@@ -307,6 +324,9 @@ class WorkspaceController extends ChangeNotifier {
     dashboard = DashboardPreferences.fromJson(
       await recurrence.records.get('assistant', 'dashboard'),
     );
+    diagnosticsConsent =
+        (await recurrence.records.get('privacy', 'diagnostics'))?['enabled'] ==
+        true;
     if (greet) {
       final settings =
           reminders?.preferences ??

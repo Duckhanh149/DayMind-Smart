@@ -4,6 +4,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val productionSigning = System.getenv("DAYMIND_REQUIRE_RELEASE_SIGNING") == "true"
+val signingVariables = listOf("DAYMIND_ANDROID_KEYSTORE_PATH", "DAYMIND_ANDROID_STORE_PASSWORD", "DAYMIND_ANDROID_KEY_ALIAS", "DAYMIND_ANDROID_KEY_PASSWORD")
+if (productionSigning && signingVariables.any { System.getenv(it).isNullOrBlank() }) {
+    throw GradleException("Production signing configuration is incomplete. Configure GitHub Actions secrets; do not put keys/passwords in source.")
+}
+
 android {
     namespace = "dev.daymind.daymind_smart"
     compileSdk = 36
@@ -30,11 +36,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (productionSigning) {
+            create("production") {
+                storeFile = file(System.getenv("DAYMIND_ANDROID_KEYSTORE_PATH"))
+                storePassword = System.getenv("DAYMIND_ANDROID_STORE_PASSWORD")
+                keyAlias = System.getenv("DAYMIND_ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("DAYMIND_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Preview remains explicit. Production mode never falls back to a debug key.
+            signingConfig = signingConfigs.getByName(if (productionSigning) "production" else "debug")
         }
     }
     testOptions {

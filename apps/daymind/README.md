@@ -1,6 +1,6 @@
 # DayMind SMART — Android & Windows
 
-Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Reminder Engine, lịch/lặp lại, trợ lý/thống kê, tài khoản/đồng bộ Firebase Emulator và Companion tùy chỉnh. Giai đoạn0–7 đã qua cổng tự động; preview0.6.1 đang kiểm thử giai đoạn8 theo nhánh phát hành không Live2D. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
+Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Không phải vỏ WebView của website. Có quản lý công việc cục bộ, Reminder Engine, lịch/lặp lại, trợ lý/thống kê, tài khoản/đồng bộ Firebase Emulator và Companion tùy chỉnh. Giai đoạn0–8 đã qua cổng tự động (8 dùng nhánh không Live2D); preview0.7.0 đang kiểm giai đoạn9. Dùng được không tài khoản. [Tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ phần chưa hoàn thành.
 
 ## Đã triển khai
 
@@ -59,6 +59,6 @@ APK preview trong Actions được build tối ưu ARM64 nhưng vẫn ký bằng
 
 Giai đoạn0–7 đạt cổng tự động, sourcee993033 / Native42757179906: Android199 Flutter tests/25 receiver, cold-process/digest, Keystore, tài khoản/thư viện thật; Windows197+2 skip do quyền symlink, DPAPI, policy12/component94/Win32 probes/khay/installer. Emulator42752885523 đạt16 ca+7 AOT với lib/backend/package cây giống sourcee993033. Bộ kiểm thử hiện tại bổ sung ca cooldown không làm mất lời nhắc và replay clip cùng biểu cảm; kết quả mới ghi ở [checkpoint](docs/WORK_CHECKPOINT.md).
 
-Giai đoạn8 giữ Live2D tắt theo fallback của đặc tả, duy trì contract renderer Dart và chặn nhập model, chưa tuyên bố SDK/model được cấp phép hoặc render thật. Giai đoạn9 còn backup/restore mật khẩu, migration/upgrade/signing, privacy và nghiệm thu phần cứng; chưa hoàn tất dự án. Website và kho native hiện tách dữ liệu.
+Giai đoạn8 giữ Live2D tắt theo fallback của đặc tả, duy trì contract renderer Dart và chặn nhập model, chưa tuyên bố SDK/model được cấp phép hoặc render thật. Giai đoạn9 có backup/restore mật khẩu/atomic journal và UI, migration guards, mutex Windows và diagnostics/consent. Source0.7.0 còn cổng native/package/signing/upgrade/phần cứng; chưa hoàn tất dự án. Xem [sao lưu](docs/BACKUP_FORMAT.md), [quyền riêng tư](docs/PRIVACY.vi.md), [ký/phát hành](docs/PRODUCTION_SIGNING.md). Website và kho native hiện tách dữ liệu.
 
 Cổng nghiệm thu Android thiết bị thật, Windows 10/11 thực tế và thông báo OEM/Doze/reboot thật vẫn phải xác minh; không tuyên bố đã đạt chỉ từ widget tests hoặc compilation. Trạng thái build cụ thể xem `docs/BUILD_STATUS.md` và kết quả Actions. Các giai đoạn tính năng tiếp theo giữ theo master spec, không đánh dấu toàn bộ dự án đã hoàn tất.

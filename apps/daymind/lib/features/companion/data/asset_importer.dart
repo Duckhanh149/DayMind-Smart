@@ -700,6 +700,109 @@ class StaticAssetImporter {
       ..sort();
   }
 
+  /// Fixed logical names only. Credentials and arbitrary filesystem paths never
+  /// enter a backup. Stored packages are verified again before reading them.
+  Future<Map<String, Uint8List>> backupFiles(String name) => _trackRead(
+    () async {
+      _checkOpen();
+      if (!installed().contains(name)) {
+        throw const ValidationException('Nhân vật không có trong thư viện.');
+      }
+      final source = resolve(name);
+      if (source == null) {
+        throw const ValidationException('Nguồn nhân vật bị thiếu.');
+      }
+      if (!_packName(name)) return {'source.bin': await _readSource(source)};
+      final character = await this.character(name);
+      if (character == null) {
+        throw const ValidationException('Gói nhân vật bị thiếu.');
+      }
+      final root = _packageDirectory(name)!;
+      return {
+        'source.bin': await _readSource(source, limit: 16 * 1024 * 1024),
+        'atlas.png': await _atlasBytes(character),
+        'preview.png': await _readSource(character.preview, limit: 128 * 1024),
+        'asset.json': await _readSource(
+          File(p.join(root.path, 'asset.json')),
+          limit: 65536,
+        ),
+        if (character.metadata.hasLicenseText)
+          'license.txt': await _readSource(
+            File(p.join(root.path, 'license.txt')),
+            limit: 65536,
+          ),
+      };
+    }(),
+  );
+
+  Future<String> restoreBackupFiles(
+    String name,
+    Map<String, Uint8List> files,
+  ) async {
+    _checkOpen();
+    if (!isCharacterAssetName(name) || !files.containsKey('source.bin')) {
+      throw const ValidationException('Mã nhân vật sao lưu không hợp lệ.');
+    }
+    final source = files['source.bin']!;
+    if (sha256.convert(source).toString() != name.substring(0, 64)) {
+      throw const ValidationException('Nguồn sao lưu không khớp checksum.');
+    }
+    if (!_packName(name)) {
+      if (files.length != 1) {
+        throw const ValidationException('Ảnh tĩnh sao lưu có tệp thừa.');
+      }
+      return installBytes(source, name);
+    }
+    if (!files.keys.toSet().containsAll({
+          'asset.json',
+          'atlas.png',
+          'preview.png',
+        }) ||
+        files.keys.any(
+          (k) => !{
+            'source.bin',
+            'asset.json',
+            'atlas.png',
+            'preview.png',
+            'license.txt',
+          }.contains(k),
+        )) {
+      throw const ValidationException('Gói sao lưu không hợp lệ.');
+    }
+    final meta = await _verifyStored(
+      name,
+      files['asset.json']!,
+      source,
+      files['atlas.png']!,
+      files['preview.png']!,
+    );
+    final plan = await CharacterBlueprint.inspect(
+      source,
+      meta.sourceFormat,
+      'backup',
+    );
+    if (meta.hasLicenseText != files.containsKey('license.txt') ||
+        (meta.hasLicenseText &&
+            (plan.licenseBytes == null ||
+                sha256.convert(plan.licenseBytes!).toString() !=
+                    sha256.convert(files['license.txt']!).toString()))) {
+      throw const ValidationException(
+        'Giấy phép trong bản sao lưu không khớp nguồn.',
+      );
+    }
+    final preview = StaticAssetPreview._package(
+      source,
+      PreparedCharacterAnimation(
+        meta,
+        files['atlas.png']!,
+        files['preview.png']!,
+        files['license.txt'],
+      ),
+      'restore.${meta.sourceFormat}',
+    );
+    return installPrepared(preview, rightsConfirmed: true);
+  }
+
   Future<void> remove(String name) => _serialized(() async {
     if (_packName(name)) {
       final root = _packageDirectory(name);

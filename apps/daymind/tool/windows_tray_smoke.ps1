@@ -23,6 +23,16 @@ try {
   Start-Sleep -Milliseconds 600
   $process.Refresh()
   if ($process.HasExited -or [DayMindWindowTest]::IsWindowVisible($handle)) { throw 'WM_CLOSE did not keep app alive in tray' }
+  $second = Start-Process (Join-Path $directory 'daymind_smart.exe') -WorkingDirectory $directory -PassThru
+  try {
+    if (-not $second.WaitForExit(12000) -or $second.ExitCode -ne 0) { throw 'Second launch did not hand over to the existing process' }
+    $deadline = (Get-Date).AddSeconds(5)
+    while ((Get-Date) -lt $deadline -and -not [DayMindWindowTest]::IsWindowVisible($handle)) { Start-Sleep -Milliseconds 100 }
+    if (-not [DayMindWindowTest]::IsWindowVisible($handle)) { throw 'Second launch did not restore the original tray window' }
+    $process.Refresh()
+    if ($process.HasExited) { throw 'Second launch replaced the original process' }
+    Write-Host 'PASS: second launch opens the original tray window and exits without another engine/workspace.'
+  } finally { if (-not $second.HasExited) { Stop-Process -Id $second.Id -Force } }
   [DayMindWindowTest]::PostMessage($handle, 0x0111, [IntPtr]801, [IntPtr]::Zero) | Out-Null
   Start-Sleep -Milliseconds 600
   if (-not [DayMindWindowTest]::IsWindowVisible($handle)) { throw 'Open command did not restore window' }
