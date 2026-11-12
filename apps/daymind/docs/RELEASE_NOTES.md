@@ -1,4 +1,4 @@
-# Preview0.7.0 — đang kiểm giai đoạn9
+# Preview 0.7.0 — cổng tự động đã đạt, chờ nghiệm thu phát hành
 
 - Sao lưu có mật khẩu, gồm dữ liệu công việc/lịch lặp/cấu hình/thư viện; restore thêm bản sao và giữ dữ liệu hiện tại. Nhắc việc tạm dừng sau restore, không phát lịch cũ. Xem BACKUP_FORMAT.md.
 - Khôi phục ảnh/recurrence/history nguyên tử, journal xử lý gián đoạn; không chuyển phiên đăng nhập.
@@ -6,12 +6,14 @@
 - Hiển thị lý do Windows đang ẩn pet; chẩn đoán chỉ xuất khi opt-in, không tự gửi.
 - Phân tách preview/production signing, manual publish mặc định tắt. Bản này chưa có identity ký sản xuất hoặc nghiệm thu thiết bị, không hướng dẫn gỡ app cũ để cài đè khác chữ ký.
 
-0–8 qua cổng tự động ở213a820 / Native42762621177 / Emulator42762620985. Live2D giữ tắt theo fallback đã đánh giá, chưa SDK/model/license approval. Source0.7.0 phải qua CI riêng; chưa coi hoàn thành0–9. Android/Windows chỉ tải artifact được BUILD_STATUS xác nhận.
+Nguồn `8372826a` đạt cả Android và Windows tại [Native43160174675](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43160174675):225 Flutter tests (Windows223+2 skip), 27 receiver cases, SQLite PID/concurrent integrity, backup/account và host integration đạt. Windows có100 component checks và nâng0.6.1→0.7.0→gỡ/cài lại giữ dữ liệu thử. Emulator43157911425 đạt16+7 trên lib/backend/package trees giống nguồn 837. Đã kiểm hash/CRC/manifest/PE/runtime/giấy phép gói; [BUILD_STATUS](BUILD_STATUS.md) có link tải và SHA256.
+
+Cổng phần mềm tự động 0–9 đã đạt; giai đoạn 8 dùng raster fallback, Live2D vẫn OFF/chưa SDK/model/license approval. Thiết bị Android OEM/Doze/reboot/máy yếu, Windows10/11 DND/DPI/file dialogs và ký/upgrade-chain production chưa nghiệm thu. Firebase vẫn Emulator. Chưa hoàn tất toàn dự án, chưa merge main hoặc xuất bản Release.
 
 # Preview 0.6.0 — giai đoạn7 qua cổng tự động
 
 - Nhập GIF/WebP động và ZIP DayMind chứa sprite/manifest; xem trước, tiến độ/hủy và xác nhận quyền sử dụng.
-- Atlas tối đa120 khung,128px/khung; nguồn giữ nguyên byte/checksum. Không tải ảnh lên cloud.
+- Atlas tối đa120 khung, 128px/khung; nguồn giữ nguyên byte/checksum. Không tải ảnh lên cloud.
 - Hoạt ảnh dừng và nhả texture khi cuộn khuất, bị hộp thoại che, thu khay hoặc ra nền. Low-resource/giảm chuyển động dùng ảnh tĩnh.
 - Windows có Companion nổi tùy chọn, mặc định tắt; kéo/resize, khôi phục vị trí, topmost/click-through tường minh. Cùng tiến trình, không thêm Flutter engine hoặc lịch nhắc.
 - Cửa sổ nổi tự ẩn khi fullscreen, giờ yên lặng và các trạng thái công khai của Windows notification API. Cần nghiệm thu Focus Assist/DND trên Windows10/11 thật.

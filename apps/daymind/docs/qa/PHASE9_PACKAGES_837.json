@@ -1,0 +1,73 @@
+{
+  "source": "8372826a11389aaaa886b9230eff242b9b8d75d9",
+  "run": 43160174675,
+  "verifiedOn": "2026-11-12",
+  "android": {
+    "zipBytes": 11386910,
+    "zipSha256": "bc2173f0b2782d9eead7f6e6e54e1c3377bd0fb4a67e345035873eeb94e9d960",
+    "crcPassed": true,
+    "artifactId": 13917549464,
+    "package": "dev.daymind.daymind_smart",
+    "version": "0.7.0",
+    "versionCode": 2008,
+    "minSdk": 24,
+    "targetSdk": 36,
+    "compileSdk": 36,
+    "apkBytes": 23948891,
+    "apkSha256": "fb27f5182d372d01da8d4fb30a0d40c6641e0b25d7e70ee0ab3c065b295ccd5c",
+    "apkFiles": 83,
+    "apkCrcPassed": true,
+    "abis": [
+      "arm64-v8a"
+    ],
+    "releaseNotDebuggable": true,
+    "debugReceiverExcluded": true,
+    "databaseReceiversInPrivateProcess": true,
+    "ipcControlExported": false,
+    "automaticAppBackup": false,
+    "apkV2SignatureVerified": true,
+    "certificateType": "Android Debug preview",
+    "certificateSha256": "96cf376f4eb8bace321cbf614595887807261dc9fdd51fd89b6ca246ded7d90c",
+    "productionSigningVerified": false,
+    "fontOflIncluded": true,
+    "cryptographyApacheNoticesIncluded": true
+  },
+  "windows": {
+    "zipBytes": 28738606,
+    "zipSha256": "0fb317df3fff831df9d834deaf5c791b1b1aa01732793d1d20d2e11c16eac4b9",
+    "crcPassed": true,
+    "artifactId": 13918351430,
+    "version": "0.7.0",
+    "files": 34,
+    "productionSigningVerified": false,
+    "fontOflIncluded": true,
+    "cryptographyApacheNoticesIncluded": true,
+    "vcRuntimeIncluded": [
+      "msvcp140.dll",
+      "vcruntime140.dll",
+      "vcruntime140_1.dll"
+    ],
+    "gateProbesAndUserDataExcluded": true,
+    "exe": {
+      "bytes": 174592,
+      "sha256": "b6bb649b06c526eb6497d91af86fdb7bd7bf10c6b280ae124c4347405e0ba836",
+      "peMachine": "0x8664",
+      "embeddedVersionVerified": true,
+      "authenticodeDirectorySize": 0
+    },
+    "installer": {
+      "bytes": 13225943,
+      "sha256": "2b4f9c46ca3bacb8f3414e5a882d602826b652dcee519e9c669d63284a96b510",
+      "peMachine": "0x14c",
+      "embeddedVersionVerified": true,
+      "authenticodeDirectorySize": 0
+    }
+  },
+  "limits": [
+    "Artifact CRC, metadata, package content and SHA256 verified locally against GitHub artifact digests.",
+    "APK signed with ephemeral Android Debug certificate; not a production upgrade chain.",
+    "Windows app and installer unsigned; x86 installer bootstrap carries x64 application.",
+    "No physical Android OEM/Doze/reboot or Windows10/11/DND/low-end acceptance.",
+    "Never uninstall an existing user app to bypass a signing mismatch."
+  ]
+}

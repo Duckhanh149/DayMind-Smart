@@ -1,6 +1,6 @@
 # Nghiệm thu thiết bị và bản ký — đang chờ
 
-Các cổng tự động0–8 đã có bằng chứng trong [PHASE_STATUS](../PHASE_STATUS.md). CI Windows Server và Android emulator không chứng minh hành vi trên điện thoại OEM, máy yếu hoặc Windows10/11 của người dùng. Chỉ đánh dấu mục dưới đây đạt khi thực sự chạy, ghi OS/kiến trúc, phiên bản app/commit, giờ dự kiến/thực tế và bằng chứng đã bỏ thông tin riêng tư. Không ghi mật khẩu, token, tên công việc thật hoặc đường dẫn cá nhân.
+Các cổng phần mềm tự động 0–9 đã đạt tại nguồn 8372826a; giai đoạn 8 dùng raster fallback, Live2D vẫn tắt. Bằng chứng trong [PHASE_STATUS](../PHASE_STATUS.md) và [PHASE9_NATIVE_837](PHASE9_NATIVE_837.json). CI Windows Server và Android emulator không chứng minh hành vi trên điện thoại OEM, máy yếu hoặc Windows10/11 của người dùng. Các mục bên dưới **chưa chạy trên phần cứng đích**. Chỉ đánh dấu đạt khi thực sự chạy, ghi OS/kiến trúc, phiên bản app/commit, giờ dự kiến/thực tế và bằng chứng đã bỏ thông tin riêng tư. Không ghi mật khẩu, token, tên công việc thật hoặc đường dẫn cá nhân.
 
 Nguồn native: `apps/daymind`, nhánh `native/flutter-app`, PR#1. Lấy đúng artifact/commit được [BUILD_STATUS](../BUILD_STATUS.md) xác nhận; gói preview chưa có chữ ký sản xuất. Không gỡ ứng dụng đang dùng để vượt lỗi khác chữ ký, vì có thể mất dữ liệu. Dùng dữ liệu thử trên thiết bị riêng và sao lưu trước khi thử nâng cấp. Firebase vẫn dùng Emulator theo lựa chọn hiện tại; không cần khóa thật.
 

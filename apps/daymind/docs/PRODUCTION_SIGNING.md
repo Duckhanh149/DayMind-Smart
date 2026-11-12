@@ -1,6 +1,6 @@
 # Ký và phát hành
 
-Bản0.7.0 hiện là preview đang kiểm chứng. Chưa có signing identity sản xuất được cấu hình, chưa xác minh nâng cấp điện thoại thật hoặc tin cậy Authenticode trên máy người dùng. Không gọi artifact debug/unsigned là production. Không gỡ app cũ để cài đè khi khác chữ ký; giữ dữ liệu/bản sao lưu trước mọi thử nghiệm.
+Bản0.7.0 hiện là preview đã qua native CI43160174675 và kiểm tra gói tại nguồn 8372826a. Chưa có signing identity sản xuất được cấu hình, chưa xác minh nâng cấp điện thoại thật hoặc tin cậy Authenticode trên máy người dùng. Không gọi artifact debug/unsigned là production. Không gỡ app cũ để cài đè khi khác chữ ký; giữ dữ liệu/bản sao lưu trước mọi thử nghiệm.
 
 Workflow Build Android and Windows mặc định preview và **publish=false**. Push chỉ build/test/artifact. Không tự merge main hoặc tạo Release. Chỉ manual từ main với publish=true, sau cả jobs đạt, mới tạo prerelease theo phiên bản pubspec; không thay artifact Release đã có. Không chạy publish/production thay người dùng khi chưa có điều kiện.
 

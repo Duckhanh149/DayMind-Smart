@@ -1,6 +1,6 @@
 # ADR0012 — Tách tiến trình SQLite của bộ nhắc Android
 
-Trạng thái: sửa giai đoạn9, chờ kiểm chứng native mới; không coi compilation hoặc kiểm thử Linux là cổng Android đã đạt.
+Trạng thái: chấp nhận, đã kiểm chứng native tại nguồn 8372826a, [CI43160174675](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43160174675). Cổng tự động đạt; chưa thay nghiệm thu thiết bị thật hoặc sửa được database hỏng trước đó.
 
 Native42802618726/source614deadd đã vào được test Android qua authenticated VM trực tiếp, có90 lịch tương lai, nhưng đọc delivery_logs sau restore báo SQLITE_CORRUPT11. Windows cùng nguồn đã qua backup/cancel/no replay rồi dừng tại cache primary-device chưa cập nhật. Không retry che assertion hoặc tự xóa/tạo lại database. Ba regression coalesced-refresh đã tái hiện cache lỗi; cấu hình đã lưu được publish ngay khi thao tác xác nhận, kể cả DB đã có cùng giá trị.
 
@@ -15,3 +15,5 @@ Native openDatabase dùng DatabaseErrorHandler không xóa file. Không đưa De
 Cổng mới: cold-process driver phải kiểm cả Flutter và `:reminders` đã đóng, vẫn giữ AlarmManager (không force-stop). Native integration bắt buộc marker PID isolation, năm chu kỳ Dart giữ write transaction trong lúc native recovery cùng file và integrity_check sau từng chu kỳ; restore còn integrity_check trước khi kiểm no replay. Unit native thêm Binder thiếu client và file invalid được giữ. Sau đó phải qua lại account/artwork/cold notification/digest, installer/upgrade và package inspection. Không đánh dấu0–9 hoàn tất trước các kết quả đó.
 
 Source70c3331 đã qua27 receiver tests, cold-close cả hai process và mọi assertion của bài native Android, gồm PID/concurrency/integrity/backup/account. Tuy nhiên job43157911554 vẫn thất bại: `flutter test --no-dds` trong SDK ghim tự đăng ký stream golden `integration_test.VmServiceProxyGoldenFileComparator`, VM trực tiếp trả Invalid params. Không bỏ qua lỗi loading này hoặc đổi exit code thành PASS. Bản tiếp theo dùng adapter chính thức `integration_test/integration_test_driver.dart` qua `flutter drive --no-dds` với cùng target app_smoke_test, deadline600s/driver5phút và đầy đủ success markers; không sửa SDK, bỏ assertion hoặc retry ca hỏng. Adapter SDK chỉ exit0 khi allTestsPassed.
+
+Nguồn8372826a dùng adapter này và job 130989190737 kết thúc SUCCESS/allTestsPassed.225 Flutter tests, 27 receiver/recovery cases, cold notification/digest sau khi cả hai process đóng, PID khác Flutter, năm chu kỳ write/recovery chồng nhau và integrity_check sau mỗi chu kỳ/sau restore đều đạt. Account/artwork/backup không replay đạt; Windows cùng run đạt backup/cache và installer nâng/gỡ/cài lại. [PHASE9_NATIVE_837](../qa/PHASE9_NATIVE_837.json) ghi kết quả và giới hạn. Không giữ trạng thái pending từ run70 hoặc coi failure cũ là thành công.
