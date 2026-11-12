@@ -4,6 +4,10 @@ Cập nhật 12/11/2026 (UTC). Nguồn native tại apps/daymind; web root độ
 
 ## Checkpoint hiện tại
 
+Source70c3331: Windows43157911554/job130982038553 toàn bộ native/backup/installer upgrade đạt, package13917725566 kiểm CRC/PE/version/OFL/CRT/unsigned. Android130982038129 đã qua mọi assertion native/PID/integrity/backup/account nhưng host golden stream dưới --no-dds lỗi loading; job chưa đạt, không có APK artifact. Nguồn adapter tiếp theo dùng flutter drive chính thức với cùng target/assertions/markers và deadline. Emulator43157911425 đạt; qa/PHASE9_NATIVE_70/PHASE9_PACKAGES_70. Chưa gán cả cổng9 hoặc production/hardware PASS.
+
+Lịch sử:
+
 Nguồn614deadd: Emulator42802618924 đạt16+7; Native42802618726 chưa đạt (Windows cache primary-device sau backup đã qua90 scheduled; Android SQLITE_CORRUPT11 sau restore dù direct VM/cold gates đạt). Đang sửa cache đã tái hiện3 ca và Android SQLite process isolation/ACK/barrier/không auto-delete, có PID+concurrency+integrity probe; xem ADR0012 và qa/PHASE9_NATIVE_614.json. Local225 tests/25 Python/analyze/Kotlin main-debug compile đạt, native source mới chưa chạy. Installer/package, hardware và production signing còn mở. AOT codec near-limit peak400388KiB chỉ là Linux synthetic buffers, không là low-end/native app acceptance; qa/PHASE9_BACKUP_AOT.json.
 
 Lịch sử checkpoint:

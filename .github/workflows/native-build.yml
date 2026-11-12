@@ -9,6 +9,7 @@ on:
       - apps/daymind/assets/**
       - apps/daymind/test/**
       - apps/daymind/integration_test/**
+      - apps/daymind/test_driver/**
       - apps/daymind/firebase/**
       - apps/daymind/tool/**
       - apps/daymind/pubspec.*

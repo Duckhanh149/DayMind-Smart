@@ -126,6 +126,8 @@ def run_bounded(command, deadline, required=(), device=None):
     def output():
         for line in process.stdout:
             observe_vm_uri(discovery, line)
+            if discovery['at'] is None and discovery['vm']:
+                discovery['at'] = time.monotonic()
             if 'Finding the correct isolate with the integration test service extension' in line:
                 discovery['at'] = time.monotonic()
             if 'NATIVE_INTEGRATION_STAGE:' in line:
@@ -184,10 +186,12 @@ def main():
     subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', PACKAGE],
                    check=True, timeout=30)
     subprocess.run(['adb', '-s', device, 'logcat', '-c'], check=True, timeout=30)
-    # The CI host failed inside DDS startup before a Dart test was discovered.
-    # Connect directly to the same authenticated VM service; no SDK/transport
-    # security changes, test retries or missing-marker exceptions are involved.
-    command = ['flutter', '--verbose', 'test', '--no-dds', 'integration_test/app_smoke_test.dart',
+    # flutter test --no-dds registers a golden-comparator stream which the direct
+    # VM cannot provide in this pinned SDK. The SDK's official drive adapter
+    # runs the same suite, preserves assertion failures and avoids that listener.
+    command = ['flutter', '--verbose', 'drive', '--no-dds', '--no-devtools',
+               '--driver=test_driver/native_integration.dart',
+               '--target=integration_test/app_smoke_test.dart',
                '--no-pub', '-d', device, '--dart-define=RUN_ACCOUNT_EMULATOR=true']
     code = run_bounded(command, 600, device=device, required=(
         'SECURE_STORAGE_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:', 'ANDROID_SQLITE_ISOLATION_POC:',

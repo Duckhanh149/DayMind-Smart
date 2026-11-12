@@ -6,6 +6,12 @@ Hoàn thiện Android ARM64 và Windows10/11 x64 theo0–9, kiểm thử/cổng 
 
 Automation kiểm tra mỗi giờ, nối tiếp khi môi trường/hạn mức cho phép; không hứa chạy ngay khi hết giới hạn. Không chạy thêm worker code nếu lượt hiện tại còn hoạt động. Đọc checkpoint/PHASE_STATUS/BUILD_STATUS, git status/process/CI/remote mới nhất; giữ thay đổi chưa commit, không hard-reset.
 
+## Tiếp tục bộ chạy Android — 12/11/2026
+
+Remote/local70c3331b8e8fb07edfbd5f58f6ef677b393faa04/tree2e97979d312da0eb8a2c506bd3bc1e589e29f3a2, workspace sạch trước sửa adapter. Emulator43157911425/job130982037755 đạt. Native43157911554: Windows130982038553 đạt toàn bộ223 tests+2 skip, component100, backup/primary/account, launch2/tray/quit/no startup và baseline0.6.1→0.7.0→uninstall/reinstall; giữ3task rows/2artwork files/4domain records. ZIPartifact13917725566 SHA61bdb26add03c2aed3e1b7a407a47be27650f30f5e0749d46f5b9315a1b6d522 đã tải/CRC/PE/version/OFL/cryptography Apache/CRT/no probe-userdata kiểm; unsigned preview. qa/PHASE9_NATIVE_70.json, PHASE9_PACKAGES_70.json.
+
+Android130982038129:225 tests/27 receiver/cold gates/PID isolation+5concurrent integrity cycles/native backup/primary/account/artwork/delete đều chạy qua; SQLITE_CORRUPT không tái hiện. Nhưng job vẫn FAILURE vì SDK flutter test --no-dds tạo host golden stream không hợp lệ với direct VM (VmServiceProxyGoldenFileComparator, streamListen -32602), 1test passed+1loading failed. Không coi job đạt hoặc bỏ lỗi loading. Adapter mới dùng chính thức integration_test_driver.dart qua flutter drive --no-dds với cùng app_smoke_test target/600s+5phút/đủ markers; không sửa SDK/bỏ assertions/retry. Thêm test_driver vào workflow path triggers. Analyze/25 Python guards/actionlint đã đạt cho adapter; app code/test assertions giữ nguyên, full225 của nguồn70 còn hợp lệ. Cần native source mới xác nhận driver exit sạch rồi kiểm APK final.
+
 ## Điểm tiếp tục mới nhất — 12/11/2026
 
 Workspace/remote hiện cùng614deaddfe48a04ece5a015daee2e2041998d240, PR#1 mở, không worker khác; đã giữ mọi sửa local sau lượt bị giới hạn. Native42802618726 thất bại cả hai jobs, không retry che lỗi. Emulator42802618924/job129783709296 đạt16 thật+7 AOT trên chính614. Xem qa/PHASE9_NATIVE_614.json.
