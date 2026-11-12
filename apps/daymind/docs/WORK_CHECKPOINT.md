@@ -6,6 +6,20 @@ Hoàn thiện Android ARM64 và Windows10/11 x64 theo0–9, kiểm thử/cổng 
 
 Automation kiểm tra mỗi giờ, nối tiếp khi môi trường/hạn mức cho phép; không hứa chạy ngay khi hết giới hạn. Không chạy thêm worker code nếu lượt hiện tại còn hoạt động. Đọc checkpoint/PHASE_STATUS/BUILD_STATUS, git status/process/CI/remote mới nhất; giữ thay đổi chưa commit, không hard-reset.
 
+## Điểm tiếp tục mới nhất — 12/11/2026
+
+Workspace/remote hiện cùng614deaddfe48a04ece5a015daee2e2041998d240, PR#1 mở, không worker khác; đã giữ mọi sửa local sau lượt bị giới hạn. Native42802618726 thất bại cả hai jobs, không retry che lỗi. Emulator42802618924/job129783709296 đạt16 thật+7 AOT trên chính614. Xem qa/PHASE9_NATIVE_614.json.
+
+Windows129783704618:220 Flutter tests+2 symlink skip, component100 đạt; native backup với1task/1asset/1series/1completed occurrence và90 scheduled events đạt cancel/no replay,4063cipher bytes,capture109ms/encrypt1895ms/total21513ms,RSS517382144→537055232. Sau đó app_smoke:319 thấy primary-device cache false sau thao tác đã lưu; installer/upgrade bị skip. Đã tái hiện3 regression primary/persisted-primary/quiet khi background refresh đang chạy; publish cấu hình đã commit ngay vào coordinator, không đợi cache của poll. Cả3 đã đạt; sửa test coalesced-refresh để chờ đủ lần đọc trước assertion. Full225 Flutter tests và25 Python guards đạt, analyze sạch.
+
+Android129783705057:222 Flutter tests,25 receiver, Keystore/cold notification/digest và direct authenticated VM entrypoint đều đạt,90 scheduled trước restore; sau restore đọc delivery_logs báo SQLITE_CORRUPT11. Chưa đạt backup/account. Nguồn local mới giữ Flutter/Drift/schema nhưng tách mọi receiver SQLite Android vào process :reminders, điều khiển bằng explicit private ControlReceiver/ResultReceiver/Messenger, không thêm service/engine/scheduler. Main không mở DB Android, init ACK sau recovery/connection close, PID phải khác Flutter, callback lọc workspace path, Binder chết/thiếu client dùng OS route. Native DB error handler không tự xóa/tạo lại dữ liệu. ADR0012 nêu rủi ro hai SQLite libs cùng process theo tài liệu SQLite, không khẳng định đã chứng minh đây là nguyên nhân duy nhất.
+
+Kotlin2.4 main+debug compile CLI/SDK36 đạt; chưa chạy runtime27 receiver tests mới. Native probe mới bắt buộc PID isolation +5 chu kỳ giữ Dart write transaction đồng thời native recovery và integrity_check, restore kiểm integrity_check. Cold driver kiểm cả main và :reminders đã đóng bằng am kill, không force-stop. Cần CI đúng nguồn mới cho các thay đổi này; không gán native PASS từ compilation.
+
+Đã đo codec AOT Linux small/near-limit trong script local tạm: non-UTC/authentication/wrong-password đạt;452records+64 synthetic buffers32MiB roundtrip,48,506,578cipher bytes,encrypt11131ms,total23595ms,peak400388KiB. qa/PHASE9_BACKUP_AOT.json ghi phạm vi chỉ codec/synthetic bytes, không là import ảnh/restore native hoặc phần cứng yếu. Chưa tối ưu code crypto theo số đo này.
+
+Tiếp theo: publish toàn bộ sửa IPC/cache/QA bằng expected SHA614deadd rồi theo dõi Native/Emulator source mới, sửa mọi lỗi trước installer/package/hardware/signing acceptance. Giữ Live2D tắt/Firebase Emulator/Windows tray+Mở+Thoát/không autostart; không merge main, không phát hành hoặc báo đủ0–9. Các mục phía dưới là lịch sử, không phải trạng thái mới nhất.
+
 ## Tiếp tục sau khi môi trường phục hồi — 10/11/2026
 
 Đã fetch/fast-forward981→eb954d7 (chỉ remote checkpoint), giữ đủ các sửa local/UI/ảnh/checklist, không worker khác. Native42792153884/source981 kết thúc thất bại: Windows129748018355 đã vào native, DPAPI/tray/recurrence/resource/account initial sync đạt nhưng backup precondition không thấy scheduled event; installer bị skip. Android129748018096 đạt217 tests/25 receiver/Keystore/cold notification/digest, debug APK cài thành công nhưng DDS khởi động thất bại trước entrypoint; diagnostic sau cleanup có adb offline, không kết luận app crash. Không retry mù hoặc đổi SDK/JIT.

@@ -190,7 +190,7 @@ def main():
     command = ['flutter', '--verbose', 'test', '--no-dds', 'integration_test/app_smoke_test.dart',
                '--no-pub', '-d', device, '--dart-define=RUN_ACCOUNT_EMULATOR=true']
     code = run_bounded(command, 600, device=device, required=(
-        'SECURE_STORAGE_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:',
+        'SECURE_STORAGE_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:', 'ANDROID_SQLITE_ISOLATION_POC:',
     ))
     if code:
         diagnostic(device)

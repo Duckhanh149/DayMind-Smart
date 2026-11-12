@@ -77,7 +77,7 @@ def cold_close():
 
 def kill_and_check():
     adb('shell', 'am', 'kill', PACKAGE)
-    command = ['adb', '-s', DEVICE, 'shell', 'pidof', PACKAGE]
+    command = ['adb', '-s', DEVICE, 'shell', 'pidof', PACKAGE, PACKAGE + ':reminders']
     result = subprocess.run(command, capture_output=True, text=True,
                             errors='replace', timeout=10)
     if result.returncode == 0:

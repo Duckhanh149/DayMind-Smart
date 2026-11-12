@@ -25,6 +25,26 @@ import java.util.concurrent.Executors
 object ReminderRuntime {
     const val CHANNEL = "daymind_tasks"
     val executor = Executors.newSingleThreadExecutor()
+    private var client: android.os.Messenger? = null
+    private var clientVisible = false
+    val foreground: Boolean get() = clientVisible && client?.binder?.isBinderAlive == true
+    fun attachClient(value: android.os.Messenger?, visible: Boolean) {
+        client = value
+        clientVisible = visible
+    }
+    fun detachClient(value: android.os.Messenger?) {
+        if (client?.binder == value?.binder) { client = null; clientVisible = false }
+    }
+    private fun changed(context: Context, title: String? = null, kind: String = "reminder") {
+        try {
+            client?.send(android.os.Message.obtain(null, ReminderControlReceiver.EVENT_CHANGED).apply {
+                data = android.os.Bundle().apply {
+                    putString("title", title); putString("kind", kind)
+                    putString("database", context.getSharedPreferences("daymind_runtime", Context.MODE_PRIVATE).getString("database", null))
+                }
+            })
+        } catch (_: android.os.RemoteException) { client = null; clientVisible = false }
+    }
     private fun manager(context: Context) = context.getSystemService(NotificationManager::class.java)
     fun channel(context: Context) {
         if (Build.VERSION.SDK_INT < 26) return
@@ -42,7 +62,8 @@ object ReminderRuntime {
     }
     private fun openDatabase(path: String): SQLiteDatabase? {
         if (!java.io.File(path).exists()) return null
-        return SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READWRITE).apply {
+        return SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READWRITE,
+            android.database.DatabaseErrorHandler { /* Preserve the file for recovery; never auto-delete user data. */ }).apply {
             // This PRAGMA returns a row; Android's execSQL rejects row-producing statements.
             rawQuery("PRAGMA busy_timeout=5000", null).use { it.moveToFirst() }
         }
@@ -250,13 +271,13 @@ object ReminderRuntime {
                             !eligible(db,event) || (event.getString(event.getColumnIndexOrThrow("rule_id"))=="digest" && digestDate(db,key)!=localDay(now)) -> state(db,key,"cancelled","invalidated",now)
                             expires < now -> state(db,key,"expired","late_skipped",now)
                             !granted(context) || !config.optBoolean("primaryDevice",true) || quiet(config,now) -> state(db,key,"suppressed","quiet_or_permission",now)
-                            else -> { title = if(event.getString(event.getColumnIndexOrThrow("rule_id"))=="digest")digestTitle(db,now) else event.getString(event.getColumnIndexOrThrow("title")); db.execSQL("UPDATE reminder_events SET title=? WHERE event_key=?",arrayOf<Any?>(title,key)); state(db,key,"unknown",if(MainActivity.foreground)"in_app" else "display_attempt",now);allowed=true }
+                            else -> { title = if(event.getString(event.getColumnIndexOrThrow("rule_id"))=="digest")digestTitle(db,now) else event.getString(event.getColumnIndexOrThrow("title")); db.execSQL("UPDATE reminder_events SET title=? WHERE event_key=?",arrayOf<Any?>(title,key)); state(db,key,"unknown",if(foreground)"in_app" else "display_attempt",now);allowed=true }
                         }
                     }
                 }
                 db.setTransactionSuccessful()
             } finally { db.endTransaction() }
-            if (allowed && !MainActivity.foreground) {
+            if (allowed && !foreground) {
                 val minutes = config.optInt("groupingMinutes",10).coerceIn(1,60); val window = minutes * 60000L; val start = now / window * window
                 val digest=db.rawQuery("SELECT rule_id FROM reminder_events WHERE event_key=?",arrayOf(key)).use { it.moveToFirst()&&it.getString(0)=="digest" }
                 val groupId = if(digest)999999999 else 1000000000 + (start / window % 1000000000L).toInt()
@@ -284,7 +305,7 @@ object ReminderRuntime {
                 }
                 manager(context).notify(groupId,builder.build())
             }
-            MainActivity.changed(if(allowed && MainActivity.foreground) title else null, if(isDigest) "digest" else "reminder")
+            changed(context, if(allowed && foreground) title else null, if(isDigest) "digest" else "reminder")
         }
     }
     fun action(context: Context, intent: Intent) {
@@ -323,7 +344,7 @@ object ReminderRuntime {
                 db.setTransactionSuccessful()
             } finally { db.endTransaction() }
         }
-        manager(context).cancel(intent.getIntExtra("group",0));MainActivity.changed()
+        manager(context).cancel(intent.getIntExtra("group",0));changed(context)
     }
     fun test(context: Context,title: String,body: String) {
         channel(context);if(!granted(context))return

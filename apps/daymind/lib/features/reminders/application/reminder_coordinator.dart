@@ -219,18 +219,22 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       ...changes,
     });
     await engine.configure(value);
+    // A running poll may coalesce refresh(), so publish the persisted user
+    // choice now rather than leaving a confirmed switch visually stale.
+    preferences = value;
+    if (!_disposed) notifyListeners();
     await refresh();
   }
 
   Future<void> applyPrimary(bool value) async {
     final latest = await engine.preferences();
-    if (latest.primaryDevice == value) return;
-    await engine.configure(
-      NotificationPreferences.fromJson({
-        ...latest.toJson(),
-        'primaryDevice': value,
-      }),
-    );
+    final next = NotificationPreferences.fromJson({
+      ...latest.toJson(),
+      'primaryDevice': value,
+    });
+    if (latest.primaryDevice != value) await engine.configure(next);
+    preferences = next;
+    if (!_disposed) notifyListeners();
     await refresh();
   }
 

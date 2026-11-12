@@ -88,7 +88,8 @@ void main() {
     );
     controller.attachReminders(coordinator);
     coordinator.addListener(() {
-      if (coordinator.preferences.digestEnabled &&
+      if (reads >= 2 &&
+          coordinator.preferences.digestEnabled &&
           coordinator.events.any((e) => e.ruleId == 'digest') &&
           !applied.isCompleted) {
         applied.complete();

@@ -45,10 +45,10 @@ class ReminderRuntimeTest {
         db.execSQL("INSERT INTO tasks(id,title,status,revision,deleted_at,updated_at,completed_at,owner_id) VALUES('t','Việc',0,1,NULL,0,NULL,'')")
         configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("groupingMinutes",10))
         context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).edit().putString("database",file.path).commit()
-        MainActivity.foreground=false;MainActivity.bridge=null
+        ReminderRuntime.attachClient(null,false);MainActivity.bridge=null
         ReminderRuntime.channel(context)
     }
-    @After fun cleanup(){db.close();file.delete();MainActivity.foreground=false}
+    @After fun cleanup(){db.close();file.delete();ReminderRuntime.attachClient(null,false)}
     private fun configure(settings:JSONObject){db.execSQL("INSERT OR REPLACE INTO extension_records VALUES('notifications','settings',?,?)",arrayOf<Any?>(settings.toString(),now))}
     private fun event(key:String="event",at:Long=now-1000,expires:Long=now+900000,priority:Int=1){
         db.execSQL("INSERT INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,'t','default',1,?,?,'scheduled',0,'Việc',?,?)",arrayOf<Any?>(key,at,expires,priority,now))
@@ -103,9 +103,24 @@ class ReminderRuntimeTest {
         assertEquals(0,notifications.size());assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
     }
     @Test fun foregroundProducesInAppActivityWithoutOSToast(){
-        MainActivity.foreground=true;event();ReminderRuntime.fire(context,"event")
+        ReminderRuntime.attachClient(android.os.Messenger(android.os.Handler(android.os.Looper.getMainLooper())),true);event();ReminderRuntime.fire(context,"event")
         assertEquals("unknown",state());assertEquals(0,notifications.size())
         assertEquals(1,count("SELECT COUNT(*) FROM delivery_logs WHERE outcome='in_app'"))
+    }
+    @Test fun visibleFlagWithoutLiveFlutterClientUsesOSToast(){
+        ReminderRuntime.attachClient(null,true);event();ReminderRuntime.fire(context,"event")
+        assertEquals("unknown",state());assertEquals(1,notifications.size())
+        assertEquals(1,count("SELECT COUNT(*) FROM delivery_logs WHERE outcome='display_attempt'"))
+    }
+    @Test fun invalidDatabaseIsNeverDeletedOrRecreated(){
+        val invalid=File(context.filesDir,"${UUID.randomUUID()}.sqlite")
+        val bytes="Synthetic invalid database fixture".toByteArray();invalid.writeBytes(bytes)
+        context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).edit().putString("database",invalid.path).commit()
+        try {
+            val attempt=runCatching { ReminderRuntime.database(context)?.use { database -> database.rawQuery("PRAGMA integrity_check",null).use { it.moveToFirst() } } }
+            assertTrue(attempt.isFailure)
+            assertTrue(invalid.exists());assertArrayEquals(bytes,invalid.readBytes())
+        } finally { invalid.delete() }
     }
     @Test fun twentyNearTimeAlarmsGroupIntoOneToastAndPreserveHighPriority(){
         for(i in 0..19){event("e$i",priority=if(i==19)2 else 1);ReminderRuntime.fire(context,"e$i")}

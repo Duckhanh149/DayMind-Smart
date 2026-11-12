@@ -30,9 +30,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <receiver android:name=".ReminderAlarmReceiver" android:exported="false" />
-        <receiver android:name=".ReminderActionReceiver" android:exported="false" />
-        <receiver android:name=".ReminderRecoveryReceiver" android:exported="true">
+        <receiver android:process=":reminders" android:name=".ReminderControlReceiver" android:exported="false" />
+        <receiver android:process=":reminders" android:name=".ReminderAlarmReceiver" android:exported="false" />
+        <receiver android:process=":reminders" android:name=".ReminderActionReceiver" android:exported="false" />
+        <receiver android:process=":reminders" android:name=".ReminderRecoveryReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>

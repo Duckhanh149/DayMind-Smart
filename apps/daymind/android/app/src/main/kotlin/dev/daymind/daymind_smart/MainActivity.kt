@@ -15,6 +15,19 @@ class MainActivity : FlutterActivity() {
         var bridge: MethodChannel? = null
         fun changed(title: String? = null, kind: String = "reminder") { android.os.Handler(android.os.Looper.getMainLooper()).post { bridge?.invokeMethod("changed", if(title == null) null else mapOf("title" to title,"kind" to kind)) } }
     }
+    private var runtimeDatabase: String? = null
+    private val runtimeClient by lazy {
+        android.os.Messenger(android.os.Handler(android.os.Looper.getMainLooper()) { message ->
+            if (message.what == ReminderControlReceiver.EVENT_CHANGED && runtimeDatabase != null &&
+                message.data.getString("database") == runtimeDatabase) {
+                changed(message.data.getString("title"), message.data.getString("kind") ?: "reminder")
+            }
+            true
+        })
+    }
+    private fun visibility(visible: Boolean, detach: Boolean = false) {
+        ReminderControlReceiver.request(this, if (detach) "detach" else "visibility", runtimeClient, visible)
+    }
     private var permissionResult: MethodChannel.Result? = null
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent);setIntent(intent)
@@ -22,9 +35,9 @@ class MainActivity : FlutterActivity() {
             intent.removeExtra("daymindOpenNotifications");bridge?.invokeMethod("openNotifications",null)
         }
     }
-    override fun onResume() { super.onResume(); foreground = true }
-    override fun onPause() { foreground = false; super.onPause() }
-    override fun onDestroy() { foreground = false; bridge = null; super.onDestroy() }
+    override fun onResume() { super.onResume(); foreground = true; visibility(true) }
+    override fun onPause() { foreground = false; visibility(false); super.onPause() }
+    override fun onDestroy() { foreground = false; runtimeDatabase = null; visibility(false, true); bridge = null; super.onDestroy() }
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
         val secureStore = SecureStore(this)
@@ -37,25 +50,22 @@ class MainActivity : FlutterActivity() {
                     "initialize" -> {
                         val path = java.io.File(call.argument<String>("path")!!).canonicalFile
                         require(path.path.startsWith(filesDir.canonicalPath + java.io.File.separator))
-                        ReminderRuntime.executor.execute {
-                            try {
-                                ReminderRuntime.switchDatabase(this, path.path)
-                                ReminderRuntime.channel(this); ReminderRuntime.recover(this)
-                                runOnUiThread { result.success(null) }
-                            } catch (_:Exception) {
-                                runOnUiThread { result.error("PROFILE_OPEN", "Chưa mở được thông báo cho không gian này.", null) }
+                        runtimeDatabase = path.path
+                        ReminderControlReceiver.request(this, "initialize", runtimeClient, foreground, path.path) { ready ->
+                            if (ready) result.success(null)
+                            else {
+                                if (runtimeDatabase == path.path) runtimeDatabase = null
+                                result.error("PROFILE_OPEN", "Chưa mở được thông báo cho không gian này.", null)
                             }
                         }
                     }
                     "granted" -> result.success(ReminderRuntime.granted(this))
+                    "runtimeIsolation" -> result.success(ReminderControlReceiver.initializedInRemoteProcess)
                     "deactivate" -> {
-                        ReminderRuntime.executor.execute {
-                            try {
-                                ReminderRuntime.deactivate(this)
-                                runOnUiThread { result.success(null) }
-                            } catch (_:Exception) {
-                                runOnUiThread { result.error("PROFILE_CLOSE", "Chưa dừng được thông báo của không gian cũ.", null) }
-                            }
+                        runtimeDatabase = null
+                        ReminderControlReceiver.request(this, "deactivate", runtimeClient, foreground) { ready ->
+                            if (ready) result.success(null)
+                            else result.error("PROFILE_CLOSE", "Chưa dừng được thông báo của không gian cũ.", null)
                         }
                     }
                     "requestPermission" -> {

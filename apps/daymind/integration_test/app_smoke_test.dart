@@ -4,6 +4,7 @@ import 'companion_fixtures.dart';
 import 'animated_companion_probe.dart';
 import 'account_artwork_probe.dart';
 import 'backup_probe.dart';
+import 'android_sqlite_probe.dart';
 
 import 'dart:io';
 import 'dart:convert';
@@ -286,6 +287,7 @@ void main() {
           templates: {'gentle:taskCompleted': '{name} mừng bạn xong {task}.'},
         ),
       );
+      await androidSqliteProbe(tester, host);
       await backupProbe(tester, host);
       await service.sync();
       expect(service.pendingCount, 0);

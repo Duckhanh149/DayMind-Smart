@@ -42,6 +42,7 @@ class ColdProcessEvidence(unittest.TestCase):
             self.assertTrue(smoke.kill_and_check())
         adb.assert_called_once_with('shell', 'am', 'kill', smoke.PACKAGE)
         self.assertEqual(run.call_args.args[0][:3], ['adb', '-s', smoke.DEVICE])
+        self.assertEqual(run.call_args.args[0][-2:], [smoke.PACKAGE, smoke.PACKAGE + ':reminders'])
 
     def test_present_process_is_not_cold(self):
         present = subprocess.CompletedProcess([], 0, '1234\n', '')

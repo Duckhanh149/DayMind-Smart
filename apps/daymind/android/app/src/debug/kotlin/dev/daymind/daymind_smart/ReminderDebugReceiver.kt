@@ -82,7 +82,7 @@ class ReminderDebugReceiver : BroadcastReceiver() {
                         answer.put("digestActions",notices.firstOrNull { it.id==999999999 }?.notification?.actions?.size ?: 0)
                         db.rawQuery("SELECT COUNT(*) FROM delivery_logs WHERE event_key=? AND outcome='display_attempt'",arrayOf(key)).use { it.moveToFirst();answer.put("attempts",it.getInt(0)) }
                     }
-                    answer.put("foreground",MainActivity.foreground)
+                    answer.put("foreground",ReminderRuntime.foreground)
                 } ?: answer.put("ready",false)
             } catch(error:Exception){answer.put("error",error.javaClass.simpleName)}
             pending.resultData=Base64.encodeToString(answer.toString().toByteArray(),Base64.NO_WRAP)

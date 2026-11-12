@@ -89,6 +89,11 @@ Future<void> backupProbe(WidgetTester tester, WorkspaceHost host) async {
     final delivered = await displayed();
     await host.restoreBackup(restored, companionSettings: false);
     await tester.pump(const Duration(milliseconds: 500));
+    final integrity = await c.repository.db
+        .customSelect('PRAGMA integrity_check')
+        .get();
+    expect(integrity, hasLength(1));
+    expect(integrity.single.data.values.single, 'ok');
     expect(c.tasks.length, originalIds.length + snapshot.taskCount);
     expect(c.reminders!.preferences.primaryDevice, isFalse);
     expect(c.reminders!.preferences.digestEnabled, isFalse);
