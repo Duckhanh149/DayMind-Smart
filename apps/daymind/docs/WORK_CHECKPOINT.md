@@ -2,6 +2,10 @@
 
 ## Bản sửa 0.7.1 — lỗi người dùng báo ngày 12/11/2026
 
+Windows dacd03b/43222966273 đã đạt231 tests+2skip/component100/backup/tray/install-upgrade0.7.1. Khi kiểm ZIP13947541498 phát hiện metadata Inno vẫn0.7.0 dù EXE0.7.1; không phát gói đó như bản đã kiểm đầy đủ. Sửa Inno lấy ProductVersion/VersionNumbers từ EXE, bổ sung kiểm registry DisplayVersion sau nâng/cài lại. Cần native nguồn Windows installer mới. Android dacd03b còn kiểm cold-process.
+
+Nguồn đang kiểm: dacd03b3df3fa28d081ed74c3ed01f09cd07a06e; Native43222966273 đang chạy; Emulator43222966423/job131198918278 SUCCESS trên đúng nguồn mới. Workspace đã khớp remote, PR#1 mở. Phần sửa lock5files đã publish; không cần làm lại hoặc bật automation.
+
 Local đã đạt full230 Flutter tests, thêm2 ca ảnh lớn/restore và1 ca UI cutout (4/4 UI), analyze sạch,25 Python guards. CI nguồnf7fc156 (Native43222438614/Emulator43222438592) dừng trước tests vì path dependency Emulator lock còn0.7.0+8. Đã sửa lock thành0.7.1+9, không nâng package khác; cập nhật About/diagnostics0.7.1. Cần CI nguồn kế tiếp. Đang kiểm chứng lại nguồn mới; kết quả0.7.0 bên dưới là bằng chứng lịch sử, không thay cho native CI của0.7.1. Không phát hành chính thức hoặc bật lại tác vụ kiểm tra tự động.
 
 - Tái hiện lỗi Windows trả `Asia/Saigon` nhưng timezone/latest rút gọn thiếu alias. Chuyển runtime và backup worker sang latest_all, chuẩn hóa tên thiết bị về Asia/Ho_Chi_Minh; reminder/recurrence đọc được alias đã lưu, không dùng UTC âm thầm cho Việt Nam. Kiểm thử native platform response và giờ09:00→02:00UTC.

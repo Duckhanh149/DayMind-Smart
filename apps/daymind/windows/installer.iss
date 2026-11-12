@@ -1,7 +1,11 @@
+#define DayMindExe AddBackslash(SourcePath) + "..\build\windows\x64\runner\Release\daymind_smart.exe"
+#define DayMindVersion GetStringFileInfo(DayMindExe, "ProductVersion")
+
 [Setup]
 AppId={{9E5EEAD6-DB82-48CC-A0C2-A3D0574DC18B}
 AppName=DayMind SMART
-AppVersion=0.7.0
+AppVersion={#DayMindVersion}
+VersionInfoVersion={#GetVersionNumbersString(DayMindExe)}
 AppPublisher=DayMind SMART
 DefaultDirName={localappdata}\Programs\DayMind SMART
 DefaultGroupName=DayMind SMART

@@ -95,10 +95,12 @@ def main():
     def exercise(expected, old=False):
         # Read the actual installed PE version, not the input installer name.
         command = "$v=(Get-Item -LiteralPath $env:DAYMIND_INSTALL_EXE).VersionInfo.ProductVersion; if($v -notmatch $env:DAYMIND_INSTALL_VERSION_PATTERN){throw 'Installed PE version mismatch'}"
+        if not old:
+            command += "; $v=(Get-ItemProperty -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{9E5EEAD6-DB82-48CC-A0C2-A3D0574DC18B}_is1' -ErrorAction Stop).DisplayVersion; if($v -notmatch $env:DAYMIND_INSTALL_VERSION_PATTERN){throw 'Registered installer version mismatch'}"
         env = {**os.environ, "DAYMIND_INSTALL_EXE": str(install / "daymind_smart.exe"),
                "DAYMIND_INSTALL_VERSION_PATTERN": "^" + re.escape(expected) + r"($|[.+])"}
         result = subprocess.run(["pwsh", "-NoProfile", "-Command", command],env=env,capture_output=True,timeout=30)
-        assert result.returncode == 0, "Installed PE version mismatch"
+        assert result.returncode == 0, "Installed PE or registered installer version mismatch"
         args = ["pwsh", "-NoProfile", "-File", script, "-AppDirectory", install]
         if old:
             args.append("-Baseline") # 0.6.1 predates the new single-instance feature.
@@ -122,7 +124,7 @@ def main():
         print("INSTALL_UPGRADE_POC: " + json.dumps({"baseline":"0.6.1", "current":version,
               "taskRows":len(before[0]), "preservedArtworkFiles":len(before[1]),
               "preservedDomainRecords":len(before[3]),
-              "upgradePreservedData":True, "uninstallPreservedData":True, "reinstallPassed":True}))
+              "upgradePreservedData":True, "uninstallPreservedData":True, "reinstallPassed":True,"registeredVersionVerified":True}))
     finally:
         uninstaller = install / "unins000.exe"
         if uninstaller.exists():
