@@ -9,7 +9,7 @@ import '../../../app/controller.dart';
 
 Map<String, dynamic> diagnosticSummary(WorkspaceController c) => {
   'schema': 1,
-  'appVersion': '0.7.0',
+  'appVersion': '0.7.1',
   'platform': Platform.operatingSystem,
   'build': kReleaseMode ? 'release' : 'debug',
   'databaseSchema': c.repository.db.schemaVersion,

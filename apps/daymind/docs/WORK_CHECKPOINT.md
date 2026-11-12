@@ -2,7 +2,7 @@
 
 ## Bản sửa 0.7.1 — lỗi người dùng báo ngày 12/11/2026
 
-Local đã đạt full230 Flutter tests, thêm2 ca ảnh lớn/restore và1 ca UI cutout (4/4 UI), analyze sạch,25 Python guards. CI native/Emulator nguồn0.7.1 còn chờ. Đang kiểm chứng lại nguồn mới; kết quả0.7.0 bên dưới là bằng chứng lịch sử, không thay cho native CI của0.7.1. Không phát hành chính thức hoặc bật lại tác vụ kiểm tra tự động.
+Local đã đạt full230 Flutter tests, thêm2 ca ảnh lớn/restore và1 ca UI cutout (4/4 UI), analyze sạch,25 Python guards. CI nguồnf7fc156 (Native43222438614/Emulator43222438592) dừng trước tests vì path dependency Emulator lock còn0.7.0+8. Đã sửa lock thành0.7.1+9, không nâng package khác; cập nhật About/diagnostics0.7.1. Cần CI nguồn kế tiếp. Đang kiểm chứng lại nguồn mới; kết quả0.7.0 bên dưới là bằng chứng lịch sử, không thay cho native CI của0.7.1. Không phát hành chính thức hoặc bật lại tác vụ kiểm tra tự động.
 
 - Tái hiện lỗi Windows trả `Asia/Saigon` nhưng timezone/latest rút gọn thiếu alias. Chuyển runtime và backup worker sang latest_all, chuẩn hóa tên thiết bị về Asia/Ho_Chi_Minh; reminder/recurrence đọc được alias đã lưu, không dùng UTC âm thầm cho Việt Nam. Kiểm thử native platform response và giờ09:00→02:00UTC.
 - Thêm JPEG (.jpg/.jpeg), BMP không nén24/32bit, preflight kích thước trước codec. Ảnh tối đa16MiB/4096²; GIF/WebP động16MiB/1024²/120frames; ZIP vẫn16MiB và các giới hạn giải nén giữ nguyên. Thư viện64MiB/128mục; atlas/runtime vẫn128px/khung, không tăng engine hoặc lịch nhắc.
