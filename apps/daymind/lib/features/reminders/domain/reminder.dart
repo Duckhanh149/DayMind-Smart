@@ -5,8 +5,9 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../tasks/domain/task.dart';
 
-tz.Location timeLocation(String id) =>
-    id == 'UTC' ? tz.UTC : tz.getLocation(id);
+tz.Location timeLocation(String id) => id == 'UTC'
+    ? tz.UTC
+    : tz.getLocation(id == 'Asia/Saigon' ? 'Asia/Ho_Chi_Minh' : id);
 
 enum ReminderKind { due, start, absolute }
 

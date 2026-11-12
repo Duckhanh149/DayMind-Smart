@@ -79,7 +79,7 @@ class CharacterBlueprint {
       media = files[manifest.image]!;
       mediaFormat = manifest.image.split('.').last.toLowerCase();
       if (manifest.licenseFile != null) license = files[manifest.licenseFile];
-    } else if (!{'png', 'webp', 'gif'}.contains(format) ||
+    } else if (!{'png', 'webp', 'gif', 'jpg', 'jpeg', 'bmp'}.contains(format) ||
         bytes.length > CharacterImageProbe.maxBytes) {
       throw const CharacterPackageFailure(
         'Chỉ nhận PNG/WebP, GIF hoặc gói ZIP DayMind có giới hạn.',
@@ -118,8 +118,8 @@ class CharacterBlueprint {
           CharacterProvenance(license: 'Quyền sử dụng do người nhập xác nhận.'),
       license,
     );
-    if (result.simpleStatic && bytes.length > 4 * 1024 * 1024) {
-      throw const CharacterPackageFailure('Ảnh tĩnh tối đa 4 MiB.');
+    if (result.simpleStatic && bytes.length > 16 * 1024 * 1024) {
+      throw const CharacterPackageFailure('Ảnh tĩnh tối đa 16 MiB.');
     }
     manifest?.validateFrameCount(
       result.frameCount,

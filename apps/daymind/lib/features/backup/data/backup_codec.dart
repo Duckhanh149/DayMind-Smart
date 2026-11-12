@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/dart.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 import '../domain/backup_snapshot.dart';
 
@@ -13,7 +13,7 @@ import '../domain/backup_snapshot.dart';
 /// ciphertext[length], GCM tag[16]. The complete header is authenticated.
 /// Fixed algorithms/limits reject attacker-controlled KDF work before deriving.
 abstract final class BackupCodec {
-  static const maxPlaintext = 48 * 1024 * 1024;
+  static const maxPlaintext = 96 * 1024 * 1024;
   static const maxFileBytes = maxPlaintext + 56;
   static const iterations = 600000;
   static final _magic = ascii.encode('DMSBKUP1');

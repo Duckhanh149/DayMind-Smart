@@ -22,7 +22,7 @@ class CharacterImportDialog extends StatefulWidget {
 }
 
 class _CharacterImportDialogState extends State<CharacterImportDialog> {
-  StaticAssetPreview? _prepared;
+  StaticAssetPreview? _prepared, _original;
   bool _cancelled = false, _rights = false, _saving = false;
   int _done = 0, _total = 0;
   String? _error;
@@ -52,6 +52,30 @@ class _CharacterImportDialogState extends State<CharacterImportDialog> {
       // Closing the preview cancels decoding without installing anything.
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
+    }
+  }
+
+  Future<void> _cutout() async {
+    final source = _prepared;
+    if (source == null || _saving) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final result = await widget.controller.importer.removeFlatBackground(
+        source,
+      );
+      if (mounted) {
+        setState(() {
+          _original = source;
+          _prepared = result;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -119,6 +143,30 @@ class _CharacterImportDialogState extends State<CharacterImportDialog> {
                       fit: BoxFit.contain,
                     ),
                   ),
+                  if (prepared.animation == null) ...[
+                    TextButton.icon(
+                      key: const Key('character-cutout'),
+                      onPressed: _saving
+                          ? null
+                          : _original != null
+                          ? () => setState(() {
+                              _prepared = _original;
+                              _original = null;
+                            })
+                          : _cutout,
+                      icon: Icon(
+                        _original != null ? Icons.undo : Icons.auto_fix_high,
+                      ),
+                      label: Text(
+                        _original != null
+                            ? 'Hoàn tác xóa nền'
+                            : 'Tự xóa nền màu phẳng & cắt viền',
+                      ),
+                    ),
+                    const Text(
+                      'Xử lý trên máy, tối đa 256 px. Nền phức tạp: dùng PNG trong suốt. Tệp gốc trên máy được giữ nguyên.',
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   if (meta != null) ...[
                     Text(

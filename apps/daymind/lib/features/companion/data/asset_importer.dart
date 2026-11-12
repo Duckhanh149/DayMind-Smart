@@ -15,6 +15,7 @@ import '../domain/companion.dart' show isCharacterAssetName;
 import '../domain/live2d_gate.dart';
 import 'character_preparer.dart';
 import 'image_preflight.dart';
+import 'background_cutout.dart';
 
 class StaticAssetPreview {
   StaticAssetPreview._(Uint8List source, Uint8List preview, this.fileName)
@@ -48,10 +49,10 @@ class InstalledCharacter {
 class StaticAssetImporter {
   StaticAssetImporter(this.directory);
   final Directory directory;
-  static const maxBytes = 4 * 1024 * 1024;
-  static const maxDimension = 2048;
+  static const maxBytes = 16 * 1024 * 1024;
+  static const maxDimension = 4096;
   static const maxFiles = 128;
-  static const maxLibraryBytes = 32 * 1024 * 1024;
+  static const maxLibraryBytes = 64 * 1024 * 1024;
   Future<void> _tail = Future.value();
   int _pendingImports = 0;
   int _pendingPreparations = 0;
@@ -104,7 +105,7 @@ class StaticAssetImporter {
 
   static String validateSignature(Uint8List bytes, String name) {
     if (bytes.isEmpty || bytes.length > maxBytes) {
-      throw const ValidationException('Ảnh cần nhỏ hơn hoặc bằng 4 MB.');
+      throw const ValidationException('Ảnh cần nhỏ hơn hoặc bằng 16 MiB.');
     }
     if (p.basename(name) != name ||
         name.contains('..') ||
@@ -128,6 +129,15 @@ class StaticAssetImporter {
         bytes.length >= 16 &&
         String.fromCharCodes(bytes.sublist(0, 4)) == 'RIFF' &&
         String.fromCharCodes(bytes.sublist(8, 12)) == 'WEBP';
+    if ((ext == '.jpg' || ext == '.jpeg') &&
+        bytes.length >= 4 &&
+        bytes[0] == 255 &&
+        bytes[1] == 216) {
+      return 'jpeg';
+    }
+    if (ext == '.bmp' && bytes.length >= 54 && bytes[0] == 66 && bytes[1] == 77) {
+      return 'bmp';
+    }
     if (ext == '.png' && png) {
       return 'png';
     }
@@ -135,7 +145,7 @@ class StaticAssetImporter {
       return 'webp';
     }
     throw const ValidationException(
-      'Chỉ nhận PNG hoặc WebP tĩnh đúng định dạng. ZIP, GIF và Live2D chưa được hỗ trợ.',
+      'Ảnh tĩnh hỗ trợ PNG, WebP, JPEG, BMP. Dùng luồng nhập nhân vật cho GIF hoặc ZIP.',
     );
   }
 
@@ -180,12 +190,12 @@ class StaticAssetImporter {
     _checkOpen();
     Live2DGate.requireRasterFiles([displayName]);
     final format = p.extension(displayName).toLowerCase().replaceFirst('.', '');
-    if (!{'png', 'webp', 'gif', 'zip'}.contains(format) ||
+    if (!{'png', 'webp', 'gif', 'zip', 'jpg', 'jpeg', 'bmp'}.contains(format) ||
         p.basename(displayName) != displayName ||
         displayName.contains('..') ||
         displayName.contains('\\')) {
       throw const ValidationException(
-        'Hãy chọn PNG/WebP, GIF hoặc ZIP DayMind đúng định dạng.',
+        'Hãy chọn PNG, WebP, JPEG, BMP, GIF hoặc ZIP DayMind đúng định dạng.',
       );
     }
     final bytes = await _readSource(
@@ -218,6 +228,93 @@ class StaticAssetImporter {
     );
     return StaticAssetPreview._package(bytes, animation, displayName);
   }
+
+  Future<StaticAssetPreview> removeFlatBackground(
+    StaticAssetPreview original,
+  ) => _serialized(() async {
+    if (original.animation != null) {
+      throw const ValidationException('Xóa nền hiện áp dụng cho ảnh tĩnh.');
+    }
+    final codec = await ui.instantiateImageCodec(original.bytes);
+    ui.Image? image, cut, cropped;
+    ui.Picture? picture;
+    try {
+      image = (await codec.getNextFrame()).image;
+      final width = image.width, height = image.height;
+      final raw = await image.toByteData(
+        format: ui.ImageByteFormat.rawStraightRgba,
+      );
+      if (raw == null) throw const ValidationException('Chưa đọc được ảnh.');
+      final pixels = await cutFlatBackgroundAsync(
+        raw.buffer.asUint8List(),
+        width,
+        height,
+      );
+      var left = width, top = height, right = -1, bottom = -1;
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          if (pixels[(y * width + x) * 4 + 3] > 8) {
+            left = math.min(left, x);
+            top = math.min(top, y);
+            right = math.max(right, x);
+            bottom = math.max(bottom, y);
+          }
+        }
+      }
+      if (right < left) {
+        throw const ValidationException(
+          'Không tìm thấy nhân vật sau khi xóa nền. Ảnh cũ được giữ nguyên.',
+        );
+      }
+      // Raw ImageDescriptor expects premultiplied RGBA.
+      for (var i = 0; i < pixels.length; i += 4) {
+        final alpha = pixels[i + 3];
+        for (var c = 0; c < 3; c++) {
+          pixels[i + c] = (pixels[i + c] * alpha + 127) ~/ 255;
+        }
+      }
+      final decoded = ui.ImmutableBuffer.fromUint8List(pixels);
+      final buffer = await decoded;
+      final descriptor = ui.ImageDescriptor.raw(
+        buffer,
+        width: width,
+        height: height,
+        pixelFormat: ui.PixelFormat.rgba8888,
+      );
+      try {
+        final c = await descriptor.instantiateCodec();
+        try {
+          cut = (await c.getNextFrame()).image;
+        } finally {
+          c.dispose();
+        }
+      } finally {
+        descriptor.dispose();
+        buffer.dispose();
+      }
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawImage(
+        cut,
+        ui.Offset(-left.toDouble(), -top.toDouble()),
+        ui.Paint(),
+      );
+      picture = recorder.endRecording();
+      cropped = await picture.toImage(right - left + 1, bottom - top + 1);
+      final encoded = await cropped.toByteData(format: ui.ImageByteFormat.png);
+      if (encoded == null) {
+        throw const ValidationException('Chưa tạo được ảnh trong suốt.');
+      }
+      _checkOpen();
+      final png = encoded.buffer.asUint8List();
+      return StaticAssetPreview._(png, png, 'cutout.png');
+    } finally {
+      cropped?.dispose();
+      picture?.dispose();
+      cut?.dispose();
+      image?.dispose();
+      codec.dispose();
+    }
+  });
 
   Future<String> installPrepared(
     StaticAssetPreview preview, {
@@ -304,7 +401,7 @@ class StaticAssetImporter {
     if (usage.$2 >= maxFiles ||
         usage.$1 + bytes.length + thumb.length > maxLibraryBytes) {
       throw const ValidationException(
-        'Thư viện tối đa 128 ảnh và 32 MB, gồm ảnh xem trước. Hãy dọn ảnh không còn dùng.',
+        'Thư viện tối đa 128 ảnh và 64 MiB, gồm ảnh xem trước. Hãy dọn ảnh không còn dùng.',
       );
     }
     final thumbnail = _thumbnail(name);
@@ -335,7 +432,7 @@ class StaticAssetImporter {
     try {
       descriptor = await ui.ImageDescriptor.encoded(buffer);
       if (descriptor.width > maxDimension || descriptor.height > maxDimension) {
-        throw const ValidationException('Ảnh tối đa 2048 × 2048 pixel.');
+        throw const ValidationException('Ảnh tối đa 4096 × 4096 pixel.');
       }
       final scale = math.min(
         1.0,
@@ -530,7 +627,7 @@ class StaticAssetImporter {
             (prepared.licenseBytes?.length ?? 0);
     if (usage.$2 >= maxFiles || usage.$1 + total > maxLibraryBytes) {
       throw const ValidationException(
-        'Thư viện tối đa 128 mục/32 MiB, gồm nguồn và atlas. Hãy dọn mục không còn dùng.',
+        'Thư viện tối đa 128 mục/64 MiB, gồm nguồn và atlas. Hãy dọn mục không còn dùng.',
       );
     }
     final stage = Directory(
@@ -638,8 +735,7 @@ class StaticAssetImporter {
         sha256.convert(source).toString() != m.sourceHash ||
         sha256.convert(atlas).toString() != m.atlasHash ||
         sha256.convert(preview).toString() != m.previewHash ||
-        source.length >
-            (m.sourceFormat == 'zip' ? 16 * 1024 * 1024 : 8 * 1024 * 1024)) {
+        source.length > 16 * 1024 * 1024) {
       throw const CharacterPackageFailure(
         'Dữ liệu gói không còn khớp checksum; nguồn được giữ để kiểm tra.',
       );

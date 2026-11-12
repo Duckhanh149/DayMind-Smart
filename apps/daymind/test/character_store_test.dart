@@ -144,7 +144,7 @@ void main() {
     );
     final reserved = await File('${library.path}/reserved')
         .open(mode: FileMode.write);
-    await reserved.truncate(32 * 1024 * 1024);
+    await reserved.truncate(StaticAssetImporter.maxLibraryBytes);
     await reserved.close();
     await expectLater(
       importer.installPrepared(next, rightsConfirmed: true),

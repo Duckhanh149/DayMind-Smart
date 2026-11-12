@@ -11,8 +11,9 @@ enum MonthDayPolicy { skip, lastDay }
 
 enum EditScope { one, future, all }
 
-tz.Location zoneLocation(String id) =>
-    id == 'UTC' ? tz.UTC : tz.getLocation(id);
+tz.Location zoneLocation(String id) => id == 'UTC'
+    ? tz.UTC
+    : tz.getLocation(id == 'Asia/Saigon' ? 'Asia/Ho_Chi_Minh' : id);
 String dateKey(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 DateTime civilDate(String key) {

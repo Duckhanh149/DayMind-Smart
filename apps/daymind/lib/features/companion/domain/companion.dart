@@ -1,6 +1,6 @@
 bool isCharacterAssetName(String? name) =>
     name != null &&
-    RegExp(r'^[a-f0-9]{64}\.(png|webp|character)$').hasMatch(name);
+    RegExp(r'^[a-f0-9]{64}\.(png|webp|jpeg|bmp|character)$').hasMatch(name);
 
 enum Personality { gentle, practical, cheerful }
 

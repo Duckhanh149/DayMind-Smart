@@ -116,6 +116,49 @@ void main() {
     },
   );
 
+  testWidgets('static cutout previews, undoes and confirms at 200% text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    final root = Directory.systemTemp.createTempSync('daymind-cutout-ui-');
+    final db = DaymindDatabase(NativeDatabase.memory());
+    final c = WorkspaceController(
+      SqliteTaskRepository(db),
+      StaticAssetImporter(root),
+    );
+    await c.load();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      c.dispose();
+      await db.close();
+      root.deleteSync(recursive: true);
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final source = File('test/fixtures/flat_character.jpg');
+    await open(tester, c, source, 'character.jpg', scale: 2);
+    await until(tester, find.byKey(const Key('character-cutout')));
+    final cutout = find.byKey(const Key('character-cutout'));
+    await tester.ensureVisible(cutout);
+    await tester.tap(cutout);
+    await until(tester, find.text('Hoàn tác xóa nền'));
+    expect(c.importer.installed(), isEmpty);
+    await tester.ensureVisible(cutout);
+    await tester.tap(cutout);
+    await tester.pump();
+    expect(find.text('Tự xóa nền màu phẳng & cắt viền'), findsOneWidget);
+    await tester.tap(cutout);
+    await until(tester, find.text('Hoàn tác xóa nền'));
+    await tester.ensureVisible(find.byKey(const Key('character-rights')));
+    await tester.tap(find.byKey(const Key('character-rights')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('install-character')));
+    await until(tester, find.text('open').hitTestable());
+    expect(c.preferences.assetName, endsWith('.png'));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'invalid package reports its error without changing the current selection',
     (tester) async {

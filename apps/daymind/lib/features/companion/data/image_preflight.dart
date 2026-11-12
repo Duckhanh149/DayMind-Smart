@@ -24,10 +24,10 @@ class CharacterImageProbe {
   final List<int> durationsMs;
   final Uint8List decoderBytes;
   int get frameCount => durationsMs.length;
-  static const maxBytes = 8 * 1024 * 1024;
+  static const maxBytes = 16 * 1024 * 1024;
   static const maxFrames = 120;
   static const animatedMaxDimension = 1024;
-  static const maxDimension = 2048;
+  static const maxDimension = 4096;
   static int duration(int ms) => ms <= 0 ? 125 : ms.clamp(84, 5000);
 
   /// Bounds native codec metadata before creating a Flutter/OS image decoder.
@@ -37,7 +37,7 @@ class CharacterImageProbe {
     String? expectedFormat,
   }) {
     if (source.isEmpty || source.length > maxBytes) {
-      throw const CharacterImageFailure('Ảnh trong gói tối đa 8 MiB.');
+      throw const CharacterImageFailure('Ảnh trong gói tối đa 16 MiB.');
     }
     final reader = _ImageReader(source);
     final probe = source.length >= 8 && source[0] == 137
@@ -45,9 +45,16 @@ class CharacterImageProbe {
         : source.length >= 6 &&
               ascii.decode(source.sublist(0, 3), allowInvalid: true) == 'GIF'
         ? reader.gif()
+        : source[0] == 255 && source.length > 1 && source[1] == 216
+        ? reader.jpeg()
+        : source[0] == 66 && source.length > 1 && source[1] == 77
+        ? reader.bmp()
         : reader.webp();
     if (expectedFormat != null &&
-        expectedFormat.toLowerCase() != probe.format) {
+        (expectedFormat.toLowerCase() == 'jpg'
+                ? 'jpeg'
+                : expectedFormat.toLowerCase()) !=
+            probe.format) {
       throw const CharacterImageFailure('Đuôi tệp không khớp định dạng ảnh.');
     }
     return probe;
@@ -95,7 +102,7 @@ class _ImageReader {
         ? CharacterImageProbe.animatedMaxDimension
         : CharacterImageProbe.maxDimension;
     if (width < 1 || height < 1 || width > max || height > max) {
-      fail('Ảnh tĩnh/sprite tối đa 2048²; GIF/WebP động tối đa 1024² pixel.');
+      fail('Ảnh tĩnh/sprite tối đa 4096²; GIF/WebP động tối đa 1024² pixel.');
     }
   }
 
@@ -103,6 +110,54 @@ class _ImageReader {
     if (count > CharacterImageProbe.maxFrames) {
       fail('Hoạt ảnh tối đa 120 khung hình.');
     }
+  }
+
+  CharacterImageProbe jpeg() {
+    need(0, 4);
+    if (bytes[bytes.length - 2] != 255 || bytes.last != 217) fail();
+    var at = 2;
+    while (at < bytes.length) {
+      if (bytes[at++] != 255) fail();
+      while (at < bytes.length && bytes[at] == 255) {
+        at++;
+      }
+      need(at, 1);
+      final marker = bytes[at++];
+      if (marker == 0xda || marker == 0xd9) fail();
+      need(at, 2);
+      final size = data.getUint16(at, Endian.big);
+      if (size < 2) fail();
+      need(at, size);
+      if ({0xc0, 0xc1, 0xc2}.contains(marker)) {
+        if (size < 8 || bytes[at + 2] != 8) fail();
+        final h = data.getUint16(at + 3, Endian.big),
+            w = data.getUint16(at + 5, Endian.big);
+        dimensions(w, h);
+        return CharacterImageProbe._('jpeg', w, h, [125], bytes);
+      }
+      at += size;
+    }
+    fail();
+  }
+
+  CharacterImageProbe bmp() {
+    need(0, 54);
+    final offset = le32(10), header = le32(14);
+    if (header < 40 || header > 124) fail();
+    need(14, header);
+    final w = data.getInt32(18, Endian.little),
+        h = data.getInt32(22, Endian.little).abs(),
+        bits = le16(28);
+    dimensions(w, h);
+    if (le16(26) != 1 ||
+        !{24, 32}.contains(bits) ||
+        le32(30) != 0 ||
+        offset < 14 + header) {
+      fail();
+    }
+    final rowBytes = ((w * bits + 31) ~/ 32) * 4;
+    need(offset, rowBytes * h);
+    return CharacterImageProbe._('bmp', w, h, [125], bytes);
   }
 
   CharacterImageProbe png() {

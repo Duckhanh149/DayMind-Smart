@@ -124,7 +124,7 @@ void main() {
       throwsA(isA<CharacterImageFailure>()),
     );
     final header = Uint8List.fromList(source.sublist(16, 29));
-    ByteData.sublistView(header).setUint32(0, 2049, Endian.big);
+    ByteData.sublistView(header).setUint32(0, 4097, Endian.big);
     final oversized = Uint8List.fromList([
       ...source.sublist(0, 8),
       ...pngChunk('IHDR', header),

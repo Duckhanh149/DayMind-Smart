@@ -26,14 +26,14 @@ void main() {
     final temp = await Directory.systemTemp.createTemp('daymind-budget-');
     final importer = StaticAssetImporter(temp);
     await expectLater(
-      importer.installBytes(await png(2049, 1), 'wide.png'),
+      importer.installBytes(await png(4097, 1), 'wide.png'),
       throwsA(anything),
     );
     expect(importer.installed(), isEmpty);
     final name = await importer.installBytes(await png(1, 2048), 'narrow.png');
     expect(importer.installed(), [name]);
     final budget = await File('${temp.path}/budget').open(mode: FileMode.write);
-    await budget.truncate(32 * 1024 * 1024);
+    await budget.truncate(StaticAssetImporter.maxLibraryBytes);
     await budget.close();
     await expectLater(
       importer.installBytes(await png(8, 8), 'over-budget.png'),

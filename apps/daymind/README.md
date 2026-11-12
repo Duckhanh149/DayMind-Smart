@@ -1,3 +1,5 @@
+> Bản sửa0.7.1 đang kiểm chứng native: sửa Asia/Saigon, thêm JPEG/BMP, ảnh16MiB/4096², thư viện64MiB và xóa nền màu phẳng trong preview. Các link CI0.7.0 bên dưới thuộc nguồn cũ; xem docs/BUILD_STATUS.md trước tải.
+
 # DayMind SMART — Android & Windows
 
 Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Có quản lý công việc cục bộ, nhắc việc, lịch/lặp lại, trợ lý/thống kê, tài khoản/đồng bộ Firebase Emulator và Companion tùy chỉnh. **Preview 0.7.0 đã qua cổng phần mềm tự động 0–9**; giai đoạn 8 dùng nhánh không Live2D. Dùng được không tài khoản. Nghiệm thu thiết bị thật và ký phát hành còn mở; [tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ giới hạn.

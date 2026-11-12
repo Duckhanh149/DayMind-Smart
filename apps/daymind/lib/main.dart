@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'

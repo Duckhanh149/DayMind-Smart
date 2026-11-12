@@ -1,3 +1,11 @@
+# Nhập trực tiếp từ 0.7.1
+
+PNG/WebP/JPEG/BMP tĩnh tối đa16MiB/4096×4096; GIF/WebP động tối đa16MiB/1024×1024/120khung. BMP chỉ nhận không nén24/32bit; JPEG baseline/progressive8bit. Thư viện64MiB/128mục. Bộ chọn tệp có .jpg/.jpeg/.bmp; dữ liệu nguồn giữ nguyên khi nhập thông thường.
+
+Nút **Tự xóa nền màu phẳng & cắt viền** trong xem trước ảnh tĩnh xử lý cục bộ trên ảnh thu nhỏ≤256px. Chỉ xóa màu nền nối với biên, giữ vùng cùng màu bị khép kín trong nhân vật; cắt viền trong suốt, có Hoàn tác. Khi xác nhận nhập sẽ lưu bản PNG đã xử lý, không sửa tệp gốc trên máy. Đây không phải mô hình AI tách chủ thể/nền phức tạp; dùng PNG trong suốt cho ảnh nhiều màu. Hoạt ảnh và Live2D không đi qua nút này.
+
+Các giới hạn atlas/animation/ZIP và quyền sử dụng bên dưới vẫn áp dụng. Thông tin dung lượng thư viện32MiB/ảnh4–8MiB bên dưới mô tả phiên bản trước0.7.1; giới hạn mới nêu ở trên.
+
 # Gói nhân vật DayMind v1
 
 Giai đoạn7 đã đạt native CI42757179906/sourcee993033; xem BUILD_STATUS.md cho bằng chứng và giới hạn thiết bị. Không chứa Live2D hoặc mã thực thi. Chỉ nhập tài sản có quyền sử dụng; ứng dụng không xác nhận thay chủ sở hữu về giấy phép. Không tải tài nguyên qua mạng.

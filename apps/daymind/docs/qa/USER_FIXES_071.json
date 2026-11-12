@@ -1,0 +1,27 @@
+{
+  "version": "0.7.1+9",
+  "base": "9018049075b82d26d1ec59250e7c2027dfdbb6b4",
+  "local": {
+    "flutterFull": 230,
+    "additionalLargeFormatCases": 2,
+    "uiCases": 4,
+    "newUiCases": 1,
+    "analyze": "no issues",
+    "pythonGuards": 25
+  },
+  "native": "pending new source CI",
+  "timezone": "Reproduced reduced timezone database missing Asia/Saigon; native response canonicalization and UTC+7 recurrence/reminder checks passed. Runtime/backup worker use complete database.",
+  "cutout": "Local edge-connected flat-color flood fill plus transparent trim, preview<=256px, undo; actual JPEG/BMP import/render/reopen and no original file mutation checked. Not semantic AI background removal; animation unchanged.",
+  "limits": {
+    "staticSourceMiB": 16,
+    "staticDimension": 4096,
+    "libraryMiB": 64,
+    "backupPlaintextMiB": 96,
+    "runtimeAtlasUnchanged": true
+  },
+  "risks": [
+    "Larger backup memory/low-end release performance needs new acceptance; old near-limit measurements cover old caps only.",
+    "Original full test attempt failed from ENOSPC; discarded cached downloads/Gradle/test cache and reran full230 successfully.",
+    "Physical Windows timezone/toast after fix requires actual user device verification; do not certify official release from Linux tests."
+  ]
+}

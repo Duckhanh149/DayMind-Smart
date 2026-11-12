@@ -845,7 +845,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: ['png', 'webp', 'gif', 'zip'],
+        allowedExtensions: ['png', 'webp', 'gif', 'zip', 'jpg', 'jpeg', 'bmp'],
       );
       if (picked == null) return;
       if (picked.path == null) {
@@ -990,7 +990,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'PNG/WebP tĩnh ≤4 MiB, GIF/WebP động ≤8 MiB hoặc ZIP DayMind ≤16 MiB. Tối đa 120 khung; thư viện ≤32 MiB. Chỉ dùng tài sản bạn có quyền sử dụng.',
+                        'PNG/WebP/JPEG/BMP tĩnh hoặc GIF/WebP động ≤16 MiB; ZIP DayMind ≤16 MiB. Ảnh tĩnh ≤4096², động ≤1024², tối đa 120 khung; thư viện ≤64 MiB. Chỉ dùng tài sản bạn có quyền sử dụng.',
                       ),
                       const SizedBox(height: 16),
                       OutlinedButton.icon(

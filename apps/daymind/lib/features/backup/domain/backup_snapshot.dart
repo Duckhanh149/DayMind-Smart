@@ -48,7 +48,7 @@ class BackupAsset {
     }
     for (final e in files.entries) {
       final limit = switch (e.key) {
-        'source.bin' => package ? 16 * 1024 * 1024 : 4 * 1024 * 1024,
+        'source.bin' => 16 * 1024 * 1024,
         'atlas.png' => 8 * 1024 * 1024,
         'preview.png' => 128 * 1024,
         _ => 65536,
@@ -103,7 +103,7 @@ class BackupSnapshot {
         records.map((r) => r.key).toSet().length != records.length ||
         assets.length > 128 ||
         assets.map((a) => a.name).toSet().length != assets.length ||
-        assets.fold<int>(0, (n, a) => n + a.byteLength) > 32 * 1024 * 1024 ||
+        assets.fold<int>(0, (n, a) => n + a.byteLength) > 64 * 1024 * 1024 ||
         utf8.encode(jsonEncode([for (final r in records) r.toJson()])).length >
             4 * 1024 * 1024 ||
         utf8.encode(jsonEncode(settings)).length > 65536) {

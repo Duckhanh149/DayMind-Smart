@@ -1,3 +1,7 @@
+# Preview 0.7.1 — đang kiểm chứng bản sửa
+
+Sửa alias múi giờ Asia/Saigon làm chặn khởi tạo thông báo Windows; runtime dùng đủ timezone aliases, lịch cũ đọc được múi giờ Việt Nam. Thêm JPEG/BMP, ảnh16MiB/4096², thư viện64MiB và backup tương ứng. Preview ảnh tĩnh có xóa nền màu phẳng/cắt viền tự động, hoàn tác, xử lý local≤256px. Không tách nền phức tạp bằng AI hoặc hoạt ảnh. Xem CHARACTER_PACKAGE.md và BUILD_STATUS.md cho phạm vi và CI nguồn mới.
+
 # Preview 0.7.0 — cổng tự động đã đạt, chờ nghiệm thu phát hành
 
 - Sao lưu có mật khẩu, gồm dữ liệu công việc/lịch lặp/cấu hình/thư viện; restore thêm bản sao và giữ dữ liệu hiện tại. Nhắc việc tạm dừng sau restore, không phát lịch cũ. Xem BACKUP_FORMAT.md.

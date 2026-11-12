@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 import '../features/reminders/domain/reminder.dart';
 import '../features/companion/domain/companion.dart';
@@ -36,8 +36,7 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   void Function()? onOpen;
   Future<String> localTimezone() async {
     final zone = (await FlutterTimezone.getLocalTimezone()).identifier;
-    timeLocation(zone);
-    return zone;
+    return timeLocation(zone).name;
   }
 
   @override
