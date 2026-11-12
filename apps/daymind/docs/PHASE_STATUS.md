@@ -1,14 +1,8 @@
 # Tiến độ DayMind — 12/11/2026
 
-## Bản sửa 0.7.1 — lỗi người dùng báo ngày 12/11/2026
+## Bản sửa0.7.1 đã qua cổng tự động
 
-Đang kiểm chứng lại nguồn mới; kết quả0.7.0 bên dưới là bằng chứng lịch sử, không thay cho native CI của0.7.1. Không phát hành chính thức hoặc bật lại tác vụ kiểm tra tự động.
-
-- Tái hiện lỗi Windows trả `Asia/Saigon` nhưng timezone/latest rút gọn thiếu alias. Chuyển runtime và backup worker sang latest_all, chuẩn hóa tên thiết bị về Asia/Ho_Chi_Minh; reminder/recurrence đọc được alias đã lưu, không dùng UTC âm thầm cho Việt Nam. Kiểm thử native platform response và giờ09:00→02:00UTC.
-- Thêm JPEG (.jpg/.jpeg), BMP không nén24/32bit, preflight kích thước trước codec. Ảnh tối đa16MiB/4096²; GIF/WebP động16MiB/1024²/120frames; ZIP vẫn16MiB và các giới hạn giải nén giữ nguyên. Thư viện64MiB/128mục; atlas/runtime vẫn128px/khung, không tăng engine hoặc lịch nhắc.
-- Preview ảnh tĩnh có tùy chọn xóa nền màu phẳng nối với biên rồi cắt viền trong suốt, chạy local/isolate trên ảnh≤256px; xem trước/hoàn tác trước cài. Nền nhiều màu không giả nhận diện chủ thể, báo dùng PNG trong suốt. Không sửa tệp gốc trên máy. Không áp dụng cho hoạt ảnh/Live2D.
-- Backup cho phép thư viện64MiB, plaintext tối đa96MiB để chứa base64 và JSON. Bản sao lớn cần đo release/máy yếu; số đo near-limit cũ chỉ cho giới hạn cũ, không chứng minh mức mới.
-
+Nguồn66e4ae5/[Native43225672366](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366):Android233/27receiver, Windows231+2skip/component100/installer metadata+registryversion0.7.1/upgrade retention đạt. Emulator43222966423/dacd03b đạt16+7 với app/backend/package trees giống66. Gói0.7.1 đã kiểm hash/CRC/metadata/licenses; [BUILD_STATUS](BUILD_STATUS.md), [native report](qa/USER_FIXES_071_NATIVE.json). Múi giờAsia/Saigon, JPEG/BMP, xóa nền màu phẳng và giới hạn mới đã có kiểm thử. Nghiệm thu thiết bị thật/kýproduction còn mở. Bảng bên dưới giữ bằng chứng các cổng0–9 trước bản sửa; không gán số đo32MiB cũ cho mức64MiB/backup96MiB mới.
 
 **Cổng phần mềm tự động 0–9 đã đạt; nghiệm thu phát hành chưa hoàn tất.** Không đánh đồng mã đã viết, kiểm thử tự động, build và nghiệm thu thiết bị. Tài liệu tham chiếu là tiêu chí sản phẩm; mục 13 copy/paste không thay cho yêu cầu trực tiếp mới của người dùng.
 

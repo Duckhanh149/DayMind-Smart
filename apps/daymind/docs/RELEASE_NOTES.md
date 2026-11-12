@@ -1,6 +1,6 @@
-# Preview 0.7.1 — đang kiểm chứng bản sửa
+# Preview 0.7.1 — đã qua native CI và kiểm gói
 
-Sửa alias múi giờ Asia/Saigon làm chặn khởi tạo thông báo Windows; runtime dùng đủ timezone aliases, lịch cũ đọc được múi giờ Việt Nam. Thêm JPEG/BMP, ảnh16MiB/4096², thư viện64MiB và backup tương ứng. Preview ảnh tĩnh có xóa nền màu phẳng/cắt viền tự động, hoàn tác, xử lý local≤256px. Không tách nền phức tạp bằng AI hoặc hoạt ảnh. Xem CHARACTER_PACKAGE.md và BUILD_STATUS.md cho phạm vi và CI nguồn mới.
+Sửa alias múi giờ Asia/Saigon làm chặn khởi tạo thông báo Windows; runtime dùng đủ timezone aliases, lịch cũ đọc được múi giờ Việt Nam. Thêm JPEG/BMP, ảnh16MiB/4096², thư viện64MiB và backup tương ứng. Preview ảnh tĩnh có xóa nền màu phẳng/cắt viền tự động, hoàn tác, xử lý local≤256px. Không tách nền phức tạp bằng AI hoặc hoạt ảnh. Nguồn66e4ae5/CI43225672366 đã đạt cả Android/Windows; Emulator16+7, Android233/27receiver, Windows231+2skip/component100/upgrade+registryversion đạt. Xem CHARACTER_PACKAGE.md và BUILD_STATUS.md cho link tải/phạm vi. Vẫn làpreview AndroidDebug/Windowsunsigned, không phải phát hành chính thức.
 
 # Preview 0.7.0 — cổng tự động đã đạt, chờ nghiệm thu phát hành
 

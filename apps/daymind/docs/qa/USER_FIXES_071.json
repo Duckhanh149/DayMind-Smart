@@ -9,7 +9,7 @@
     "analyze": "no issues",
     "pythonGuards": 25
   },
-  "native": "pending new source CI",
+  "native": "success at66e4ae5/43225672366; see USER_FIXES_071_NATIVE.json",
   "timezone": "Reproduced reduced timezone database missing Asia/Saigon; native response canonicalization and UTC+7 recurrence/reminder checks passed. Runtime/backup worker use complete database.",
   "cutout": "Local edge-connected flat-color flood fill plus transparent trim, preview<=256px, undo; actual JPEG/BMP import/render/reopen and no original file mutation checked. Not semantic AI background removal; animation unchanged.",
   "limits": {
@@ -23,5 +23,6 @@
     "Larger backup memory/low-end release performance needs new acceptance; old near-limit measurements cover old caps only.",
     "Original full test attempt failed from ENOSPC; discarded cached downloads/Gradle/test cache and reran full230 successfully.",
     "Physical Windows timezone/toast after fix requires actual user device verification; do not certify official release from Linux tests."
-  ]
+  ],
+  "packaging": "SHA256/CRC/APK manifest/Windows PE/runtime/licenses checked; installer version and registered DisplayVersion verified at0.7.1"
 }

@@ -1,0 +1,52 @@
+{
+  "source": "66e4ae5d68ac2639619b4da6ca98917111c94607",
+  "run": 43225672366,
+  "version": "0.7.1+9",
+  "windows": {
+    "zipBytes": 28796531,
+    "zipSha256": "a9039d3674dd61c39f360a322ef85d6e86df31b04a112fe27568d2a2c8d8a55b",
+    "crcPassed": true,
+    "artifactId": 13949435030,
+    "productionSigningVerified": false,
+    "fontOflIncluded": true,
+    "cryptographyApacheNoticesIncluded": true,
+    "exe": {
+      "bytes": 174592,
+      "sha256": "95b92cb1d2bcd11fe98139fc9d2b07e98000cbe2cc0f03f3a511cd12d4440ea5",
+      "peMachine": "0x8664",
+      "embeddedVersionVerified": true,
+      "authenticodeDirectorySize": 0
+    },
+    "installer": {
+      "bytes": 13237650,
+      "sha256": "5dbe0ac6933051ab90696ebbf71809b8a7d77fd75b647e61c5b1262f3d1791ab",
+      "peMachine": "0x14c",
+      "embeddedVersionVerified": true,
+      "authenticodeDirectorySize": 0
+    },
+    "runtimeIncluded": true
+  },
+  "android": {
+    "zipBytes": 11429140,
+    "zipSha256": "c8af4cb567aa84dc343a6b568852645077a39e0c6eb8a46707c7dd85871a20d5",
+    "crcPassed": true,
+    "artifactId": 13949065397,
+    "productionSigningVerified": false,
+    "fontOflIncluded": true,
+    "cryptographyApacheNoticesIncluded": true,
+    "apkSha256": "17479d989bd4447e408c89fd451c47c00a6665821f2022454de10df9a08a415e",
+    "apkBytes": 24145679,
+    "minSdk": 24,
+    "targetSdk": 36,
+    "versionCode": 2009,
+    "arm64Only": true,
+    "debugReceiverExcluded": true,
+    "databaseReceiversInPrivateProcess": true,
+    "certificateType": "Android Debug preview",
+    "certificateSha256": "59768221229c0c5183a99cf40ca306e75485c1fef1098245aa6562bc6079a746"
+  },
+  "limits": [
+    "Android Debug certificate and unsigned Windows preview; no official signing or physical acceptance.",
+    "Artifact SHA256/CRC/metadata/license/runtime/manifest checked locally. No user data/private signing keys/probes in ZIP."
+  ]
+}
