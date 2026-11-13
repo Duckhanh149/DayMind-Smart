@@ -134,4 +134,21 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception:
+        # Query only after the test already failed. Starting the fixture now
+        # cannot turn a missing cold notification into a passing observation.
+        try:
+            status = fixture()
+            state = status.get('state')
+            allowed = {'planned','scheduled','unknown','cancelled','suppressed','expired'}
+            print('COLD_FAILURE_STATE:', json.dumps({
+                'state':state if state in allowed else 'unavailable',
+                'activeNotificationCount':status.get('notifications') if type(status.get('notifications')) is int else None,
+                'foreground':status.get('foreground') if type(status.get('foreground')) is bool else None,
+                'notificationsGranted':status.get('notificationsGranted') if type(status.get('notificationsGranted')) is bool else None,
+            }), flush=True)
+        except Exception:
+            print('COLD_FAILURE_STATE: {"available":false}', flush=True)
+        raise

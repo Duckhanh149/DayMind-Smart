@@ -20,6 +20,8 @@ Nguồn79eab1868d0598e7f91c8894958c8f58906bed2f/treefde416a: Emulator43425558473
 
 Nguồn2193fdbf6c641f3b06822a37bc00c8a8cc38280c/tree71bf3fbd đangCI43427667848. Windows131893005716 qua245unit+2skip/buildrelease+profile nhưngDialog vẫn mở ngay saupumpAndSettle ởinitialCRUD; đãthêmchờđiềukiệnrouteđóng tốiđa10s vìsettledframekhôngchờSQLiteworkercommit. GiữexpectDialogkhôngcòn, thêmfailmetadatachỉtitleLength/savingCount(no nội dung) để phânbiệtUI/asyncfailure, không retry thao tácsave. Android131893006241 đangchạy. Thayđổitestvàcheckpoint này chưacommit;analyzer sạch, cầnpublish expectedHEAD2193 vàđợiCI mới. Nếuquota/môi trườngchặn, giữworktreevàcheckpoint, khôngbáohoànthành.
 
+Đãpublishbf9446c/tree2e04217, CI43429883617 đangchạy. RàSDK đã xácđịnh nguyênnhânDialog trongAOT: IntegrationBinding khôngmockIME, enterText gửi clientID=-1; Flutter chỉchấpnận-1 trongassert/debug, profilebỏinput. Đãsửa test đăngkýTestTextInput trước mởDialogđểbắtclientIDthật, expectcontroller.text khớpfixture,rồi unregistersauđóng; không thay app hoặc giảsave. Sourcebf cóchờ10s vàfailnumericmetadata; thayIME hiệnchưa commit. Android2193/job131893006241 failcoldinexactalarm360s (chưađếnprofile); nativecodekhôngthayđổiso0.7.1, không giảnotification hoặc tăngtimeout. ThêmCI-onlydiagnosticssaukhiđãfail: state/count/foreground/granted từdebugfixture, khôngtitle/ID/path, khôngcứufailurethànhPASS. Không cókếtquảtoànbộnativeđạtcho0.8.0. Analyzer/Python27pass. CầnpublishIME+diagnostic expectedHEADbf9446c, chờCI; các câuWIP lịch sửởtrêntừlượttrước, không làm lạicodeđãcommit.
+
 ---
 
 # Điểm tiếp tục DayMind — 12/11/2026

@@ -20,6 +20,7 @@ class ReminderDebugReceiver : BroadcastReceiver() {
             try {
                 ReminderRuntime.database(context)?.use { db ->
                     answer.put("ready",true)
+                    answer.put("notificationsGranted",ReminderRuntime.granted(context))
                     val command=intent.getStringExtra("command") ?: "ready"
                     if(command=="secure") {
                         val store=SecureStore(context)

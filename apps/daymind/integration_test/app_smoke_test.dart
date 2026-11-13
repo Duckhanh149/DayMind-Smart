@@ -70,10 +70,25 @@ void main() {
       'SCOPED_SESSION_POC: native encrypted backend isolation passed.',
     );
 
+    // Integration binding uses a real IME by default. Capture its client ID
+    // for synthetic keyboard injection: the debug-only magic ID -1 is ignored
+    // by AOT, so enterText otherwise leaves the field empty in profile.
+    final inputWasRegistered = tester.testTextInput.isRegistered;
+    if (!inputWasRegistered) tester.testTextInput.register();
+    addTearDown(() {
+      if (!inputWasRegistered) tester.testTextInput.unregister();
+    });
     await tester.tap(find.byKey(const Key('add-task')));
     await tester.pumpAndSettle();
     final title = 'Native smoke ${DateTime.now().millisecondsSinceEpoch}';
     await tester.enterText(find.byKey(const Key('task-title')), title);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('task-title')))
+          .controller!
+          .text,
+      title,
+    );
     await tester.tap(find.byKey(const Key('save-task')));
     await tester.pumpAndSettle();
     // A settled frame queue does not imply that the SQLite worker committed
@@ -92,6 +107,7 @@ void main() {
       );
     }
     expect(find.byType(Dialog), findsNothing);
+    if (!inputWasRegistered) tester.testTextInput.unregister();
     final controller = ProviderScope.containerOf(
       tester.element(find.byType(WorkspaceScreen)),
     ).read(workspaceProvider);
