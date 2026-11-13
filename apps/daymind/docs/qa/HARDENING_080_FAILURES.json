@@ -45,6 +45,15 @@
         "failure": "Debug-only platform override setter invoked in profile before app startup",
         "fix": "Guard override with kDebugMode; replace debugDisposed gate with runtime Image.clone rejection, retaining disposal verification"
       }
+    },
+    {
+      "source": "2193fdbf6c641f3b06822a37bc00c8a8cc38280c",
+      "run": 43427667848,
+      "windows": {
+        "job": 131893005716,
+        "failure": "Initial editor Dialog remained after pumpAndSettle under AOT",
+        "nextVerification": "Bounded wait for async SQLite editor route to close; no save retry; fixed numeric failure metadata only"
+      }
     }
   ]
 }

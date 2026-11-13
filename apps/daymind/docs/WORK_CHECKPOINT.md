@@ -18,6 +18,8 @@ Tiếp tục: f95d563 (tree089b02b) đã lên nhánh. Emulator43422940254/job131
 
 Nguồn79eab1868d0598e7f91c8894958c8f58906bed2f/treefde416a: Emulator43425558473/job131885991193 SUCCESS16+7+security. Native43425558511 Windows131885991578 buildrelease+profileđạt nhưng testdừngngayvì setterdebugDefaultTargetPlatformOverride khôngchoprofile. ĐãsửaguardkDebugMode, profiletựchọnOSthật. RàAPIprofile: thayui.Image.debugDisposed (debug-only) bằngclone() phải throwsStateError sauhủy, códisposeclone nếugatefail; không bỏcheckgiảiphóngtexture. Analyzer sạch. Android131885991060 cònđangchạy(cũngdựkiếnsẽgặpsetterlỗi), khônglấygóicủanguồn79. Hai sửa test+checkpoint đangchưa commit, cầnpublish expectedHEAD79, chạyCI rồiđợiđếnkhipass. Không tuyênbốhoànthành.
 
+Nguồn2193fdbf6c641f3b06822a37bc00c8a8cc38280c/tree71bf3fbd đangCI43427667848. Windows131893005716 qua245unit+2skip/buildrelease+profile nhưngDialog vẫn mở ngay saupumpAndSettle ởinitialCRUD; đãthêmchờđiềukiệnrouteđóng tốiđa10s vìsettledframekhôngchờSQLiteworkercommit. GiữexpectDialogkhôngcòn, thêmfailmetadatachỉtitleLength/savingCount(no nội dung) để phânbiệtUI/asyncfailure, không retry thao tácsave. Android131893006241 đangchạy. Thayđổitestvàcheckpoint này chưacommit;analyzer sạch, cầnpublish expectedHEAD2193 vàđợiCI mới. Nếuquota/môi trườngchặn, giữworktreevàcheckpoint, khôngbáohoànthành.
+
 ---
 
 # Điểm tiếp tục DayMind — 12/11/2026

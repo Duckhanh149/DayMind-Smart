@@ -76,6 +76,21 @@ void main() {
     await tester.enterText(find.byKey(const Key('task-title')), title);
     await tester.tap(find.byKey(const Key('save-task')));
     await tester.pumpAndSettle();
+    // A settled frame queue does not imply that the SQLite worker committed
+    // and the async editor callback popped its route, especially under AOT.
+    final saved = Stopwatch()..start();
+    while (find.byType(Dialog).evaluate().isNotEmpty &&
+        saved.elapsed < const Duration(seconds: 10)) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    if (find.byType(Dialog).evaluate().isNotEmpty) {
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('task-title')),
+      );
+      debugPrint(
+        'NATIVE_EDITOR_STATE: ${jsonEncode({'titleLength': field.controller?.text.length, 'savingIndicatorCount': find.byType(CircularProgressIndicator).evaluate().length, 'dialogStillOpen': true})}',
+      );
+    }
     expect(find.byType(Dialog), findsNothing);
     final controller = ProviderScope.containerOf(
       tester.element(find.byType(WorkspaceScreen)),
