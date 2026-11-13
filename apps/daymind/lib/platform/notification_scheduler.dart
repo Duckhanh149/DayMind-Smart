@@ -10,14 +10,20 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import '../features/reminders/domain/reminder.dart';
 import '../features/companion/domain/companion.dart';
 
-class PlatformNotificationScheduler implements NotificationScheduler {
+class PlatformNotificationScheduler
+    implements NotificationScheduler, NotificationDeliveryPolicy {
   PlatformNotificationScheduler({NotificationDiagnostics? diagnostics})
     : diagnostics = diagnostics ?? NotificationDiagnostics();
   final NotificationDiagnostics diagnostics;
   static const windowChannel = MethodChannel('daymind/window');
   String permissionStatus = 'unknown';
-  int? osSetting, osState;
+  int? osSetting, osState, osQueryError;
   bool get ready => _ready;
+  bool get canAttemptWithUnknownPermission =>
+      Platform.isWindows && _ready && permissionStatus == 'unknown';
+  @override
+  Future<bool> canAttemptNotification() async =>
+      await granted() || canAttemptWithUnknownPermission;
   static const channel = MethodChannel('daymind/reminders');
   final plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
@@ -56,6 +62,7 @@ class PlatformNotificationScheduler implements NotificationScheduler {
     permissionStatus = 'unknown';
     osSetting = null;
     osState = null;
+    osQueryError = null;
     tzdata.initializeTimeZones();
     var timezone = 'UTC';
     try {
@@ -151,6 +158,11 @@ class PlatformNotificationScheduler implements NotificationScheduler {
         );
         final setting = state?['notificationSetting'],
             focus = state?['notificationState'];
+        final query = state?['notificationQueryError'];
+        osQueryError =
+            query is int && query >= -2147483648 && query <= 2147483647
+            ? query
+            : null;
         osSetting = setting is int && setting >= 0 && setting <= 4
             ? setting
             : null;
@@ -164,6 +176,7 @@ class PlatformNotificationScheduler implements NotificationScheduler {
         permissionStatus = 'unknown';
         osSetting = null;
         osState = null;
+        osQueryError = null;
       }
       diagnostics.record(
         permissionStatus == 'granted'

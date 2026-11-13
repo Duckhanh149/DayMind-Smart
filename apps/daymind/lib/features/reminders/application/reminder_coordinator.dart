@@ -303,7 +303,16 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> test() async {
     diagnostics.record(NotificationDiagnosticCode.testRequested);
     granted = await engine.scheduler.granted();
-    if (!granted) {
+    final platform = engine.scheduler is PlatformNotificationScheduler
+        ? engine.scheduler as PlatformNotificationScheduler
+        : null;
+    // An explicit Windows diagnostic request can attempt the OS API when
+    // querying its setting is unavailable. A known denial still blocks it.
+    final diagnosticAttempt =
+        Platform.isWindows &&
+        platform?.ready == true &&
+        platform?.permissionStatus == 'unknown';
+    if (!granted && !diagnosticAttempt) {
       if (engine.scheduler is PlatformNotificationScheduler &&
           (engine.scheduler as PlatformNotificationScheduler)
                   .permissionStatus ==
@@ -321,6 +330,11 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       title: 'Thử thông báo DayMind',
       body: 'Thông báo thử im lặng do bạn yêu cầu.',
     );
+    if (diagnosticAttempt) {
+      granted = await engine.scheduler
+          .granted(); // Never infer permission/banner from show success.
+      if (!_disposed) notifyListeners();
+    }
   }
 
   String localTime(int millis) {

@@ -15,6 +15,14 @@ import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
 Future<void> backupProbe(WidgetTester tester, WorkspaceHost host) async {
   final c = host.controller!, owner = host.account!.uid;
   final originalIds = c.tasks.map((t) => t.id).toSet();
+  final originalActiveIds = c.tasks
+      .where((t) => t.deletedAt == null)
+      .map((t) => t.id)
+      .toSet();
+  final originalTrashIds = c.tasks
+      .where((t) => t.deletedAt != null)
+      .map((t) => t.id)
+      .toSet();
   final originalCompleted = c.visibleTasks
       .where((t) => t.status.name == 'completed' && t.deletedAt == null)
       .map((t) => t.id)
@@ -108,7 +116,9 @@ Future<void> backupProbe(WidgetTester tester, WorkspaceHost host) async {
     );
     // Keep the surrounding account/artwork gate's original active tasks/settings.
     for (final task
-        in c.tasks.where((t) => !originalIds.contains(t.id)).toList()) {
+        in c.tasks
+            .where((t) => !originalIds.contains(t.id) && t.deletedAt == null)
+            .toList()) {
       await c.delete(task, scope: EditScope.all);
     }
     await c.reminders!.configure(notifications);
@@ -117,7 +127,15 @@ Future<void> backupProbe(WidgetTester tester, WorkspaceHost host) async {
     expect(host.sync!.message, isNull);
     expect(
       c.tasks.where((t) => t.deletedAt == null).map((t) => t.id).toSet(),
-      originalIds,
+      originalActiveIds,
+    );
+    expect(
+      c.tasks
+          .where((t) => t.deletedAt != null)
+          .map((t) => t.id)
+          .toSet()
+          .containsAll(originalTrashIds),
+      isTrue,
     );
     expect(
       c.visibleTasks

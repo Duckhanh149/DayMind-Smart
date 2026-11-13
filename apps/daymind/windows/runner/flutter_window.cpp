@@ -11,13 +11,17 @@
 #include "secure_store.h"
 
 namespace {
+thread_local HRESULT toast_query_error = S_OK;
 int ToastPermission() noexcept {
+  toast_query_error = S_OK;
   const HRESULT initialized = RoInitialize(RO_INIT_SINGLETHREADED);
   int setting = -1;
   try {
     const auto notifier = winrt::Windows::UI::Notifications::ToastNotificationManager::CreateToastNotifier(L"dev.daymind.DayMindSMART");
     setting = static_cast<int>(notifier.Setting());
-  } catch (...) { /* Unknown is not permission granted; no raw error/path. */ }
+  } catch (const winrt::hresult_error& error) {
+    toast_query_error = static_cast<HRESULT>(error.code());
+  } catch (...) { toast_query_error = E_FAIL; }
   if (SUCCEEDED(initialized)) RoUninitialize();
   return setting;
 }
@@ -148,6 +152,7 @@ flutter::EncodableMap FlutterWindow::WindowState() {
           {flutter::EncodableValue("trayEnabled"), flutter::EncodableValue(tray_enabled_)},
           {flutter::EncodableValue("iconReady"), flutter::EncodableValue(tray_added_)},
           {flutter::EncodableValue("notificationSetting"), flutter::EncodableValue(ToastPermission())},
+          {flutter::EncodableValue("notificationQueryError"), flutter::EncodableValue(static_cast<int64_t>(toast_query_error))},
           {flutter::EncodableValue("notificationState"), flutter::EncodableValue(NotificationState())},
           {flutter::EncodableValue("deliveryAfterExit"), flutter::EncodableValue(false)}};
 }

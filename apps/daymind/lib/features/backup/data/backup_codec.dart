@@ -28,9 +28,9 @@ abstract final class BackupCodec {
   static Future<Uint8List> encrypt(BackupSnapshot snapshot, String password) {
     validatePassword(password);
     return Isolate.run(() async {
-      final clear = Uint8List.fromList(
-        utf8.encode(jsonEncode(snapshot.toJson())),
-      );
+      // Utf8Codec already returns a new owned Uint8List. Avoid retaining a
+      // second plaintext buffer for large backups; erase this one below.
+      final clear = utf8.encode(jsonEncode(snapshot.toJson()));
       if (clear.length > maxPlaintext) invalidBackup();
       final random = Random.secure(), header = Uint8List(40)..setAll(0, _magic);
       for (var i = 8; i < 36; i++) {

@@ -36,7 +36,9 @@ Chạy trên cả Windows10 build17763+ và Windows11 x64; cùng bản cài/hash
 
 Mở app/thu khay/Thoát hẳn và bật DND/Focus Assist bằng UI hệ điều hành, không dùng registry override giả kết quả. Script ghi OS build, process count, window visible, working set/private bytes, CPU và SHQueryUserNotificationState; không đọc tiêu đề cửa sổ hoặc nội dung notifications. Mã OS5 là accepts notifications;6 quiet time. Public API không đảm bảo bao phủ mọi chế độ DND/banner. Tệp chẩn đoán trong app có ToastNotifier.Setting sau khi bật đồng ý.
 
-Windows hiện **không có nhắc sau khi tiến trình thoát/reboot/đăng xuất**. Close→tray chỉ khi iconReady+trayEnabled thật; khay lỗi/tắt thì close thoát. Không autostart, service hoặc helper nền. Gửi API thành công/history xuất hiện không chứng minh banner đã hiện. CI test đặt defaultTargetPlatform đúng OS thật (FLUTTER_TEST mặc định Android dù runnerWindows); không giả quyền/OSstate. CI tray probe kiểm engine route lúc cửa sổ ẩn và OS history nếu state5; nếu OS chặn, ghi trạng thái và không gọi đó là visible banner PASS.
+Windows hiện **không có nhắc sau khi tiến trình thoát/reboot/đăng xuất**. Close→tray chỉ khi iconReady+trayEnabled thật; khay lỗi/tắt thì close thoát. Không autostart, service hoặc helper nền. Gửi API thành công/history xuất hiện không chứng minh banner đã hiện. Nếu permission query không khả dụng, granted vẫn false/unknown. Desktop có thể gửi yêu cầu qua OS khi adapter ready, app bật nhắc và không có known-denied; OS vẫn quyết định hiển thị. UI/chẩn đoán tách quyền khỏi khả năng thử gửi, không đổi DND hoặc khẳng định banner đã hiện. HRESULT chỉ là mã số, không phải thông báo lỗi thô.
+
+CI test đặt defaultTargetPlatform đúng OS thật (FLUTTER_TEST mặc định Android dù runnerWindows); không giả quyền/OSstate. CI tray probe kiểm engine route lúc cửa sổ ẩn và OS history nếu state5; nếu OS chặn, ghi trạng thái và không gọi đó là visible banner PASS.
 
 ## Nâng cấp và kết quả
 

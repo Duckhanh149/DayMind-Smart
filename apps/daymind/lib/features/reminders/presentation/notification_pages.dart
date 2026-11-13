@@ -46,6 +46,9 @@ class NotificationSettingsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final prefs = reminders.preferences;
     final scheduler = reminders.engine.scheduler;
+    final unknownWindowsPermission =
+        scheduler is PlatformNotificationScheduler &&
+        scheduler.canAttemptWithUnknownPermission;
     final osSetting = scheduler is PlatformNotificationScheduler
         ? scheduler.osSetting
         : window?.notificationSetting;
@@ -61,15 +64,24 @@ class NotificationSettingsSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              reminders.granted ? 'Thông báo đã sẵn sàng.' : 'Chưa có quyền hoặc kênh thông báo đang tắt. Công việc vẫn dùng bình thường.',
+              unknownWindowsPermission
+                  ? 'Windows chưa cung cấp trạng thái quyền. DayMind vẫn có thể gửi yêu cầu nhắc qua hệ điều hành khi bạn bật nhắc; chưa xác nhận banner sẽ hiện.'
+                  : reminders.granted
+                  ? 'Thông báo đã sẵn sàng.'
+                  : 'Chưa có quyền hoặc kênh thông báo đang tắt. Công việc vẫn dùng bình thường.',
             ),
             if (!reminders.granted) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: () => _run(context, reminders.requestPermission()),
+                onPressed: () => _run(
+                  context,
+                  unknownWindowsPermission
+                      ? scheduler.openSettings()
+                      : reminders.requestPermission(),
+                ),
                 icon: const Icon(Icons.notifications_active_outlined),
                 label: Text(
-                  prefs.permissionPrompted
+                  unknownWindowsPermission || prefs.permissionPrompted
                       ? 'Mở cài đặt thông báo'
                       : 'Cho phép thông báo',
                 ),

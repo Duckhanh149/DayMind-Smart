@@ -98,7 +98,8 @@ class ReminderEngine {
 
   Future<void> reconcile(List<domain.Task> tasks) async {
     final now = clock(), prefs = await preferences();
-    final permitted = prefs.primaryDevice && await scheduler.granted();
+    final permitted =
+        prefs.primaryDevice && await notificationAttemptAllowed(scheduler);
     final prior = await events();
     final byId = {for (final task in tasks) task.id: task};
     final modes = {
@@ -553,7 +554,7 @@ class ReminderEngine {
 
   /// Used by guarded foreground schedulers. Android independently enforces these checks in its receiver.
   Future<List<ReminderEventRecord>> claimDue(List<domain.Task> tasks) async {
-    final permission = await scheduler.granted();
+    final permission = await notificationAttemptAllowed(scheduler);
     return db.transaction(() async {
       final prefs = await preferences(), now = clock();
       final result = <ReminderEventRecord>[];

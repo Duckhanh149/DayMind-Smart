@@ -19,14 +19,14 @@ Future<void> windowsNotificationProbe(
           c.reminders!.engine.scheduler as PlatformNotificationScheduler;
   final window = c.window!, saved = service.preferences.toJson();
   expect(scheduler.supportsClosedApp, isFalse);
-  final allowed = await scheduler.granted();
+  final allowed = await scheduler.canAttemptNotification();
   debugPrint(
-    'WINDOWS_PERMISSION_POC: ${jsonEncode({'ready': scheduler.ready, 'permission': scheduler.permissionStatus, 'osSetting': scheduler.osSetting, 'osState': scheduler.osState})}',
+    'WINDOWS_PERMISSION_POC: ${jsonEncode({'ready': scheduler.ready, 'permission': scheduler.permissionStatus, 'osSetting': scheduler.osSetting, 'osState': scheduler.osState, 'osQueryError': scheduler.osQueryError})}',
   );
   expect(
     allowed,
     isTrue,
-    reason: 'CI must report real enabled Windows ToastNotifier settings.',
+    reason: 'The desktop adapter must be ready and not known to be blocked; unknown permission stays unknown.',
   );
   final title = 'Synthetic tray probe ${const Uuid().v4()}';
   final traceEnabled = scheduler.diagnostics.enabled;

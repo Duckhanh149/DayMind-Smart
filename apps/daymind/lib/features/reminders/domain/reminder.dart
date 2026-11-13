@@ -293,3 +293,14 @@ abstract interface class NotificationScheduler {
     String? eventKey,
   });
 }
+
+/// A send attempt is separate from permission or banner confirmation.
+/// Desktop APIs can accept attempts when their settings query is unavailable.
+abstract interface class NotificationDeliveryPolicy {
+  Future<bool> canAttemptNotification();
+}
+
+Future<bool> notificationAttemptAllowed(NotificationScheduler scheduler) =>
+    scheduler is NotificationDeliveryPolicy
+    ? (scheduler as NotificationDeliveryPolicy).canAttemptNotification()
+    : scheduler.granted();

@@ -31,12 +31,22 @@ Map<String, dynamic> diagnosticSummary(WorkspaceController c) => {
         ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler)
               .osState
         : null,
+    'osQueryError':
+        c.reminders?.engine.scheduler is PlatformNotificationScheduler
+        ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler)
+              .osQueryError
+        : null,
     'trayReady': c.window?.iconReady ?? false,
     'trayEnabled': c.window?.trayEnabled ?? false,
     'visible': c.window?.visible,
     'afterProcessExitSupported':
         c.reminders?.engine.scheduler.supportsClosedApp ?? false,
     'bannerConfirmed': false,
+    'canAttemptWithUnknownPermission':
+        c.reminders?.engine.scheduler is PlatformNotificationScheduler
+        ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler)
+              .canAttemptWithUnknownPermission
+        : false,
     'eventCounts': {
       for (final state in [
         'planned',
