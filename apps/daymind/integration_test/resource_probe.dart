@@ -172,8 +172,14 @@ Future<void> resourceProbe(WidgetTester tester, WorkspaceHost host) async {
     }
     await host.sync!.sync();
     expect(host.sync!.pendingCount, 0);
+    // Android log entries can truncate long lines; keep every metric decodable.
+    for (final entry in metrics.entries) {
+      debugPrint(
+        'RESOURCE_STAGE_POC: ${jsonEncode({'stage': entry.key, ...entry.value})}',
+      );
+    }
     debugPrint(
-      'RESOURCE_SOAK_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'durationSeconds': seconds, 'frames': 120, 'observedFrames': observedFrames.length, 'sourceBytes': sourceBytes, 'cipherBytes': encrypted.length, 'syncWrites': fixtureIds.length, 'floatingStatus': c.floatingStatus == null ? 'notReported' : 'osPolicyReported', 'metrics': metrics, 'scope': 'debug native Flutter process; no private receiver process CPU/RSS or physical low-end certification'})}',
+      'RESOURCE_SOAK_POC: ${jsonEncode({'platform': Platform.operatingSystem, 'buildMode': kProfileMode ? 'profile' : 'debug', 'durationSeconds': seconds, 'frames': 120, 'observedFrames': observedFrames.length, 'sourceBytes': sourceBytes, 'cipherBytes': encrypted.length, 'syncWrites': fixtureIds.length, 'floatingStatus': c.floatingStatus == null ? 'notReported' : 'osPolicyReported', 'metricStages': metrics.keys.toList(), 'scope': 'native Flutter process; no private receiver process CPU/RSS or physical low-end certification'})}',
     );
   } finally {
     binding.framePolicy = previousFramePolicy;

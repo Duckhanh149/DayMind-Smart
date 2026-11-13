@@ -19,8 +19,12 @@ Future<void> windowsNotificationProbe(
           c.reminders!.engine.scheduler as PlatformNotificationScheduler;
   final window = c.window!, saved = service.preferences.toJson();
   expect(scheduler.supportsClosedApp, isFalse);
+  final allowed = await scheduler.granted();
+  debugPrint(
+    'WINDOWS_PERMISSION_POC: ${jsonEncode({'ready': scheduler.ready, 'permission': scheduler.permissionStatus, 'osSetting': scheduler.osSetting, 'osState': scheduler.osState})}',
+  );
   expect(
-    await scheduler.granted(),
+    allowed,
     isTrue,
     reason: 'CI must report real enabled Windows ToastNotifier settings.',
   );

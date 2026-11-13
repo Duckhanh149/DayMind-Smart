@@ -4,13 +4,13 @@ Không dùng Windows Server/Android Emulator để gán PASS cho Windows10/11/OE
 
 ## Profile native trong CI
 
-`RUN_RESOURCE_SOAK=true` chỉ ở integration target; app release không tạo fixture hoặc tự đo/upload. Profile mặc định120 giây thời gian thật, có thể đặt DAYMIND_RESOURCE_SOAK_SECONDS từ120–600. Có đo hoạt ảnh120 khung hiển thị thực (kiểm nhiều khung đã vẽ), tạo và đồng bộ ít nhất vài bản ghi synthetic, nhập ba BMP12MiB hợp lệ, capture/encrypt/decrypt backup tổng source hơn36MiB. Kiểm restore nguyên tử/no replay riêng bằng backupProbe, không gọi codec-only thành restore lớn đã nghiệm thu.
+CI chạy AOT **profile** qua SDK drive adapter trên Android/Windows, giữ đầy đủ expect assertions. `RUN_RESOURCE_SOAK=true` chỉ ở integration target; app release không tạo fixture hoặc tự đo/upload. Profile mặc định120 giây thời gian thật, có thể đặt DAYMIND_RESOURCE_SOAK_SECONDS từ120–600. Có đo hoạt ảnh120 khung hiển thị thực (kiểm nhiều khung đã vẽ), tạo và đồng bộ ít nhất vài bản ghi synthetic, nhập ba BMP12MiB hợp lệ, capture/encrypt/decrypt backup tổng source hơn36MiB. Kiểm restore nguyên tử/no replay riêng bằng backupProbe, không gọi codec-only thành restore lớn đã nghiệm thu.
 
-ResourceSampler lấy current RSS/lifetime max RSS và CPU tất cả thread bằng clock_gettime(CLOCK_PROCESS_CPUTIME_ID) trên Android/Linux, GetProcessTimes trên Windows. CPU phần trăm tính theo một core, có thể >100%. Peak theo mẫu250ms không phải peak tuyệt đối của từng bước; lifetime max RSS bao gồm cả phần trước profile. Số đo Flutter process không gồm private Android :reminders process. Mọi trường CPU unavailable phải null/false, không giả bằng0; native gate yêu cầu API CPU đọc được. Không log PID, đường dẫn hoặc dữ liệu fixture.
+ResourceSampler lấy current RSS/lifetime max RSS và CPU tất cả thread bằng clock_gettime(CLOCK_PROCESS_CPUTIME_ID) trên Android/Linux, GetProcessTimes trên Windows. CPU phần trăm tính theo một core, có thể >100%. Peak theo mẫu250ms không phải peak tuyệt đối của từng bước; lifetime max RSS bao gồm cả phần trước profile. Số đo Flutter process không gồm private Android :reminders process. Mọi trường CPU unavailable phải null/false, không giả bằng0; native gate yêu cầu API CPU đọc được. Mỗi stage được in ở RESOURCE_STAGE_POC riêng để không bị Android cắt dòng; summary RESOURCE_SOAK_POC không chứa dữ liệu cá nhân. Không log PID, đường dẫn hoặc dữ liệu fixture.
 
 Profile hoạt ảnh dùng MediaQuery tắt reduced-motion **chỉ bên trong dialog của test** để đo renderer; app người dùng vẫn tôn trọng accessibility/DND/fullscreen. Companion nổi thực có thể bị Windows Server quiet state6 chặn; không gọi đó là đo floating đang render. Component Win32/GDI+ kiểm visible route riêng với controlled notification reader, không thay Focus Assist/DND thật.
 
-Driver dùng deadline có giới hạn: SDK12min/Android outer20min khi soak, default driver5min/outer10min khi không soak. Windows wrapper20min. Nếu thiếu RESOURCE_SOAK_POC hoặc có assertion failure, không coi profiling đạt. Số đo debug không phải RAM/CPU release hoặc low-end certification.
+Driver dùng deadline có giới hạn: SDK12min/Android outer20min khi soak, default driver5min/outer10min khi không soak. Windows wrapper20min. Nếu thiếu RESOURCE_SOAK_POC hoặc có assertion failure, không coi profiling đạt. Số đo profile trên VM/emulator không phải low-end/physical certification hoặc bản release đã ký.
 
 ## Android thật — chỉ thu thập, không đổi cài đặt
 
@@ -36,7 +36,7 @@ Chạy trên cả Windows10 build17763+ và Windows11 x64; cùng bản cài/hash
 
 Mở app/thu khay/Thoát hẳn và bật DND/Focus Assist bằng UI hệ điều hành, không dùng registry override giả kết quả. Script ghi OS build, process count, window visible, working set/private bytes, CPU và SHQueryUserNotificationState; không đọc tiêu đề cửa sổ hoặc nội dung notifications. Mã OS5 là accepts notifications;6 quiet time. Public API không đảm bảo bao phủ mọi chế độ DND/banner. Tệp chẩn đoán trong app có ToastNotifier.Setting sau khi bật đồng ý.
 
-Windows hiện **không có nhắc sau khi tiến trình thoát/reboot/đăng xuất**. Close→tray chỉ khi iconReady+trayEnabled thật; khay lỗi/tắt thì close thoát. Không autostart, service hoặc helper nền. Gửi API thành công/history xuất hiện không chứng minh banner đã hiện. CI tray probe kiểm engine route lúc cửa sổ ẩn và OS history nếu state5; nếu OS chặn, ghi trạng thái và không gọi đó là visible banner PASS.
+Windows hiện **không có nhắc sau khi tiến trình thoát/reboot/đăng xuất**. Close→tray chỉ khi iconReady+trayEnabled thật; khay lỗi/tắt thì close thoát. Không autostart, service hoặc helper nền. Gửi API thành công/history xuất hiện không chứng minh banner đã hiện. CI test đặt defaultTargetPlatform đúng OS thật (FLUTTER_TEST mặc định Android dù runnerWindows); không giả quyền/OSstate. CI tray probe kiểm engine route lúc cửa sổ ẩn và OS history nếu state5; nếu OS chặn, ghi trạng thái và không gọi đó là visible banner PASS.
 
 ## Nâng cấp và kết quả
 

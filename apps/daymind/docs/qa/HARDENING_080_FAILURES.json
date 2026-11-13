@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "runs": [
+    {
+      "source": "a503307e5d224a37e05848a1e4c5b5aa0619107e",
+      "run": 43421624408,
+      "windows": {
+        "job": 131872757630,
+        "failure": "C++17 WinRT deprecated experimental coroutine in MSVC18",
+        "fix": "Runner C++20; verified release build at f95d563"
+      },
+      "android": {
+        "job": 131872757259,
+        "failure": "SIGSEGV after large resource probe, in debug VM background optimizer",
+        "engineBuildId": "39569f68c45cdf8aa63b6a5e852210804660d89c",
+        "symbolicatedFrames": [
+          "0x225c059 dart::TypeArguments::InstantiateFrom",
+          "0x23b1e3f dart::ConstantPropagator::VisitInstantiateTypeArguments",
+          "0x23ae1c1 dart::ConstantPropagator::Analyze",
+          "0x23ae06b dart::ConstantPropagator::Optimize",
+          "0x247d369 dart::CompilerPass_ConstantPropagation::DoBody"
+        ],
+        "nextVerification": "AOT profile native workload and original functional assertions; no claim this was application OOM"
+      }
+    },
+    {
+      "source": "f95d5637507543e9e498698514c1b98b0d97957c",
+      "run": 43422940120,
+      "windows": {
+        "job": 131877144953,
+        "flutterPassed": 245,
+        "flutterSkipped": 2,
+        "releaseBuild": "passed",
+        "failure": "Native notification adapter selection: FLUTTER_TEST defaults defaultTargetPlatform to Android",
+        "fix": "Test selects actual OS platform, never overrides permission/OS quiet state"
+      }
+    }
+  ]
+}
