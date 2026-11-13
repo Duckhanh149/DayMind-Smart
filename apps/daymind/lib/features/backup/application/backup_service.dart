@@ -36,8 +36,9 @@ abstract final class BackupService {
   static Future<BackupSnapshot> capture(
     SqliteTaskRepository repo,
     StaticAssetImporter importer,
-    String? owner,
-  ) async {
+    String? owner, {
+    String? backupOwner,
+  }) async {
     await _checkOwner(repo, owner);
     if (owner != null &&
         (await SyncStore(repo, owner).conflicts()).isNotEmpty) {
@@ -53,7 +54,7 @@ abstract final class BackupService {
     return repo.db.transaction(
       () async => BackupSnapshot(
         id: const Uuid().v4(),
-        owner: owner,
+        owner: backupOwner ?? owner,
         createdAt: DateTime.now().toUtc().toIso8601String(),
         records: (await records.read()).values.toList(),
         assets: assets,
@@ -123,9 +124,10 @@ abstract final class BackupService {
     StaticAssetImporter importer,
     String? owner, {
     required bool companionSettings,
+    String? backupOwner,
   }) async {
     await _checkOwner(repo, owner);
-    if (snapshot.owner != owner) {
+    if (snapshot.owner != (backupOwner ?? owner)) {
       throw const BackupFailure(
         'Bản sao lưu thuộc không gian khác. Hãy mở đúng tài khoản hoặc chế độ cục bộ đã tạo bản sao lưu.',
       );

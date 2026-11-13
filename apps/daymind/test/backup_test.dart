@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as zones;
 import 'package:daymind_smart/features/backup/application/backup_service.dart';
 import 'package:daymind_smart/features/backup/data/backup_codec.dart';
+import 'package:daymind_smart/features/account_sync/data/firebase_rest.dart';
+import 'package:daymind_smart/features/account_sync/data/sync_store.dart';
 import 'package:daymind_smart/features/backup/domain/backup_snapshot.dart';
 import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/companion/domain/companion.dart';
@@ -78,6 +80,71 @@ void main() {
     await db.close();
     await targetDb.close();
     await root.delete(recursive: true);
+  });
+  test('production backup scopes the archive without rebinding the SQLite account UID', () async {
+    final endpoints = FirebaseEndpoints.production(
+      project: 'daymind-production',
+      apiKey: 'AIza${List.filled(35, 'a').join()}',
+    );
+    final other = FirebaseEndpoints.production(
+      project: 'daymind-other',
+      apiKey: 'AIza${List.filled(35, 'a').join()}',
+    );
+    const uid = 'same-uid';
+    await SyncStore(source, uid).bindOwner();
+    await SyncStore(target, uid).bindOwner();
+    final scoped = await BackupService.capture(
+      source,
+      art,
+      uid,
+      backupOwner: endpoints.backupOwner(uid),
+    );
+    expect(scoped.owner, endpoints.backupOwner(uid));
+    await expectLater(
+      BackupService.capture(
+        source,
+        art,
+        'another-uid',
+        backupOwner: scoped.owner,
+      ),
+      throwsA(isA<BackupFailure>()),
+    );
+    await expectLater(
+      BackupService.restore(
+        scoped,
+        target,
+        targetArt,
+        uid,
+        backupOwner: other.backupOwner(uid),
+        companionSettings: false,
+      ),
+      throwsA(isA<BackupFailure>()),
+    );
+    expect(await target.list(), isEmpty);
+    await BackupService.restore(
+      scoped,
+      target,
+      targetArt,
+      uid,
+      backupOwner: endpoints.backupOwner(uid),
+      companionSettings: false,
+    );
+    expect(
+      (await target.list()).where((t) => t.title == 'Private backup task'),
+      isNotEmpty,
+    );
+    expect(
+      (await SyncStore(
+        target,
+        uid,
+      ).records.get('account', 'session'))?['ownerId'],
+      uid,
+    );
+    await SyncStore(target, uid).bindOwner();
+    await expectLater(
+      SyncStore(target, scoped.owner!).bindOwner(),
+      throwsA(isA<Exception>()),
+    );
   });
   test('password AEAD authenticates the header and source; malformed framing is rejected before KDF', () async {
     const password = 'test-only-backup-passphrase';

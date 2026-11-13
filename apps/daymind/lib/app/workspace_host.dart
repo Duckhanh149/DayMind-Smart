@@ -185,8 +185,12 @@ class WorkspaceHost extends ChangeNotifier {
   Future<BackupSnapshot> captureBackup() => _serial(
     () => _backupOperation(
       restoring: false,
-      action: (c) =>
-          BackupService.capture(c.repository, c.importer, scopedBackupOwner),
+      action: (c) => BackupService.capture(
+        c.repository,
+        c.importer,
+        account?.uid,
+        backupOwner: scopedBackupOwner,
+      ),
     ),
   );
 
@@ -201,7 +205,8 @@ class WorkspaceHost extends ChangeNotifier {
           snapshot,
           c.repository,
           c.importer,
-          scopedBackupOwner,
+          account?.uid,
+          backupOwner: scopedBackupOwner,
           companionSettings: companionSettings,
         );
         sync?.markLocalChange();

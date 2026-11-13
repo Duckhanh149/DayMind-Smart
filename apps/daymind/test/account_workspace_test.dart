@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:daymind_smart/platform/floating_companion.dart';
 
@@ -42,12 +43,15 @@ class MemorySecure extends NativeSessionStore {
 }
 
 class TestAuth implements AuthGateway {
+  String? productionProject;
   String? deleted;
   bool loseDeletionReply = false;
   AuthSession account(String email) => AuthSession(
     uid: email.split('@').first,
     email: email,
-    idToken: 'test-id',
+    idToken: productionProject == null
+        ? 'test-id'
+        : 'e30.${base64Url.encode(utf8.encode(jsonEncode({'aud': productionProject, 'iss': 'https://securetoken.google.com/$productionProject', 'sub': email.split('@').first})))}.synthetic',
     refreshToken: 'test-refresh',
     expiresAt: DateTime.now().add(const Duration(hours: 1)),
   );
@@ -219,6 +223,40 @@ void main() {
     expect(host.sessionError, isNotNull);
   });
 
+  test('production host backs up and restores with scoped archive ownership and the original sync UID', () async {
+    await host.shutdown();
+    host.dispose();
+    auth.productionProject = 'daymind-production';
+    final endpoints = FirebaseEndpoints.production(
+      project: auth.productionProject!,
+      apiKey: 'AIza${List.filled(35, 'a').join()}',
+    );
+    host = WorkspaceHost(dir, MemorySecure(), auth, cloud, firebase: endpoints);
+    await host.start();
+    await host.signIn(
+      'production-user@example.invalid',
+      'correct',
+      create: true,
+      copyLocal: false,
+    );
+    await host.controller!.save(
+      TaskDraft(title: 'Synthetic production backup fixture'),
+    );
+    await host.sync!.sync();
+    final snapshot = await host.captureBackup();
+    expect(snapshot.owner, endpoints.backupOwner(host.account!.uid));
+    expect(snapshot.owner, isNot(host.account!.uid));
+    await host.restoreBackup(snapshot, companionSettings: false);
+    expect(host.sync!.store.owner, host.account!.uid);
+    await host.sync!.sync();
+    expect(host.sync!.pendingCount, 0);
+    expect(
+      host.controller!.tasks
+          .where((t) => t.title == 'Synthetic production backup fixture')
+          .length,
+      2,
+    );
+  });
   test('failed credential persistence restores usable local workspace and permits a later sign-in', () async {
     await host.controller!.save(
       const TaskDraft(title: 'Dữ liệu trước đăng nhập'),

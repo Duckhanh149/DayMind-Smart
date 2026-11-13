@@ -44,7 +44,10 @@ while ($clock.Elapsed.TotalSeconds -lt $Seconds) {
   Start-Sleep -Seconds 1
 }
 $os=[Environment]::OSVersion.Version
-$report=@{schema=1;scenario=$Scenario;osBuild=$os.Build;targetOS= $(if($os.Build -ge 22000){'Windows11'}elseif($os.Build -ge 17763){'Windows10'}else{'unsupported'});samples=$samples;notificationVisibility='not_observed_by_tool';dataRetention='not_verified_by_tool';physicalAcceptanceComplete=$false}
+$productType=0
+try { $productType=[int](Get-CimInstance -ClassName Win32_OperatingSystem -Property ProductType).ProductType } catch { <# Unknown must not be inferred to be a client OS from build alone. #> }
+$targetOS=if($productType -eq 1 -and $os.Build -ge 22000){'Windows11'}elseif($productType -eq 1 -and $os.Build -ge 17763){'Windows10'}elseif($productType -in 2,3){'WindowsServer'}else{'unknown_or_unsupported'}
+$report=@{schema=1;scenario=$Scenario;osBuild=$os.Build;targetOS=$targetOS;samples=$samples;notificationVisibility='not_observed_by_tool';dataRetention='not_verified_by_tool';physicalAcceptanceComplete=$false}
 $report | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $OutputPath -Encoding UTF8
 Write-Output ('{"saved":true,"physicalAcceptanceComplete":false}')
 } catch {
