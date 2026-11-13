@@ -12,6 +12,10 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
+internal fun validSessionKey(name: String?): Boolean = name != null && (
+    name in setOf("session", "installation", "test_probe") ||
+    Regex("""offline\.(session|installation)|production\.[a-z][a-z0-9-]{4,28}[a-z0-9]\.(session|installation)""").matches(name))
+
 /** No passwords; tokens are encrypted with an OS-owned, non-exportable key. */
 internal class SecureStore(private val context: Context) {
     private val alias = "dev.daymind.session.v1"
@@ -27,7 +31,7 @@ internal class SecureStore(private val context: Context) {
     fun handle(call: MethodCall, result: MethodChannel.Result) {
         try {
             val name = call.argument<String>("key")
-            require(name in setOf("session", "installation", "test_probe"))
+            require(validSessionKey(name))
             val prefs = context.getSharedPreferences("daymind_secure_v1", Context.MODE_PRIVATE)
             when (call.method) {
                 "read" -> {

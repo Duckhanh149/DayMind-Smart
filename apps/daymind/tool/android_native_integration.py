@@ -193,9 +193,12 @@ def main():
                '--driver=test_driver/native_integration.dart',
                '--target=integration_test/app_smoke_test.dart',
                '--no-pub', '-d', device, '--dart-define=RUN_ACCOUNT_EMULATOR=true']
-    code = run_bounded(command, 600, device=device, required=(
-        'SECURE_STORAGE_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:', 'ANDROID_SQLITE_ISOLATION_POC:',
-    ))
+    soak = os.environ.get('DAYMIND_RESOURCE_SOAK') == 'true'
+    if soak:
+        command += ['--dart-define=RUN_RESOURCE_SOAK=true', '--dart-define=DAYMIND_RESOURCE_SOAK_SECONDS=' + os.environ.get('DAYMIND_RESOURCE_SOAK_SECONDS','120')]
+    code = run_bounded(command, 1200 if soak else 600, device=device, required=((('RESOURCE_SOAK_POC:',) if soak else ()) + (
+        'SECURE_STORAGE_POC:', 'SCOPED_SESSION_POC:', 'RECURRENCE_POC:', 'COMPANION_RESOURCE_POC:', 'ANIMATION_RESOURCE_POC:', 'MAX_ATLAS_RESOURCE_POC:', 'ACCOUNT_NATIVE_POC:', 'ACCOUNT_ARTWORK_POC:', 'BACKUP_NATIVE_POC:', 'ANDROID_SQLITE_ISOLATION_POC:',
+    )))
     if code:
         diagnostic(device)
     return code

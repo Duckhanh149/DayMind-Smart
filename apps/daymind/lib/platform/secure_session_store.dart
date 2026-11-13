@@ -7,13 +7,17 @@ import '../features/account_sync/domain/account.dart';
 
 /// Native OS encryption: Android Keystore AES-GCM / Windows user-bound DPAPI.
 class NativeSessionStore implements SecureSessionStore {
+  NativeSessionStore({this.namespace = ''});
+  final String namespace;
   static const channel = MethodChannel('daymind/secure');
   Future<String?> get(String key) =>
-      channel.invokeMethod<String>('read', {'key': key});
-  Future<void> set(String key, String value) =>
-      channel.invokeMethod<void>('write', {'key': key, 'value': value});
+      channel.invokeMethod<String>('read', {'key': '$namespace$key'});
+  Future<void> set(String key, String value) => channel.invokeMethod<void>(
+    'write',
+    {'key': '$namespace$key', 'value': value},
+  );
   Future<void> remove(String key) =>
-      channel.invokeMethod<void>('delete', {'key': key});
+      channel.invokeMethod<void>('delete', {'key': '$namespace$key'});
   @override
   Future<AuthSession?> read() async {
     final raw = await get('session');

@@ -16,7 +16,7 @@ npm run test:emulator
 
 Lệnh cuối khởi động Auth/Firestore, chạy Node security smoke và bộ Dart REST/hai SQLite thiết bị độc lập, sau đó dừng Emulator. Dữ liệu tài khoản ngẫu nhiên `example.invalid` được dọn sau kiểm thử. Không dùng VM flag, không retry lỗi assertion; helper chỉ retry lỗi tải SQLite HTTP502/503/504.
 
-Chạy máy chủ cho ứng dụng:
+Chạy máy chủ cho ứng dụng (bản0.8.0 mặc định offline; chạy client với `flutter run --dart-define=DAYMIND_FIREBASE_MODE=emulator`):
 
 ```sh
 npx firebase emulators:start --config firebase.json --project demo-daymind --only auth,firestore
@@ -36,3 +36,5 @@ Rules chỉ cho UID chủ sở hữu đọc/ghi. Task/ruleset/cấu hình nhắc
 Đăng xuất giữ thay đổi chưa gửi trong kho riêng, trở về kho local. Xóa tài khoản cần nhập lại mật khẩu, đặt `active:false` trước khi dọn records/settings/devices/Auth và xóa cache tài khoản trên máy. Giữ dấu UID đã xóa không chứa email/nội dung để ngăn thiết bị cũ tải dữ liệu lên lại. Ảnh nhân vật, credential và lịch sử nhắc không được đồng bộ.
 
 Primary-device policy được xác minh khi online; máy chính cũ offline có thể còn phát theo lịch cache. Chưa kết nối Firebase production, chưa coi Emulator là nghiệm thu hai máy phần cứng thật. Chi tiết [ADR0007](../docs/adr/0007-account-sync.md).
+
+Production được tách riêng; xem [FIREBASE_PRODUCTION](../docs/FIREBASE_PRODUCTION.md). Không dùng project thật với endpoints Emulator hoặc gửi credentials thật qua HTTP.

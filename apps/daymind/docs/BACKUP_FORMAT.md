@@ -15,3 +15,5 @@ Host serialize thao tác với đổi/xóa tài khoản; dừng sync/controller/
 Local đã kiểm AEAD/mật khẩu sai/sửa header, giới hạn, roundtrip recurrence/history/ảnh, khác owner/relations, SQL failure thật và journal crash trước/sau commit. Native probe trên Android/Windows phải xác minh file mã hóa, tài khoản Emulator thật, giữ dữ liệu/ảnh và không thêm delivery log trên chính source mới; xem BUILD_STATUS.
 
 Từ0.7.1, ảnh nguồn tĩnh (gồm JPEG/BMP) tối đa16MiB và tổng assets64MiB; plaintext96MiB gồm base64/JSON. Định dạng framing/KDF không thay đổi. Bản cũ có thể từ chối backup lớn hơn giới hạn cũ; nâng phiên bản trước restore. Giới hạn lớn mới chưa được nghiệm thu hiệu năng thiết bị yếu.
+
+Từ0.8.0, owner của backup production ràng buộc digest(project+UID); không cho restore chéo project/Emulator dù UID giống nhau. Backup Emulator cũ giữ ownerUID cũ, local vẫnnull. Không chứa tên project trong plaintext và không chuyển session/credentials.

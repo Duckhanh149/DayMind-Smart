@@ -32,19 +32,13 @@ Future<void> main() async {
     final support = await getApplicationSupportDirectory();
     await support.create(recursive: true);
     final http = JsonTransport();
-    const configuredHost = String.fromEnvironment('DAYMIND_EMULATOR_HOST');
-    final endpoints = FirebaseEndpoints(
-      host: configuredHost.isNotEmpty
-          ? configuredHost
-          : Platform.isAndroid
-          ? '10.0.2.2'
-          : '127.0.0.1',
-    );
+    final endpoints = FirebaseEndpoints.fromBuild(android: Platform.isAndroid);
     final host = WorkspaceHost(
       support,
-      NativeSessionStore(),
+      NativeSessionStore(namespace: endpoints.storageNamespace),
       FirebaseRestAuth(endpoints, http),
       FirestoreRestGateway(endpoints, http),
+      firebase: endpoints,
     );
     await host.start();
     runApp(WorkspaceApplication(host: host));

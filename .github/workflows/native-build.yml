@@ -38,6 +38,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     env:
+      DAYMIND_RESOURCE_SOAK: 'true'
+      DAYMIND_RESOURCE_SOAK_SECONDS: '120'
       DAYMIND_PRODUCTION_SIGNING: ${{ github.event_name == 'workflow_dispatch' && inputs.signing == 'production' && 'true' || 'false' }}
     timeout-minutes: 55
     defaults:
@@ -76,7 +78,9 @@ jobs:
       - name: Parse optional Windows signing script without loading credentials
         if: runner.os == 'Windows'
         shell: pwsh
-        run: '[void][scriptblock]::Create((Get-Content tool/production_signing.ps1 -Raw))'
+        run: |
+          [void][scriptblock]::Create((Get-Content tool/production_signing.ps1 -Raw))
+          [void][scriptblock]::Create((Get-Content tool/windows_device_report.ps1 -Raw))
       - run: flutter pub get --enforce-lockfile
       - run: flutter pub get --enforce-lockfile
         working-directory: apps/daymind/emulator_test

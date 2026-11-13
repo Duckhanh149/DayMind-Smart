@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <regex>
 #include <vector>
 
 namespace {
@@ -62,7 +63,8 @@ void HandleSecureCall(const flutter::MethodCall<Value>& call,
     const auto* args = call.arguments() ? std::get_if<flutter::EncodableMap>(call.arguments()) : nullptr;
     if (!args) throw std::runtime_error("argument");
     const std::string key = Argument(*args, "key");
-    if (key != "session" && key != "installation" && key != "test_probe")
+    static const std::regex scoped_key(R"(offline\.(session|installation)|production\.[a-z][a-z0-9-]{4,28}[a-z0-9]\.(session|installation))");
+    if (key != "session" && key != "installation" && key != "test_probe" && !std::regex_match(key, scoped_key))
       throw std::runtime_error("key");
     auto path = StorageDirectory() / (key + ".dpapi");
     DATA_BLOB entropy{static_cast<DWORD>(key.size()), reinterpret_cast<BYTE*>(const_cast<char*>(key.data()))};

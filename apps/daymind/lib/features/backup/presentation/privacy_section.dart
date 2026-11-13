@@ -6,14 +6,54 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/controller.dart';
+import '../../../platform/notification_scheduler.dart';
 
 Map<String, dynamic> diagnosticSummary(WorkspaceController c) => {
   'schema': 1,
-  'appVersion': '0.7.1',
+  'appVersion': '0.8.0',
   'platform': Platform.operatingSystem,
   'build': kReleaseMode ? 'release' : 'debug',
   'databaseSchema': c.repository.db.schemaVersion,
   'notificationsGranted': c.reminders?.granted ?? false,
+  'notifications': {
+    'permission': c.reminders?.engine.scheduler is PlatformNotificationScheduler
+        ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler)
+              .permissionStatus
+        : 'unknown',
+    'ready': c.reminders?.engine.scheduler is PlatformNotificationScheduler
+        ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler).ready
+        : false,
+    'osSetting': c.reminders?.engine.scheduler is PlatformNotificationScheduler
+        ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler)
+              .osSetting
+        : null,
+    'osState': c.reminders?.engine.scheduler is PlatformNotificationScheduler
+        ? (c.reminders!.engine.scheduler as PlatformNotificationScheduler)
+              .osState
+        : null,
+    'trayReady': c.window?.iconReady ?? false,
+    'trayEnabled': c.window?.trayEnabled ?? false,
+    'visible': c.window?.visible,
+    'afterProcessExitSupported':
+        c.reminders?.engine.scheduler.supportsClosedApp ?? false,
+    'bannerConfirmed': false,
+    'eventCounts': {
+      for (final state in [
+        'planned',
+        'scheduled',
+        'unknown',
+        'suppressed',
+        'cancelled',
+        'expired',
+        'snoozed',
+        'dismissed',
+      ])
+        state: c.reminders?.events.where((e) => e.state == state).length ?? 0,
+    },
+    'sessionTrace': c.diagnosticsConsent
+        ? c.reminders?.diagnostics.export() ?? []
+        : [],
+  },
   'errors': {
     'reminders': c.reminders?.error != null,
     'companion': c.companionError != null,
@@ -70,7 +110,7 @@ class _PrivacySectionState extends State<PrivacySection> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'DayMind không quảng cáo, theo dõi vị trí hay tự gửi báo lỗi. Công việc, ảnh và lịch sử thông báo lưu trong không gian riêng trên thiết bị. Firebase Emulator chỉ nhận dữ liệu khi bạn chọn đăng nhập/đồng bộ thử nghiệm; ảnh nhân vật không được đồng bộ.',
+            'DayMind không quảng cáo, theo dõi vị trí hay tự gửi báo lỗi. Công việc, ảnh và lịch sử thông báo lưu trong không gian riêng trên thiết bị. Máy chủ đồng bộ chỉ nhận dữ liệu khi bạn chọn đăng nhập/đồng bộ trong môi trường hiển thị ở phần Tài khoản; ảnh nhân vật không được đồng bộ.',
           ),
           const SizedBox(height: 12),
           const Text(
@@ -97,7 +137,7 @@ class _PrivacySectionState extends State<PrivacySection> {
                   },
             title: const Text('Cho phép xuất chẩn đoán khi tôi yêu cầu'),
             subtitle: const Text(
-              'Mặc định tắt. Chỉ gồm phiên bản, nền tảng, trạng thái quyền và cờ lỗi; không nội dung công việc, tài khoản, ảnh, đường dẫn hoặc thông báo lỗi thô.',
+              'Mặc định tắt. Gồm phiên bản, quyền/khay/trạng thái OS, số lượng trạng thái và mã lỗi cố định tối đa128 mục trong phiên; không nội dung công việc, tài khoản, ảnh, đường dẫn hoặc thông báo lỗi thô.',
             ),
           ),
           OutlinedButton(

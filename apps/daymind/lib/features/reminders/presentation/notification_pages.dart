@@ -5,10 +5,17 @@ import '../../tasks/data/database.dart';
 import '../../tasks/presentation/task_editor.dart';
 import '../application/reminder_coordinator.dart';
 import '../domain/reminder.dart';
+import '../../../platform/window_lifecycle.dart';
+import '../../../platform/notification_scheduler.dart';
 
 class NotificationSettingsSection extends StatelessWidget {
-  const NotificationSettingsSection({super.key, required this.reminders});
+  const NotificationSettingsSection({
+    super.key,
+    required this.reminders,
+    this.window,
+  });
   final ReminderCoordinator reminders;
+  final WindowLifecycle? window;
   Future<void> _run(BuildContext context, Future<void> action) async {
     try {
       await action;
@@ -38,6 +45,10 @@ class NotificationSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prefs = reminders.preferences;
+    final scheduler = reminders.engine.scheduler;
+    final osSetting = scheduler is PlatformNotificationScheduler
+        ? scheduler.osSetting
+        : window?.notificationSetting;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -199,10 +210,25 @@ class NotificationSettingsSection extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               reminders.engine.scheduler.supportsClosedApp
-                  ? 'Android dùng lịch nhắc không chính xác tuyệt đối; hệ điều hành có thể trì hoãn. Không yêu cầu quyền báo thức chính xác hoặc bỏ qua tiết kiệm pin.'
-                  : 'Windows tiếp tục nhắc khi DayMind còn chạy trong khay. Chọn Thoát hẳn sẽ dừng nhắc; DayMind không tự khởi động cùng Windows.',
+                  ? 'Android dùng lịch nhắc không chính xác tuyệt đối; hệ điều hành có thể trì hoãn. Không yêu cầu quyền báo thức chính xác hoặc bỏ qua tiết kiệm pin. Buộc dừng (Force stop) trong cài đặt Android sẽ chặn nhắc cho tới khi mở lại app.'
+                  : '${window?.notificationLifetime ?? 'Windows chỉ tiếp tục nhắc khi DayMind còn chạy trong khay.'} Thoát hẳn, kết thúc tiến trình, đăng xuất hoặc khởi động lại: không có nhắc nền. DayMind không tự khởi động cùng Windows. Khi app đang ở trước màn hình, lời nhắc hiện trong app; hệ điều hành có thể không hiện banner khi Không làm phiền.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (window != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Quyền thông báo Windows: ${switch (osSetting) {
+                  0 => 'được phép',
+                  1 || 2 || 3 || 4 => 'đang bị chặn bởi cài đặt hoặc chính sách hệ điều hành',
+                  _ => 'chưa xác minh được',
+                }}. Gửi thành công không xác nhận banner đã hiện.',
+              ),
+              OutlinedButton(
+                onPressed: () =>
+                    _run(context, window!.openNotificationSettings()),
+                child: const Text('Mở cài đặt thông báo Windows'),
+              ),
+            ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => _run(context, reminders.test()),

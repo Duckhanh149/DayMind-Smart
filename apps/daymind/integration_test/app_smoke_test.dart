@@ -4,6 +4,8 @@ import 'companion_fixtures.dart';
 import 'animated_companion_probe.dart';
 import 'account_artwork_probe.dart';
 import 'backup_probe.dart';
+import 'resource_probe.dart';
+import 'windows_notification_probe.dart';
 import 'android_sqlite_probe.dart';
 
 import 'dart:io';
@@ -47,6 +49,17 @@ void main() {
     debugPrint(
       'SECURE_STORAGE_POC: native encrypted write/read/replace/delete passed.',
     );
+    final scoped = NativeSessionStore(namespace: 'production.daymind-ci.');
+    final legacySession = await secure.get('session');
+    await scoped.set('session', probe);
+    expect(await scoped.get('session'), probe);
+    await scoped.remove('session');
+    expect(await scoped.get('session'), isNull);
+    expect(await secure.get('session'), legacySession);
+    debugPrint(
+      'SCOPED_SESSION_POC: native encrypted backend isolation passed.',
+    );
+
     await tester.tap(find.byKey(const Key('add-task')));
     await tester.pumpAndSettle();
     final title = 'Native smoke ${DateTime.now().millisecondsSinceEpoch}';
@@ -81,6 +94,7 @@ void main() {
       debugPrint(
         'TRAY_POC: WM_CLOSE hides, process stays active, restore succeeds.',
       );
+      await windowsNotificationProbe(tester, controller);
     }
     final now = controller.now();
     final recurring = await controller.save(
@@ -288,6 +302,7 @@ void main() {
         ),
       );
       await androidSqliteProbe(tester, host);
+      await resourceProbe(tester, host);
       await backupProbe(tester, host);
       await service.sync();
       expect(service.pendingCount, 0);

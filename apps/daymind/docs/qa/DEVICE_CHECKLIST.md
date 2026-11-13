@@ -1,3 +1,5 @@
+> Lượt sửa0.8.0 đang kiểm chứng. Có [hướng dẫn/script đo trên thiết bị thật](../RESOURCE_AND_DEVICE_ACCEPTANCE.md); chưa có máy thật kết nối nên không đổi các mục đó thành PASS.
+
 # Nghiệm thu thiết bị và bản ký — đang chờ
 
 Các cổng phần mềm tự động 0–9 đã đạt tại nguồn 8372826a; giai đoạn 8 dùng raster fallback, Live2D vẫn tắt. Bằng chứng trong [PHASE_STATUS](../PHASE_STATUS.md) và [PHASE9_NATIVE_837](PHASE9_NATIVE_837.json). CI Windows Server và Android emulator không chứng minh hành vi trên điện thoại OEM, máy yếu hoặc Windows10/11 của người dùng. Các mục bên dưới **chưa chạy trên phần cứng đích**. Chỉ đánh dấu đạt khi thực sự chạy, ghi OS/kiến trúc, phiên bản app/commit, giờ dự kiến/thực tế và bằng chứng đã bỏ thông tin riêng tư. Không ghi mật khẩu, token, tên công việc thật hoặc đường dẫn cá nhân.

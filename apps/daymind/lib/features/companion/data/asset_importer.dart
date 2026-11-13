@@ -135,7 +135,10 @@ class StaticAssetImporter {
         bytes[1] == 216) {
       return 'jpeg';
     }
-    if (ext == '.bmp' && bytes.length >= 54 && bytes[0] == 66 && bytes[1] == 77) {
+    if (ext == '.bmp' &&
+        bytes.length >= 54 &&
+        bytes[0] == 66 &&
+        bytes[1] == 77) {
       return 'bmp';
     }
     if (ext == '.png' && png) {

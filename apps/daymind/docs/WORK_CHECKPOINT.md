@@ -1,3 +1,19 @@
+# Đang kiểm bản0.8.0+10 — 13/11/2026
+
+Base d731111e5c929e54f625a982dc077d53f94a6852, native/flutter-app/PR#1. Workspace ban đầu sạch; không worker khác. Automation đã tắt theo yêu cầu và giữ tắt. Giữ thay đổi local nếu chưa commit; không reset hard/merge main/release.
+
+Đã triển khai Windows ToastNotifier.Setting/SHQueryUserNotificationState thật, close→tray theo iconReady/trayEnabled, UI giới hạn full quit/reboot/Force stop và mở OS settings. Opt-in diagnostic128 enum-only/relative elapsed không titles/IDs/path/token/raw exceptions; accepted/history không đồng nghĩa thấy banner. Native hidden-window reminder probe mới chờ CI.
+
+Firebase mặc định offline, Emulator explicit demo/loopback; production HTTPS official origins, invalid config fail closed, HTTP redirects disabled. Auth response aud/iss/sub project checks không thay JWT signature validation server. Keystore/DPAPI, workspace và backup owner cách ly backend/project, không gửi dữ liệu thử lên cloud ngầm. Rules password-provider/owner/schema/size/tombstone. Docs FIREBASE_PRODUCTION.md + validator; chưa có project thật, chưa deploy production.
+
+Local full245 Flutter tests PASS, analyze sạch,27 Python guards PASS; Emulator expanded security rules +16 Dart real +7 AOT PASS. Evidence hardening-* trong /workspace/work/evidence. Native Windows compilation/query/hidden reminder, Android28 receiver cases và resource actual chưa chạy nguồn mới, không gán kết quả0.7.1 cho0.8.0.
+
+CI thêm120s animated Companion+real sync,120frameGIFimport,3validBMP>36MiB,large capture/encrypt/decrypt,real process CPU/RSS metrics. Test-only FFI clock_gettime/GetProcessTimes; metric scope Flutter debug process, không private Androidreminders process/low-end/release certification. Physical harnesses read-only và bảng nghiệm thu RESOURCE_AND_DEVICE_ACCEPTANCE.md; chưa thiết bị thật. Đã hỏi project Firebase và thiết bị, chưa nhận trả lời. Không hỏi hoặc ghi khóa/mật khẩu.
+
+Bước tiếp: publish nguồn expectedHEAD d731; chờ Native/Emulator CI, sửa failure thật; thu RESOURCE_SOAK_POC và WINDOWS_TRAY_NOTIFICATION_POC, kiểm artifact metadata/hash, cập nhật BUILD_STATUS/PHASE_STATUS/QA. Firebase live, AndroidOEM/battery/Doze/reboot, Windows10/11/DND/upgrade và kýproduction còn chặn ngoài môi trường. Live2D OFF. Không bật lại automation.
+
+---
+
 # Điểm tiếp tục DayMind — 12/11/2026
 
 ## Nguồn hiện tại — bản sửa preview đã sẵn sàng

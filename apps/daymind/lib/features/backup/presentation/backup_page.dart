@@ -102,7 +102,7 @@ class _BackupPageState extends State<BackupPage> {
       builder.takeBytes(),
       password.text,
     );
-    if (snapshot.owner != widget.host.account?.uid) {
+    if (snapshot.owner != widget.host.scopedBackupOwner) {
       throw const BackupFailure(
         'Hãy mở đúng tài khoản hoặc chế độ cục bộ đã tạo bản sao lưu này.',
       );

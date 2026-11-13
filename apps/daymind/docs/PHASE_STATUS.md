@@ -1,3 +1,11 @@
+# Bản0.8.0+10 đang kiểm — 13/11/2026
+
+Đã sửa Windows permission/lifecycle limits, diagnostic opt-in, Firebase production build configuration và namespace/security rules. Local245 Flutter tests/analyze/27 Python guards và Firebase Emulator security+16 Dart+7AOT đã đạt. **Native và đo tài nguyên nguồn mới đang chờ CI**; chưa có kết quả0.8.0 hoặc phát hành chính thức. Bằng chứng0.7.1 bên dưới là lịch sử.
+
+Firebase production thật/thiết bị AndroidOEM/Windows10/11/kýproduction chưa được cung cấp. Hướng dẫn [Firebase production](FIREBASE_PRODUCTION.md), [đo tài nguyên và nghiệm thu thật](RESOURCE_AND_DEVICE_ACCEPTANCE.md). Automation vẫn tắt, không merge main/Release. Windows chỉ nhắc khi tiến trình còn chạy (close→tray nếu khay sẵn sàng); quit/reboot không nhắc.
+
+---
+
 # Tiến độ DayMind — 12/11/2026
 
 ## Bản sửa0.7.1 đã qua cổng tự động

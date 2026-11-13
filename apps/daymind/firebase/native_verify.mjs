@@ -7,6 +7,7 @@ const device = process.platform === 'win32' ? 'windows' : 'emulator-5554';
 const args = process.platform === 'win32' ? ['tool/retry_native_assets.py', 'flutter', 'test',
   'integration_test/app_smoke_test.dart', '-d', device,
   '--dart-define=RUN_ACCOUNT_EMULATOR=true'] : ['tool/android_native_integration.py'];
+if (process.platform === 'win32' && process.env.DAYMIND_RESOURCE_SOAK === 'true') args.push('--dart-define=RUN_RESOURCE_SOAK=true', `--dart-define=DAYMIND_RESOURCE_SOAK_SECONDS=${process.env.DAYMIND_RESOURCE_SOAK_SECONDS || '120'}`);
 const result = spawnSync('python', args,
-  { cwd: root, stdio: 'inherit', env: process.env, shell: process.platform === 'win32' });
+  { cwd: root, stdio: 'inherit', env: process.env, timeout: 20*60*1000, shell: process.platform === 'win32' });
 process.exit(result.status === 0 && !result.error ? 0 : result.status || 1);

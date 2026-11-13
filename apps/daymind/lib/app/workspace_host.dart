@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 
 import '../features/account_sync/application/sync_service.dart';
 import '../features/account_sync/data/copy_workspace.dart';
+import '../features/account_sync/data/firebase_rest.dart';
 import '../features/account_sync/data/sync_store.dart';
 import '../features/account_sync/data/workspace_records.dart';
 import '../features/account_sync/domain/account.dart';
@@ -33,12 +34,32 @@ import '../features/backup/domain/backup_snapshot.dart';
 
 final workspaceHostProvider = Provider<WorkspaceHost?>((ref) => null);
 
-String workspacePath(String support, String? uid) => uid == null
-    ? support
-    : p.join(support, 'accounts', sha256.convert(utf8.encode(uid)).toString());
+String workspacePath(String support, String? uid, {String namespace = ''}) {
+  if (uid == null) return support;
+  if (namespace.isNotEmpty &&
+      (!RegExp(r'^[a-z0-9-]{1,64}$').hasMatch(namespace))) {
+    throw ArgumentError('Invalid backend namespace');
+  }
+  final owner = sha256.convert(utf8.encode(uid)).toString();
+  return namespace.isEmpty
+      ? p.join(support, 'accounts', owner)
+      : p.join(support, 'accounts', namespace, owner);
+}
 
 class WorkspaceHost extends ChangeNotifier {
-  WorkspaceHost(this.support, this.secure, this.auth, this.gateway);
+  WorkspaceHost(
+    this.support,
+    this.secure,
+    this.auth,
+    this.gateway, {
+    this.firebase,
+  });
+  final FirebaseEndpoints? firebase;
+  bool get syncConfigured => firebase?.enabled ?? true;
+  bool get isEmulator => firebase?.backend != FirebaseBackend.production;
+  String get accountNamespace => firebase?.accountNamespace ?? '';
+  String? get scopedBackupOwner =>
+      firebase?.backupOwner(account?.uid) ?? account?.uid;
   final Directory support;
   final NativeSessionStore secure;
   final AuthGateway auth;
@@ -76,8 +97,12 @@ class WorkspaceHost extends ChangeNotifier {
     await clearAndroidPickerCache();
     try {
       deviceId = await secure.installationId();
-      account = await secure.read();
+      account = syncConfigured ? await secure.read() : null;
+      if (account != null && firebase != null) {
+        firebase!.validateSessionProject(account!);
+      }
     } catch (_) {
+      account = null;
       deviceId = const Uuid().v4();
       sessionError = 'Chưa đọc được kho đăng nhập của hệ điều hành. Bạn vẫn dùng được dữ liệu cục bộ.';
     }
@@ -116,6 +141,7 @@ class WorkspaceHost extends ChangeNotifier {
     if (_refresh != null) return _refresh!;
     final f = () async {
       final next = await auth.refresh(s);
+      firebase?.validateSessionProject(next);
       if (next.uid != s.uid) {
         throw const AccountFailure(
           'owner_mismatch',
@@ -143,6 +169,7 @@ class WorkspaceHost extends ChangeNotifier {
       );
     }
     final next = await auth.signIn(email, password, create: create);
+    firebase?.validateSessionProject(next);
     await gateway.provision(next);
     final source = copyLocal
         ? (await WorkspaceRecords(
@@ -159,7 +186,7 @@ class WorkspaceHost extends ChangeNotifier {
     () => _backupOperation(
       restoring: false,
       action: (c) =>
-          BackupService.capture(c.repository, c.importer, account?.uid),
+          BackupService.capture(c.repository, c.importer, scopedBackupOwner),
     ),
   );
 
@@ -174,7 +201,7 @@ class WorkspaceHost extends ChangeNotifier {
           snapshot,
           c.repository,
           c.importer,
-          account?.uid,
+          scopedBackupOwner,
           companionSettings: companionSettings,
         );
         sync?.markLocalChange();
@@ -212,7 +239,11 @@ class WorkspaceHost extends ChangeNotifier {
         final zone = platformPaused
             ? await _scheduler!.initialize(
                 p.join(
-                  workspacePath(support.path, account?.uid),
+                  workspacePath(
+                    support.path,
+                    account?.uid,
+                    namespace: accountNamespace,
+                  ),
                   'daymind.sqlite',
                 ),
               )
@@ -273,7 +304,9 @@ class WorkspaceHost extends ChangeNotifier {
         'authDeleted': true,
       });
     }
-    final directory = Directory(workspacePath(support.path, current.uid));
+    final directory = Directory(
+      workspacePath(support.path, current.uid, namespace: accountNamespace),
+    );
     await _switch(null);
     if (await directory.exists()) await directory.delete(recursive: true);
   });
@@ -298,7 +331,9 @@ class WorkspaceHost extends ChangeNotifier {
     List<SyncRecord>? copy,
     bool persist = true,
   }) async {
-    final directory = Directory(workspacePath(support.path, next?.uid));
+    final directory = Directory(
+      workspacePath(support.path, next?.uid, namespace: accountNamespace),
+    );
     await directory.create(recursive: true);
     final path = p.join(directory.path, 'daymind.sqlite');
     final db = DaymindDatabase(NativeDatabase.createInBackground(File(path)));
@@ -372,7 +407,14 @@ class WorkspaceHost extends ChangeNotifier {
       if (old != null && _scheduler != null) {
         _scheduler!.onOpen = oldOpen;
         final zone = await _scheduler!.initialize(
-          p.join(workspacePath(support.path, account?.uid), 'daymind.sqlite'),
+          p.join(
+            workspacePath(
+              support.path,
+              account?.uid,
+              namespace: accountNamespace,
+            ),
+            'daymind.sqlite',
+          ),
         );
         await old.reminders?.resume(zone);
         if (sync != null) unawaited(sync!.resume());
@@ -400,6 +442,7 @@ class WorkspaceHost extends ChangeNotifier {
       await window!.configure(c.preferences.windowsTrayEnabled);
     }
     final scheduler = PlatformNotificationScheduler();
+    scheduler.diagnostics.enabled = c.diagnosticsConsent;
     _scheduler = scheduler;
     scheduler.onOpen = () {
       c.openNotifications();

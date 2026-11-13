@@ -56,7 +56,11 @@ class _AccountPageState extends State<AccountPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, update) => AlertDialog(
-          title: const Text('Xóa tài khoản thử nghiệm?'),
+          title: Text(
+            widget.host.isEmulator
+                ? 'Xóa tài khoản thử nghiệm?'
+                : 'Xóa tài khoản?',
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -75,8 +79,10 @@ class _AccountPageState extends State<AccountPage> {
                   obscureText: true,
                   autocorrect: false,
                   enableSuggestions: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Nhập lại mật khẩu thử nghiệm',
+                  decoration: InputDecoration(
+                    labelText: widget.host.isEmulator
+                        ? 'Nhập lại mật khẩu thử nghiệm'
+                        : 'Nhập lại mật khẩu',
                   ),
                   onChanged: (_) => update(() {}),
                 ),
@@ -124,19 +130,19 @@ class _AccountPageState extends State<AccountPage> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 16),
-          const Card(
+          Card(
             child: Padding(
               padding: EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Firebase Emulator · thử nghiệm',
+                    host.firebase?.label ?? 'Firebase Emulator · thử nghiệm',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Dùng email và mật khẩu thử, không dùng mật khẩu thật. Chưa kết nối Firebase chính thức. Trên Android Emulator, máy chủ chạy trên máy tính phát triển; trên Windows, máy chủ chạy trên chính máy đó. Dữ liệu cục bộ dùng được khi không có máy chủ.',
+                    host.firebase?.description ?? 'Chỉ dùng email/mật khẩu thử nghiệm. Dữ liệu cục bộ vẫn dùng được khi không có máy chủ.',
                   ),
                 ],
               ),
@@ -148,7 +154,7 @@ class _AccountPageState extends State<AccountPage> {
               child: Text(host.sessionError!),
             ),
           const SizedBox(height: 16),
-          if (account == null)
+          if (account == null && host.syncConfigured)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -158,7 +164,11 @@ class _AccountPageState extends State<AccountPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        create ? 'Tạo tài khoản thử' : 'Đăng nhập để đồng bộ',
+                        create
+                            ? (host.isEmulator
+                                  ? 'Tạo tài khoản thử'
+                                  : 'Tạo tài khoản')
+                            : 'Đăng nhập để đồng bộ',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 16),
@@ -167,8 +177,10 @@ class _AccountPageState extends State<AccountPage> {
                         controller: email,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.username],
-                        decoration: const InputDecoration(
-                          labelText: 'Email thử nghiệm',
+                        decoration: InputDecoration(
+                          labelText: host.isEmulator
+                              ? 'Email thử nghiệm'
+                              : 'Email',
                         ),
                         validator: (v) =>
                             v != null &&
@@ -244,7 +256,7 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               ),
             )
-          else ...[
+          else if (account != null) ...[
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),

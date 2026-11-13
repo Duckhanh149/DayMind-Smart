@@ -10,7 +10,11 @@ class FirestoreRestGateway implements SyncGateway {
   FirestoreRestGateway(this.endpoints, this.http);
   final FirebaseEndpoints endpoints;
   final JsonTransport http;
-  String _path(AuthSession s, String suffix) => '/users/${s.uid}$suffix';
+  String _path(AuthSession s, String suffix) {
+    endpoints.validateSessionProject(s);
+    return '/users/${s.uid}$suffix';
+  }
+
   String _name(AuthSession s, String suffix) =>
       '${endpoints.documentPrefix}${_path(s, suffix)}';
   Future<Map<String, dynamic>?> _get(AuthSession s, String suffix) =>

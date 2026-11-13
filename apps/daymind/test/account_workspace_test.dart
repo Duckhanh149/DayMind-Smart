@@ -13,6 +13,7 @@ import 'package:daymind_smart/app/workspace_host.dart';
 import 'package:daymind_smart/main.dart' show WorkspaceApplication;
 import 'package:daymind_smart/platform/secure_session_store.dart';
 import 'package:daymind_smart/features/account_sync/domain/account.dart';
+import 'package:daymind_smart/features/account_sync/data/firebase_rest.dart';
 import 'package:daymind_smart/features/account_sync/domain/sync_record.dart';
 import 'package:daymind_smart/features/account_sync/data/workspace_records.dart';
 import 'package:daymind_smart/features/tasks/domain/task.dart';
@@ -190,6 +191,34 @@ void main() {
           null,
         );
   });
+  test('a cached session for another project never activates production or loses local data', () async {
+    await host.controller!.save(TaskDraft(title: 'Retained local fixture'));
+    await host.shutdown();
+    host.dispose();
+    final secure = MemorySecure();
+    await secure.write(auth.account('wrongproject@example.invalid'));
+    host = WorkspaceHost(
+      dir,
+      secure,
+      auth,
+      cloud,
+      firebase: FirebaseEndpoints.production(
+        project: 'daymind-production',
+        apiKey: 'AIza${List.filled(35, 'a').join()}',
+      ),
+    );
+    await host.start();
+    expect(host.account, isNull);
+    expect(host.sync, isNull);
+    expect(
+      host.controller!.visibleTasks.any(
+        (t) => t.title == 'Retained local fixture',
+      ),
+      isTrue,
+    );
+    expect(host.sessionError, isNotNull);
+  });
+
   test('failed credential persistence restores usable local workspace and permits a later sign-in', () async {
     await host.controller!.save(
       const TaskDraft(title: 'Dữ liệu trước đăng nhập'),

@@ -9,6 +9,7 @@ import '../../tasks/domain/task.dart' as domain;
 import '../../assistant/domain/daily_assistant.dart' show localDay;
 import '../../../platform/notification_scheduler.dart';
 import '../domain/reminder.dart';
+import '../domain/notification_diagnostics.dart';
 import '../../companion/domain/companion.dart';
 import 'reminder_engine.dart';
 
@@ -21,6 +22,11 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     this.onCue,
     this.readTimezone,
   });
+  final _diagnostics = NotificationDiagnostics();
+  NotificationDiagnostics get diagnostics =>
+      engine.scheduler is PlatformNotificationScheduler
+      ? (engine.scheduler as PlatformNotificationScheduler).diagnostics
+      : _diagnostics;
   final ReminderEngine engine;
   final Future<List<domain.Task>> Function() getTasks;
   final Future<void> Function()? onNativeChange;
@@ -96,7 +102,8 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       await onNativeChange?.call();
       await refresh();
     } catch (e) {
-      error = '$e';
+      diagnostics.record(NotificationDiagnosticCode.pollFailed);
+      error = 'Chưa cập nhật được lịch nhắc. Kiểm tra quyền, múi giờ và kết nối dữ liệu trên thiết bị.';
       if (!_disposed) notifyListeners();
     }
   }
@@ -124,6 +131,12 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
       granted = await engine.scheduler.granted();
+      if (preferences.quietAt(engine.clock())) {
+        diagnostics.record(NotificationDiagnosticCode.quietHours);
+      }
+      if (!preferences.primaryDevice) {
+        diagnostics.record(NotificationDiagnosticCode.secondaryDevice);
+      }
       if (_disposed) return;
       final tasks = await getTasks();
       if (_disposed) return;
@@ -140,6 +153,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         for (final digest in digests) {
           if (_disposed) return;
           if (_foreground && _windowVisible) {
+            diagnostics.record(NotificationDiagnosticCode.foregroundRoute);
             _announce(
               CompanionCue(
                 CompanionEvent.dailyDigest,
@@ -160,6 +174,7 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
           ..sort((a, b) => b.priority.compareTo(a.priority));
         if (work.isNotEmpty && !_disposed) {
           if (_foreground && _windowVisible) {
+            diagnostics.record(NotificationDiagnosticCode.foregroundRoute);
             _announce(
               CompanionCue(
                 CompanionEvent.reminderDue,
@@ -195,7 +210,8 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
                 .initializationError
           : null;
     } catch (e) {
-      error = '$e';
+      diagnostics.record(NotificationDiagnosticCode.pollFailed);
+      error = 'Chưa cập nhật được lịch nhắc. Kiểm tra quyền, múi giờ và kết nối dữ liệu trên thiết bị.';
     } finally {
       _running = false;
       _idle?.complete();
@@ -285,7 +301,17 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> test() async {
+    diagnostics.record(NotificationDiagnosticCode.testRequested);
+    granted = await engine.scheduler.granted();
     if (!granted) {
+      if (engine.scheduler is PlatformNotificationScheduler &&
+          (engine.scheduler as PlatformNotificationScheduler)
+                  .permissionStatus ==
+              'unknown') {
+        throw const domain.ValidationException(
+          'Chưa xác minh được kênh thông báo. Mở cài đặt hệ thống và thử lại; có thể xuất chẩn đoán nếu bạn bật đồng ý.',
+        );
+      }
       throw const domain.ValidationException(
         'Hãy cho phép thông báo trong cài đặt trước.',
       );

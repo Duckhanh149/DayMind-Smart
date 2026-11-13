@@ -303,6 +303,7 @@ class WorkspaceController extends ChangeNotifier {
 
   void attachReminders(ReminderCoordinator coordinator) {
     reminders = coordinator;
+    coordinator.diagnostics.enabled = diagnosticsConsent;
     coordinator.addListener(notifyListeners);
   }
 
@@ -313,6 +314,7 @@ class WorkspaceController extends ChangeNotifier {
       'enabled': enabled,
     });
     diagnosticsConsent = enabled;
+    reminders?.diagnostics.enabled = enabled;
   }, localChange: false);
 
   Future<void> load({bool greet = true}) async {
@@ -327,6 +329,7 @@ class WorkspaceController extends ChangeNotifier {
     diagnosticsConsent =
         (await recurrence.records.get('privacy', 'diagnostics'))?['enabled'] ==
         true;
+    reminders?.diagnostics.enabled = diagnosticsConsent;
     if (greet) {
       final settings =
           reminders?.preferences ??

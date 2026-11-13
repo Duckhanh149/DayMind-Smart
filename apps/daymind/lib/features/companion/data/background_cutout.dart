@@ -36,7 +36,8 @@ Uint8List cutFlatBackground(Uint8List rgba, int width, int height) {
   void add(int p) {
     if (visited[p] != 0) return;
     visited[p] = 1;
-    if (rgba[p * 4 + 3] < 8 || (opaque.isNotEmpty && similar(p, opaque.first))) {
+    if (rgba[p * 4 + 3] < 8 ||
+        (opaque.isNotEmpty && similar(p, opaque.first))) {
       queue.add(p);
     }
   }

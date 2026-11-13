@@ -51,3 +51,7 @@ app.*.map.json
 test/previews/
 android/.kotlin/
 __pycache__/
+
+# Local Firebase client configuration; never package service-account keys.
+firebase.production.local.json
+*.service-account.json

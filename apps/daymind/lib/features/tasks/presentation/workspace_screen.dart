@@ -1141,7 +1141,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         const SizedBox(height: 20),
       ],
       if (controller.reminders != null)
-        NotificationSettingsSection(reminders: controller.reminders!),
+        NotificationSettingsSection(
+          reminders: controller.reminders!,
+          window: controller.window,
+        ),
       const SizedBox(height: 20),
       PrivacySection(controller: controller),
       const SizedBox(height: 20),
@@ -1149,7 +1152,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.7.1',
+          applicationVersion: '0.8.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),

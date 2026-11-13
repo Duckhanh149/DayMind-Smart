@@ -1,6 +1,9 @@
 #include "flutter_window.h"
 
 #include <optional>
+#include <roapi.h>
+#include <shellapi.h>
+#include <winrt/Windows.UI.Notifications.h>
 #include <flutter/standard_method_codec.h>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -8,6 +11,20 @@
 #include "secure_store.h"
 
 namespace {
+int ToastPermission() noexcept {
+  const HRESULT initialized = RoInitialize(RO_INIT_SINGLETHREADED);
+  int setting = -1;
+  try {
+    const auto notifier = winrt::Windows::UI::Notifications::ToastNotificationManager::CreateToastNotifier(L"dev.daymind.DayMindSMART");
+    setting = static_cast<int>(notifier.Setting());
+  } catch (...) { /* Unknown is not permission granted; no raw error/path. */ }
+  if (SUCCEEDED(initialized)) RoUninitialize();
+  return setting;
+}
+int NotificationState() noexcept {
+  QUERY_USER_NOTIFICATION_STATE state = QUNS_NOT_PRESENT;
+  return SUCCEEDED(SHQueryUserNotificationState(&state)) ? static_cast<int>(state) : -1;
+}
 constexpr UINT kTrayCallback = WM_APP + 71;
 constexpr UINT kOpenDayMind = 801;
 constexpr UINT kQuitDayMind = 802;
@@ -82,6 +99,10 @@ bool FlutterWindow::OnCreate() {
       result->Success(flutter::EncodableValue(WindowState()));
     } else if (call.method_name() == "show") {
       RestoreFromTray();result->Success(flutter::EncodableValue(WindowState()));
+    } else if (call.method_name() == "openNotificationSettings") {
+      const auto launched = reinterpret_cast<INT_PTR>(ShellExecuteW(GetHandle(), L"open", L"ms-settings:notifications", nullptr, nullptr, SW_SHOWNORMAL));
+      if (launched <= 32) { result->Error("SETTINGS_UNAVAILABLE", "Cannot open notification settings."); }
+      else { result->Success(); }
     } else if (call.method_name() == "quit") {
       tray_enabled_ = false;result->Success();PostMessageW(GetHandle(), WM_CLOSE, 0, 0);
     } else { result->NotImplemented(); }
@@ -125,7 +146,10 @@ void FlutterWindow::OnDestroy() {
 flutter::EncodableMap FlutterWindow::WindowState() {
   return {{flutter::EncodableValue("visible"), flutter::EncodableValue(IsWindowVisible(GetHandle()) != FALSE)},
           {flutter::EncodableValue("trayEnabled"), flutter::EncodableValue(tray_enabled_)},
-          {flutter::EncodableValue("iconReady"), flutter::EncodableValue(tray_added_)}};
+          {flutter::EncodableValue("iconReady"), flutter::EncodableValue(tray_added_)},
+          {flutter::EncodableValue("notificationSetting"), flutter::EncodableValue(ToastPermission())},
+          {flutter::EncodableValue("notificationState"), flutter::EncodableValue(NotificationState())},
+          {flutter::EncodableValue("deliveryAfterExit"), flutter::EncodableValue(false)}};
 }
 
 bool FlutterWindow::ConfigureTray(bool enabled) {

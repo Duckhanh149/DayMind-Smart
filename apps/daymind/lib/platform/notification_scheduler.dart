@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import '../features/reminders/domain/notification_diagnostics.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -9,6 +11,13 @@ import '../features/reminders/domain/reminder.dart';
 import '../features/companion/domain/companion.dart';
 
 class PlatformNotificationScheduler implements NotificationScheduler {
+  PlatformNotificationScheduler({NotificationDiagnostics? diagnostics})
+    : diagnostics = diagnostics ?? NotificationDiagnostics();
+  final NotificationDiagnostics diagnostics;
+  static const windowChannel = MethodChannel('daymind/window');
+  String permissionStatus = 'unknown';
+  int? osSetting, osState;
+  bool get ready => _ready;
   static const channel = MethodChannel('daymind/reminders');
   final plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
@@ -42,6 +51,11 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   @override
   bool get supportsClosedApp => Platform.isAndroid;
   Future<String> initialize(String databasePath) async {
+    _ready = false;
+    initializationError = null;
+    permissionStatus = 'unknown';
+    osSetting = null;
+    osState = null;
     tzdata.initializeTimeZones();
     var timezone = 'UTC';
     try {
@@ -50,6 +64,7 @@ class PlatformNotificationScheduler implements NotificationScheduler {
       timezone = 'UTC';
       initializationError = 'Chưa xác định được múi giờ thiết bị. Kiểm tra múi giờ hệ thống và mở lại ứng dụng.';
       // With an unknown local zone, keep reminders disabled until a valid zone is selected.
+      diagnostics.record(NotificationDiagnosticCode.timezoneUnavailable);
       return '';
     }
     if (Platform.isAndroid) {
@@ -73,8 +88,8 @@ class PlatformNotificationScheduler implements NotificationScheduler {
         if (await channel.invokeMethod<bool>('consumeOpen') ?? false) {
           onOpen?.call();
         }
-      } catch (e) {
-        initializationError = 'Chưa khởi tạo được thông báo: $e';
+      } catch (_) {
+        initializationError = 'Chưa khởi tạo được thông báo Android. Kiểm tra quyền và mở lại ứng dụng.';
       }
     } else if (Platform.isWindows) {
       try {
@@ -103,11 +118,16 @@ class PlatformNotificationScheduler implements NotificationScheduler {
           initializationError =
               'Hệ điều hành chưa khởi tạo được kênh thông báo.';
         }
-      } catch (e) {
+      } catch (_) {
         _ready = false;
-        initializationError = 'Chưa khởi tạo được thông báo Windows: $e';
+        initializationError = 'Chưa khởi tạo được thông báo Windows. Kiểm tra cài đặt thông báo và mở lại ứng dụng.';
       }
     }
+    diagnostics.record(
+      _ready
+          ? NotificationDiagnosticCode.initialized
+          : NotificationDiagnosticCode.initializationFailed,
+    );
     return timezone;
   }
 
@@ -115,9 +135,48 @@ class PlatformNotificationScheduler implements NotificationScheduler {
   Future<bool> granted() async {
     if (!_ready) return false;
     if (Platform.isAndroid) {
-      return await channel.invokeMethod<bool>('granted') ?? false;
+      final allowed = await channel.invokeMethod<bool>('granted') ?? false;
+      permissionStatus = allowed ? 'granted' : 'denied';
+      diagnostics.record(
+        allowed
+            ? NotificationDiagnosticCode.permissionGranted
+            : NotificationDiagnosticCode.permissionDenied,
+      );
+      return allowed;
     }
-    return Platform.isWindows;
+    if (Platform.isWindows) {
+      try {
+        final state = await windowChannel.invokeMapMethod<String, dynamic>(
+          'state',
+        );
+        final setting = state?['notificationSetting'],
+            focus = state?['notificationState'];
+        osSetting = setting is int && setting >= 0 && setting <= 4
+            ? setting
+            : null;
+        osState = focus is int && focus >= 1 && focus <= 7 ? focus : null;
+        permissionStatus = osSetting == null
+            ? 'unknown'
+            : osSetting == 0
+            ? 'granted'
+            : 'denied';
+      } catch (_) {
+        permissionStatus = 'unknown';
+        osSetting = null;
+        osState = null;
+      }
+      diagnostics.record(
+        permissionStatus == 'granted'
+            ? NotificationDiagnosticCode.permissionGranted
+            : permissionStatus == 'denied'
+            ? NotificationDiagnosticCode.permissionDenied
+            : NotificationDiagnosticCode.permissionUnknown,
+        setting: osSetting,
+        state: osState,
+      );
+      return permissionStatus == 'granted';
+    }
+    return false;
   }
 
   @override
@@ -133,6 +192,9 @@ class PlatformNotificationScheduler implements NotificationScheduler {
 
   Future<void> openSettings() async {
     if (Platform.isAndroid) await channel.invokeMethod<void>('openSettings');
+    if (Platform.isWindows) {
+      await windowChannel.invokeMethod<void>('openNotificationSettings');
+    }
   }
 
   Future<void> deactivate() async {
@@ -179,20 +241,31 @@ class PlatformNotificationScheduler implements NotificationScheduler {
     required String body,
     String? eventKey,
   }) async {
-    if (Platform.isAndroid) {
-      await channel.invokeMethod<void>('test', {'title': title, 'body': body});
-    } else if (Platform.isWindows && _ready) {
-      await plugin.show(
-        id: id,
-        title: title,
-        body: body,
-        payload: eventKey,
-        notificationDetails: NotificationDetails(
-          windows: WindowsNotificationDetails(
-            audio: WindowsNotificationAudio.silent(),
+    diagnostics.record(NotificationDiagnosticCode.osAttempt);
+    try {
+      if (!_ready) throw StateError('Thông báo chưa sẵn sàng.');
+      if (Platform.isAndroid) {
+        await channel.invokeMethod<void>('test', {
+          'title': title,
+          'body': body,
+        });
+      } else if (Platform.isWindows && _ready) {
+        await plugin.show(
+          id: id,
+          title: title,
+          body: body,
+          payload: eventKey,
+          notificationDetails: NotificationDetails(
+            windows: WindowsNotificationDetails(
+              audio: WindowsNotificationAudio.silent(),
+            ),
           ),
-        ),
-      );
+        );
+      }
+      diagnostics.record(NotificationDiagnosticCode.osAccepted);
+    } catch (_) {
+      diagnostics.record(NotificationDiagnosticCode.osFailed);
+      rethrow;
     }
   }
 }

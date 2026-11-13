@@ -5,9 +5,28 @@ class WindowLifecycle extends ChangeNotifier {
   static const channel = MethodChannel('daymind/window');
   bool visible = true, iconReady = false, trayEnabled = false;
   String? error;
+  int? notificationSetting, notificationState;
+  bool get keepsRunningOnClose => trayEnabled && iconReady;
+  String get notificationLifetime => keepsRunningOnClose
+      ? 'Đóng cửa sổ (X): DayMind thu vào khay và tiếp tục nhắc khi máy đang chạy.'
+      : 'Khay hệ thống đang tắt hoặc chưa sẵn sàng: đóng cửa sổ sẽ thoát và dừng nhắc.';
+  Future<void> openNotificationSettings() =>
+      channel.invokeMethod<void>('openNotificationSettings');
   void Function(bool)? onVisibility;
   void _state(Map<dynamic, dynamic>? value) {
     if (value == null) return;
+    notificationSetting =
+        value['notificationSetting'] is int &&
+            (value['notificationSetting'] as int) >= 0 &&
+            (value['notificationSetting'] as int) <= 4
+        ? value['notificationSetting'] as int
+        : null;
+    notificationState =
+        value['notificationState'] is int &&
+            (value['notificationState'] as int) >= 1 &&
+            (value['notificationState'] as int) <= 7
+        ? value['notificationState'] as int
+        : null;
     visible = value['visible'] == true;
     iconReady = value['iconReady'] == true;
     trayEnabled = value['trayEnabled'] == true;
