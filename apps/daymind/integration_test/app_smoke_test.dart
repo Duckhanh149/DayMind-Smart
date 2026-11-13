@@ -36,11 +36,13 @@ void main() {
   testWidgets('native startup and durable task creation', (tester) async {
     // FLUTTER_TEST otherwise makes defaultTargetPlatform Android on Windows,
     // causing the notification plugin to select the wrong platform adapter.
-    final previousPlatform = debugDefaultTargetPlatformOverride;
-    debugDefaultTargetPlatformOverride = Platform.isWindows
-        ? TargetPlatform.windows
-        : TargetPlatform.android;
-    addTearDown(() => debugDefaultTargetPlatformOverride = previousPlatform);
+    if (kDebugMode) {
+      final previousPlatform = debugDefaultTargetPlatformOverride;
+      debugDefaultTargetPlatformOverride = Platform.isWindows
+          ? TargetPlatform.windows
+          : TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = previousPlatform);
+    }
     debugPrint('NATIVE_INTEGRATION_STAGE: opening workspace.');
     await app.main();
     debugPrint('NATIVE_INTEGRATION_STAGE: workspace opened.');

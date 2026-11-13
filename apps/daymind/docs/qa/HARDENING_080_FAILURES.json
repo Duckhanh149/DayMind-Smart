@@ -34,6 +34,17 @@
         "failure": "Native notification adapter selection: FLUTTER_TEST defaults defaultTargetPlatform to Android",
         "fix": "Test selects actual OS platform, never overrides permission/OS quiet state"
       }
+    },
+    {
+      "source": "79eab1868d0598e7f91c8894958c8f58906bed2f",
+      "run": 43425558511,
+      "windows": {
+        "job": 131885991578,
+        "releaseBuild": "passed",
+        "profileBuild": "passed",
+        "failure": "Debug-only platform override setter invoked in profile before app startup",
+        "fix": "Guard override with kDebugMode; replace debugDisposed gate with runtime Image.clone rejection, retaining disposal verification"
+      }
     }
   ]
 }

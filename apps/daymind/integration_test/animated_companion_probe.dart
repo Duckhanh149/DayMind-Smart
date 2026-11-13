@@ -178,7 +178,12 @@ Future<PreparedCharacterAnimation> maximumAtlasProbe(
       peak = peak < ProcessInfo.currentRss ? ProcessInfo.currentRss : peak;
       await closeProbeDialog(tester, route);
       expect(frames, findsNothing);
-      expect(paint.atlas.debugDisposed, isTrue);
+      // clone() explicitly rejects disposed handles in every build mode;
+      // debugDisposed is unavailable in AOT profile.
+      expect(() {
+        final unexpected = paint.atlas.clone();
+        unexpected.dispose(); // Avoid leaking a handle when the gate fails.
+      }, throwsStateError);
     }
     expect(
       peak - before,
