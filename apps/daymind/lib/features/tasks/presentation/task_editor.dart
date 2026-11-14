@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/controller.dart';
+import '../../reminders/domain/reminder.dart';
+import '../../reminders/presentation/reminder_editor.dart';
 import '../domain/task.dart';
+import '../../recurrence/domain/recurrence.dart';
+import '../../recurrence/application/recurrence_service.dart';
+import '../../recurrence/presentation/recurrence_editor.dart';
+
+import 'package:timezone/timezone.dart' as tz;
 
 const priorityLabels = ['Thấp', 'Vừa', 'Cao'];
 const statusLabels = ['Cần làm', 'Đang làm', 'Đã hoàn thành', 'Đã hủy'];
-String dateLabel(DateTime value) {
-  final date = value.toLocal();
+String dateLabel(DateTime value, {bool local = true}) {
+  final date = local ? value.toLocal() : value;
   return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} · ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 }
 
@@ -41,6 +48,26 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
       end = widget.task?.scheduledEndAt;
   bool saving = false;
   String? error;
+  TaskReminderConfig? reminderConfig;
+  RepeatChange? repeatChange;
+  late final initialRule = ref
+      .read(workspaceProvider)
+      .recurrence
+      .rule(widget.task?.recurrenceRuleId);
+  String get editorZone {
+    final value =
+        repeatChange?.spec?.zone ??
+        initialRule?.spec.zone ??
+        ref.read(workspaceProvider).reminders?.preferences.timezoneId ??
+        'UTC';
+    try {
+      zoneLocation(value);
+      return value;
+    } catch (_) {
+      return initialRule?.spec.zone ?? 'UTC';
+    }
+  }
+
   @override
   void dispose() {
     title.dispose();
@@ -49,7 +76,10 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
   }
 
   Future<DateTime?> pick(DateTime? initial) async {
-    final local = (initial ?? DateTime.now()).toLocal();
+    final local = tz.TZDateTime.from(
+      initial ?? DateTime.now(),
+      zoneLocation(editorZone),
+    );
     final date = await showDatePicker(
       context: context,
       initialDate: local,
@@ -62,17 +92,15 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
       initialTime: TimeOfDay.fromDateTime(local),
     );
     if (time == null) return initial;
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    ).toUtc();
+    return resolveWall(editorZone, dateKey(date), time.hour * 60 + time.minute);
   }
 
   Future<void> save() async {
     if (saving) return;
+    final scope = widget.task?.occurrenceId == null
+        ? EditScope.one
+        : await chooseEditScope(context, scheduleChanged: repeatChange != null);
+    if (scope == null || !mounted) return;
     setState(() {
       saving = true;
       error = null;
@@ -92,6 +120,9 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
               scheduledEndAt: end,
             ),
             existing: widget.task,
+            notifications: reminderConfig,
+            repetition: repeatChange,
+            scope: scope,
           );
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -127,7 +158,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                   },
             icon: const Icon(Icons.event_outlined, size: 18),
             label: Text(
-              '$label: ${value == null ? 'Chưa đặt' : dateLabel(value)}',
+              '$label: ${value == null ? 'Chưa đặt' : dateLabel(tz.TZDateTime.from(value, zoneLocation(editorZone)), local: false)}',
             ),
           ),
         ),
@@ -194,7 +225,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                       const Padding(
                         padding: EdgeInsets.only(bottom: 12),
                         child: Text(
-                          'Không bắt buộc đặt hạn. Phiên bản này chưa bật nhắc việc tự động.',
+                          'Không bắt buộc đặt hạn. Bạn có thể tùy chỉnh hoặc tắt nhắc cho từng việc.',
                           style: TextStyle(fontSize: 12),
                         ),
                       ),
@@ -213,6 +244,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                             ),
                           ),
                           DropdownButtonFormField<TaskPriority>(
+                            isExpanded: true,
                             initialValue: priority,
                             decoration: const InputDecoration(
                               labelText: 'Ưu tiên',
@@ -256,6 +288,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<TaskStatus>(
+                            isExpanded: true,
                             initialValue: status,
                             decoration: const InputDecoration(
                               labelText: 'Trạng thái',
@@ -282,6 +315,41 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                               style: TextStyle(fontSize: 12),
                             ),
                           ),
+                          RecurrenceEditor(
+                            initial: widget.task?.detached == true
+                                ? null
+                                : initialRule?.spec,
+                            date: tz.TZDateTime.from(
+                              start ?? due ?? controller.now(),
+                              zoneLocation(editorZone),
+                            ),
+                            zone: editorZone,
+                            onChanged: (value) =>
+                                setState(() => repeatChange = value),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Giờ đang nhập theo $editorZone',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          if (controller.reminders != null)
+                            ReminderEditor(
+                              engine: controller.reminders!.engine,
+                              task: Task(
+                                id: widget.task?.id ?? 'new',
+                                seriesId: widget.task?.seriesId,
+                                recurrenceRuleId: widget.task?.recurrenceRuleId,
+                                title: title.text,
+                                priority: priority,
+                                status: status,
+                                dueAt: due,
+                                scheduledStartAt: start,
+                                scheduledEndAt: end,
+                                createdAt: DateTime.now(),
+                                updatedAt: DateTime.now(),
+                              ),
+                              onChanged: (value) => reminderConfig = value,
+                            ),
                         ],
                       ),
                       if (warning != null)

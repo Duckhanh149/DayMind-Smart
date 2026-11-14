@@ -4,12 +4,19 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val productionSigning = System.getenv("DAYMIND_REQUIRE_RELEASE_SIGNING") == "true"
+val signingVariables = listOf("DAYMIND_ANDROID_KEYSTORE_PATH", "DAYMIND_ANDROID_STORE_PASSWORD", "DAYMIND_ANDROID_KEY_ALIAS", "DAYMIND_ANDROID_KEY_PASSWORD")
+if (productionSigning && signingVariables.any { System.getenv(it).isNullOrBlank() }) {
+    throw GradleException("Production signing configuration is incomplete. Configure GitHub Actions secrets; do not put keys/passwords in source.")
+}
+
 android {
     namespace = "dev.daymind.daymind_smart"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -29,11 +36,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (productionSigning) {
+            create("production") {
+                storeFile = file(System.getenv("DAYMIND_ANDROID_KEYSTORE_PATH"))
+                storePassword = System.getenv("DAYMIND_ANDROID_STORE_PASSWORD")
+                keyAlias = System.getenv("DAYMIND_ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("DAYMIND_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Preview remains explicit. Production mode never falls back to a debug key.
+            signingConfig = signingConfigs.getByName(if (productionSigning) "production" else "debug")
+        }
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            it.testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
 }
@@ -46,4 +68,25 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { variant ->
+        (variant as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
+    }
+}
+
+// AGP host-test packaging consumes the assets directory that Flutter augments.
+// Declare the producer explicitly so Gradle validates the task graph.
+tasks.configureEach {
+    val variant = Regex("^package(.+)UnitTestForUnitTest$").matchEntire(name)
+        ?.groupValues?.get(1)
+    if (variant != null) dependsOn("copyFlutterAssets$variant")
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.core:core-ktx:1.17.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }

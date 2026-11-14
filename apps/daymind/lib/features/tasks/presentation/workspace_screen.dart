@@ -4,17 +4,32 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart'
+    show RenderAbstractViewport, RenderBox, MatrixUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/controller.dart';
-import '../../companion/domain/companion.dart';
+import '../../../app/workspace_host.dart';
+import '../../../platform/picker_cache.dart';
+import '../../backup/presentation/backup_page.dart';
+import '../../backup/presentation/privacy_section.dart';
+import '../../account_sync/presentation/account_page.dart';
 import '../../companion/presentation/companion_card.dart';
+import '../../companion/presentation/companion_settings.dart';
+import '../../companion/presentation/character_import_dialog.dart';
+import '../../reminders/presentation/notification_pages.dart';
 import '../domain/task.dart';
 import 'task_editor.dart';
+import '../../calendar/presentation/calendar_page.dart';
+import '../../assistant/domain/daily_assistant.dart';
+import '../../assistant/presentation/assistant_pages.dart';
+import '../../recurrence/presentation/recurrence_editor.dart';
 
 const pageLabels = {
   'today': 'Hôm nay',
+  'calendar': 'Lịch',
+  'analytics': 'Thống kê',
   'all': 'Tất cả công việc',
   'inbox': 'Hộp thư',
   'upcoming': 'Sắp tới',
@@ -22,9 +37,13 @@ const pageLabels = {
   'trash': 'Thùng rác',
   'companion': 'Companion',
   'settings': 'Cài đặt',
+  'notifications': 'Thông báo',
+  'backup': 'Sao lưu',
 };
 const pageIcons = {
   'today': Icons.wb_sunny_outlined,
+  'calendar': Icons.calendar_month_outlined,
+  'analytics': Icons.bar_chart_outlined,
   'all': Icons.grid_view_rounded,
   'inbox': Icons.inbox_outlined,
   'upcoming': Icons.event_outlined,
@@ -32,6 +51,8 @@ const pageIcons = {
   'trash': Icons.delete_outline,
   'companion': Icons.eco_outlined,
   'settings': Icons.settings_outlined,
+  'notifications': Icons.notifications_outlined,
+  'backup': Icons.backup_outlined,
 };
 
 class WorkspaceScreen extends ConsumerStatefulWidget {
@@ -43,22 +64,54 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   final search = TextEditingController();
+  final scaffoldKey = GlobalKey<ScaffoldState>();
   String? category;
   TaskPriority? priority;
   bool overdueOnly = false, importing = false;
-  double? companionSizePreview;
   late final Timer timer;
+  final libraryScroll = ScrollController();
+  final dialogueKey = GlobalKey();
+  bool get dialogueVisible {
+    if (ModalRoute.of(context)?.isCurrent == false) return false;
+    final box = dialogueKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    final viewport = RenderAbstractViewport.maybeOf(box);
+    final bounds = MatrixUtils.transformRect(
+      box.getTransformTo(viewport),
+      Offset.zero & box.size,
+    );
+    final clip =
+        viewport?.paintBounds ?? (Offset.zero & MediaQuery.sizeOf(context));
+    return clip.contains(bounds.center);
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.page == 'today') {
+        act(ref.read(workspaceProvider).overdueVisible());
+      }
+    });
     timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
   }
 
   @override
+  void didUpdateWidget(WorkspaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.page != widget.page && widget.page == 'today') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) act(ref.read(workspaceProvider).overdueVisible());
+      });
+    }
+  }
+
+  @override
   void dispose() {
     timer.cancel();
+    libraryScroll.dispose();
     search.dispose();
     super.dispose();
   }
@@ -76,9 +129,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       search.clear();
     });
     context.go('/$page');
-    if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
-      Navigator.pop(context);
-    }
+    scaffoldKey.currentState?.closeDrawer();
   }
 
   void notice(Object error) {
@@ -179,18 +230,24 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'daymind',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
+                const Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'daymind',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text('S M A R T', style: TextStyle(fontSize: 9)),
+                      ],
                     ),
-                    Text('S M A R T', style: TextStyle(fontSize: 9)),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -208,9 +265,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 for (final page in [
                   'today',
                   'all',
+                  'calendar',
+                  'analytics',
                   'inbox',
                   'upcoming',
                   'completed',
+                  'notifications',
                 ])
                   ListTile(
                     dense: true,
@@ -234,7 +294,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                         padding: EdgeInsets.only(left: 14),
                         child: Text(
                           'DANH MỤC',
-                          style: TextStyle(fontSize: 10, letterSpacing: 1),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -461,6 +525,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                   : null,
                             ),
                           ),
+                          if (task.occurrenceId != null)
+                            const Text(
+                              '↻ Lặp lại',
+                              style: TextStyle(fontSize: 11),
+                            ),
                           if (task.status != TaskStatus.todo)
                             Text(
                               statusLabels[task.status.index],
@@ -484,7 +553,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                     tooltip: 'Tùy chọn ${task.title}',
                     onSelected: (value) {
                       if (value == 'edit') showTaskEditor(context, task: task);
-                      if (value == 'delete') act(controller.delete(task));
+                      if (value == 'delete') {
+                        if (task.occurrenceId == null) {
+                          act(controller.delete(task));
+                        } else {
+                          chooseEditScope(context, deleting: true).then((
+                            scope,
+                          ) {
+                            if (scope != null) {
+                              act(controller.delete(task, scope: scope));
+                            }
+                          });
+                        }
+                      }
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(
@@ -511,7 +592,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         TaskView.values.where((v) => v.name == widget.page).firstOrNull ??
         TaskView.today;
     final items = filterTasks(
-      controller.tasks,
+      controller.visibleTasks,
       view: view,
       now: now,
       search: search.text,
@@ -519,22 +600,15 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       priority: priority,
       overdueOnly: overdueOnly,
     );
-    final today = filterTasks(
-      controller.tasks,
-      view: TaskView.today,
-      now: now,
-    ).length;
-    final completed = controller.tasks
-        .where(
-          (t) =>
-              t.deletedAt == null &&
-              t.status == TaskStatus.completed &&
-              t.completedAt != null &&
-              sameDay(t.completedAt!, now),
-        )
-        .length;
-    final late = controller.tasks.where((t) => t.overdue(now)).length;
-    final high = controller.tasks
+    final summary = DaySummary.calculate(
+      controller.visibleTasks,
+      now,
+      controller.reminders?.preferences.timezoneId ?? 'UTC',
+    );
+    final today = summary.open,
+        completed = summary.completed,
+        late = summary.overdue;
+    final high = controller.visibleTasks
         .where(
           (t) =>
               t.deletedAt == null &&
@@ -567,6 +641,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
         const SizedBox(height: 24),
         if (widget.page == 'today') ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => editDashboard(context, controller),
+              icon: const Icon(Icons.dashboard_customize_outlined),
+              label: const Text('Tùy chỉnh trang hôm nay'),
+            ),
+          ),
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth > 760 ? 4 : 2;
@@ -576,47 +658,53 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Cần làm hôm nay',
-                      today,
-                      Icons.wb_sunny_outlined,
-                      'Gồm việc đã quá hạn',
-                      () => navigate('today'),
+                  if (controller.dashboard.cards.contains('today'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Cần làm hôm nay',
+                        today,
+                        Icons.wb_sunny_outlined,
+                        'Gồm việc đã quá hạn',
+                        () => navigate('today'),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Đã xong hôm nay',
-                      completed,
-                      Icons.task_alt,
-                      'Ghi nhận mọi nỗ lực',
-                      () => navigate('completed'),
+                  if (controller.dashboard.cards.contains('completed'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Đã xong hôm nay',
+                        completed,
+                        Icons.task_alt,
+                        'Ghi nhận mọi nỗ lực',
+                        () => navigate('completed'),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Đang quá hạn',
-                      late,
-                      Icons.schedule,
-                      'Chọn một việc để tiếp tục',
-                      () => navigate('all', lateOnly: true),
+                  if (controller.dashboard.cards.contains('overdue'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Đang quá hạn',
+                        late,
+                        Icons.schedule,
+                        'Chọn một việc để tiếp tục',
+                        () => navigate('all', lateOnly: true),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: width,
-                    child: statistic(
-                      'Ưu tiên cao',
-                      high,
-                      Icons.flag_outlined,
-                      'Điều cần tập trung',
-                      () =>
-                          navigate('all', selectedPriority: TaskPriority.high),
+                  if (controller.dashboard.cards.contains('high'))
+                    SizedBox(
+                      width: width,
+                      child: statistic(
+                        'Ưu tiên cao',
+                        high,
+                        Icons.flag_outlined,
+                        'Điều cần tập trung',
+                        () => navigate(
+                          'all',
+                          selectedPriority: TaskPriority.high,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               );
             },
@@ -625,9 +713,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           if (controller.preferences.companionEnabled) ...[
             CompanionCard(
               controller: controller,
+              dialogueKey: dialogueKey,
               compact: MediaQuery.sizeOf(context).width < 600,
             ),
             const SizedBox(height: 24),
+          ],
+          if (controller.dashboard.cards.contains('suggestions')) ...[
+            FocusSuggestions(controller: controller),
+            const SizedBox(height: 16),
           ],
         ],
         TextField(
@@ -752,7 +845,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: ['png', 'webp'],
+        allowedExtensions: ['png', 'webp', 'gif', 'zip', 'jpg', 'jpeg', 'bmp'],
       );
       if (picked == null) return;
       if (picked.path == null) {
@@ -760,14 +853,25 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           'Không đọc được tệp đã chọn. Hãy chọn ảnh trên thiết bị.',
         );
       }
-      final name = await controller.importer.install(
-        File(picked.path!),
-        picked.name,
+      if (!mounted) return;
+      await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => CharacterImportDialog(
+          controller: controller,
+          source: File(picked.path!),
+          fileName: picked.name,
+        ),
       );
-      await controller.configure((prefs) => prefs.copyWith(assetName: name));
     } catch (error) {
       notice(error);
     } finally {
+      final cleaned = await clearAndroidPickerCache();
+      if (!cleaned && mounted) {
+        notice(
+          'Chưa dọn được bản tệp tạm của bộ chọn. Hãy mở lại ứng dụng để thử dọn cache.',
+        );
+      }
       if (mounted) setState(() => importing = false);
     }
   }
@@ -777,77 +881,78 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     if (names.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: names.indexed.map((entry) {
-          final (index, name) = entry;
-          return SizedBox(
-            width: 132,
-            child: Column(
-              children: [
-                SizedBox(
-                  width: 96,
-                  height: 96,
-                  child: Image(
-                    image: ResizeImage(
-                      FileImage(controller.importer.resolve(name)!),
-                      width: 128,
-                      height: 128,
-                      policy: ResizeImagePolicy.fit,
-                      allowUpscaling: false,
-                    ),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const MamMascot(),
-                  ),
-                ),
-                Text(
-                  'Nhân vật ${index + 1}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+      child: SizedBox(
+        key: const Key('companion-library'),
+        height: 196 + (MediaQuery.textScalerOf(context).scale(12) - 12) * 2,
+        child: Scrollbar(
+          controller: libraryScroll,
+          thumbVisibility: true,
+          child: ListView.builder(
+            controller: libraryScroll,
+            scrollDirection: Axis.horizontal,
+            itemExtent: 148,
+            itemCount: names.length,
+            itemBuilder: (_, index) {
+              final name = names[index];
+              return SizedBox(
+                width: 132,
+                child: Column(
                   children: [
-                    IconButton(
-                      tooltip: 'Chọn nhân vật ${index + 1}',
-                      icon: Icon(
-                        controller.preferences.assetName == name
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
+                    SizedBox(
+                      width: 96,
+                      height: 96,
+                      child: CompanionAssetImage(
+                        importer: controller.importer,
+                        name: name,
+                        decodeSize: controller.companionLayout.lowResource
+                            ? 64
+                            : 128,
                       ),
-                      onPressed: controller.busy
-                          ? null
-                          : () => act(
-                              controller.configure(
-                                (prefs) => prefs.copyWith(assetName: name),
-                              ),
-                            ),
                     ),
-                    IconButton(
-                      tooltip: 'Xóa nhân vật ${index + 1}',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: controller.busy
-                          ? null
-                          : () async {
-                              try {
-                                if (controller.preferences.assetName == name) {
-                                  await controller.configure(
-                                    (prefs) => prefs.copyWith(resetAsset: true),
-                                  );
-                                }
-                                await controller.importer.remove(name);
-                                if (mounted) setState(() {});
-                              } catch (error) {
-                                notice(error);
-                              }
-                            },
+                    Text(
+                      'Nhân vật ${index + 1}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Chọn nhân vật ${index + 1}',
+                          icon: Icon(
+                            controller.preferences.assetName == name
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                          ),
+                          onPressed: controller.busy
+                              ? null
+                              : () => act(
+                                  controller.configure(
+                                    (prefs) => prefs.copyWith(assetName: name),
+                                  ),
+                                ),
+                        ),
+                        IconButton(
+                          tooltip: 'Xóa nhân vật ${index + 1}',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: controller.busy
+                              ? null
+                              : () async {
+                                  try {
+                                    await controller.removeCompanionAsset(name);
+                                    if (mounted) setState(() {});
+                                  } catch (error) {
+                                    notice(error);
+                                  }
+                                },
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          );
-        }).toList(),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -869,92 +974,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CompanionCard(controller: controller),
+              CompanionCard(controller: controller, dialogueKey: dialogueKey),
               const SizedBox(height: 20),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Hiển thị Companion'),
-                        subtitle: const Text(
-                          'Chỉ trong ứng dụng. Không có âm thanh hoặc thông báo riêng.',
-                        ),
-                        value: controller.preferences.companionEnabled,
-                        onChanged: (value) => act(
-                          controller.configure(
-                            (prefs) => prefs.copyWith(companionEnabled: value),
-                          ),
-                        ),
-                      ),
-                      const Divider(),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<Personality>(
-                        initialValue: controller.preferences.personality,
-                        decoration: const InputDecoration(
-                          labelText: 'Tính cách',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: Personality.gentle,
-                            child: Text('Dịu dàng · Nhẹ nhàng động viên'),
-                          ),
-                          DropdownMenuItem(
-                            value: Personality.practical,
-                            child: Text('Thực tế · Ngắn gọn, rõ việc'),
-                          ),
-                          DropdownMenuItem(
-                            value: Personality.cheerful,
-                            child: Text('Vui vẻ · Ghi nhận bước tiến'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            act(
-                              controller.configure(
-                                (prefs) => prefs.copyWith(personality: value),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Kích thước trên máy tính: ${controller.preferences.companionSize.round()} dp',
-                      ),
-                      Slider(
-                        value:
-                            companionSizePreview ??
-                            controller.preferences.companionSize,
-                        min: 48,
-                        max: 112,
-                        divisions: 8,
-                        label:
-                            '${(companionSizePreview ?? controller.preferences.companionSize).round()} dp',
-                        onChanged: (value) =>
-                            setState(() => companionSizePreview = value),
-                        onChangeEnd: (value) async {
-                          await act(
-                            controller.configure(
-                              (prefs) => prefs.copyWith(companionSize: value),
-                            ),
-                          );
-                          if (mounted) {
-                            setState(() => companionSizePreview = null);
-                          }
-                        },
-                      ),
-                      const Text(
-                        'Trên màn hình nhỏ, Companion tự thu gọn còn 56 dp trong vùng riêng, nhường chỗ cho công việc.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              CompanionSettingsSection(controller: controller),
               const SizedBox(height: 20),
               Card(
                 child: Padding(
@@ -968,7 +990,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Chọn PNG/WebP tĩnh bạn có quyền sử dụng. Tối đa 4 MB và 2048 × 2048 px. Ảnh chỉ lưu cục bộ.',
+                        'PNG/WebP/JPEG/BMP tĩnh hoặc GIF/WebP động ≤16 MiB; ZIP DayMind ≤16 MiB. Ảnh tĩnh ≤4096², động ≤1024², tối đa 120 khung; thư viện ≤64 MiB. Chỉ dùng tài sản bạn có quyền sử dụng.',
                       ),
                       const SizedBox(height: 16),
                       OutlinedButton.icon(
@@ -992,7 +1014,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       characterLibrary(controller),
                       const SizedBox(height: 8),
                       const Text(
-                        'Mầm là nhân vật gốc của DayMind. Chưa bật hoạt ảnh, cửa sổ nổi trên desktop hoặc Live2D.',
+                        'Mầm là nhân vật gốc của DayMind. Hoạt ảnh dùng tệp bạn nhập; Companion nổi có trên Windows. Live2D chưa được bật.',
                         style: TextStyle(fontSize: 12),
                       ),
                     ],
@@ -1022,6 +1044,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               Text('Giao diện', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: controller.preferences.theme,
                 decoration: const InputDecoration(labelText: 'Chế độ màu'),
                 items: const [
@@ -1043,6 +1066,25 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 },
               ),
               const SizedBox(height: 20),
+              if (Platform.isWindows)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: controller.preferences.windowsTrayEnabled,
+                  title: const Text('Thu vào khay khi đóng cửa sổ'),
+                  subtitle: const Text(
+                    'DayMind tiếp tục nhắc trong khay. Menu khay có Mở DayMind và Thoát hẳn. Không tự khởi động cùng Windows.',
+                  ),
+                  onChanged: (value) => act(
+                    controller.configure(
+                      (prefs) => prefs.copyWith(windowsTrayEnabled: value),
+                    ),
+                  ),
+                ),
+              if (controller.window?.error != null)
+                Text(
+                  controller.window!.error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.eco_outlined),
@@ -1055,6 +1097,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ),
       ),
       const SizedBox(height: 20),
+      if (ref.read(workspaceHostProvider) != null) ...[
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.sync_rounded),
+            title: const Text('Tài khoản & đồng bộ'),
+            subtitle: const Text('Tùy chọn · Firebase Emulator'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => navigate('account'),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
       const Card(
         child: Padding(
           padding: EdgeInsets.all(20),
@@ -1067,22 +1121,38 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               ),
               SizedBox(height: 12),
               Text(
-                'Công việc và nhân vật lưu trong thư mục ứng dụng trên thiết bị. Không cần tài khoản; chưa có đồng bộ đám mây.',
+                'Công việc và nhân vật lưu trên thiết bị. Tài khoản và đồng bộ là tùy chọn. Mỗi tài khoản có không gian riêng; ảnh nhân vật không tự tải lên máy chủ.',
               ),
               SizedBox(height: 10),
               Text(
-                'Gỡ ứng dụng hoặc xóa dữ liệu có thể làm mất công việc. Chưa có sao lưu bằng mật khẩu. Nhắc việc, lịch lặp lại và đồng bộ sẽ được làm trong các giai đoạn tiếp theo.',
+                'Gỡ ứng dụng hoặc xóa dữ liệu có thể làm mất công việc chưa đồng bộ. Hãy tạo bản sao lưu có mật khẩu và giữ ở nơi an toàn.',
               ),
             ],
           ),
         ),
       ),
       const SizedBox(height: 20),
+      if (ref.read(workspaceHostProvider) != null) ...[
+        OutlinedButton.icon(
+          onPressed: () => navigate('backup'),
+          icon: const Icon(Icons.backup_outlined),
+          label: const Text('Sao lưu & khôi phục bằng mật khẩu'),
+        ),
+        const SizedBox(height: 20),
+      ],
+      if (controller.reminders != null)
+        NotificationSettingsSection(
+          reminders: controller.reminders!,
+          window: controller.window,
+        ),
+      const SizedBox(height: 20),
+      PrivacySection(controller: controller),
+      const SizedBox(height: 20),
       OutlinedButton(
         onPressed: () => showLicensePage(
           context: context,
           applicationName: 'DayMind SMART',
-          applicationVersion: '0.1.0',
+          applicationVersion: '0.8.0',
           applicationLegalese: 'Mầm — nhân vật gốc của DayMind',
         ),
         child: const Text('Thông tin & giấy phép mã nguồn mở'),
@@ -1092,14 +1162,56 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(workspaceProvider);
+    ref.listen<int>(workspaceProvider.select((c) => c.inAppSequence), (
+      _,
+      next,
+    ) {
+      final c = ref.read(workspaceProvider);
+      if (!c.preferences.companionEnabled ||
+          c.companionAnnouncementSequence != next ||
+          !{'today', 'companion'}.contains(widget.page) ||
+          !dialogueVisible) {
+        final message = c.inAppAnnouncement;
+        if (message != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              action: SnackBarAction(
+                label: 'Xem',
+                onPressed: () => navigate('notifications'),
+              ),
+            ),
+          );
+        }
+      }
+    });
     final wide = MediaQuery.sizeOf(context).width >= 1000;
-    final special = ['companion', 'settings'].contains(widget.page);
-    final content = widget.page == 'companion'
+    final special = [
+      'companion',
+      'settings',
+      'notifications',
+      'analytics',
+      'account',
+      'backup',
+    ].contains(widget.page);
+    final content =
+        widget.page == 'backup' && ref.read(workspaceHostProvider) != null
+        ? BackupPage(host: ref.read(workspaceHostProvider)!)
+        : widget.page == 'account' && ref.read(workspaceHostProvider) != null
+        ? AccountPage(host: ref.read(workspaceHostProvider)!)
+        : widget.page == 'companion'
         ? companionContent(controller)
         : widget.page == 'settings'
         ? settingsContent(controller)
+        : widget.page == 'notifications'
+        ? NotificationCenterPage(controller: controller)
+        : widget.page == 'analytics'
+        ? AnalyticsPage(controller: controller)
+        : widget.page == 'calendar'
+        ? CalendarPage(controller: controller)
         : taskContent(controller);
     final scaffold = Scaffold(
+      key: scaffoldKey,
       appBar: wide
           ? null
           : AppBar(
@@ -1108,6 +1220,18 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               actions: [
+                IconButton(
+                  onPressed: () => navigate('notifications'),
+                  icon: Badge(
+                    isLabelVisible:
+                        controller.reminders?.events.any(
+                          (e) => e.state == 'unknown' && !e.read,
+                        ) ??
+                        false,
+                    child: const Icon(Icons.notifications_outlined),
+                  ),
+                  tooltip: 'Thông báo',
+                ),
                 IconButton(
                   onPressed: () => navigate('settings'),
                   icon: const Icon(Icons.tune_rounded),
@@ -1152,28 +1276,29 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           : NavigationBar(
               selectedIndex: [
                 'today',
-                'all',
+                'calendar',
                 'upcoming',
-                'companion',
+                'analytics',
               ].indexOf(widget.page).clamp(0, 3),
-              onDestinationSelected: (index) =>
-                  navigate(['today', 'all', 'upcoming', 'companion'][index]),
+              onDestinationSelected: (index) => navigate(
+                ['today', 'calendar', 'upcoming', 'analytics'][index],
+              ),
               destinations: const [
                 NavigationDestination(
                   icon: Icon(Icons.wb_sunny_outlined),
                   label: 'Hôm nay',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.grid_view_rounded),
-                  label: 'Công việc',
+                  icon: Icon(Icons.calendar_month_outlined),
+                  label: 'Lịch',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.event_outlined),
                   label: 'Sắp tới',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.eco_outlined),
-                  label: 'Companion',
+                  icon: Icon(Icons.bar_chart_outlined),
+                  label: 'Thống kê',
                 ),
               ],
             ),
@@ -1185,7 +1310,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
             navigate('all'),
       },
-      child: scaffold,
+      child: Focus(autofocus: true, child: scaffold),
     );
   }
 }

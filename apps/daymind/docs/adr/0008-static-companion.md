@@ -1,0 +1,23 @@
+# ADR 0008 — Companion tĩnh và hồ sơ có thể chỉnh sửa
+
+Trạng thái: giai đoạn6 đạt cổng native Android/Windows và Emulator tại67c4a43 / CI42716570760,42716570825. Kết quả định lượng xem ../qa/PHASE6_RESOURCES.json.
+
+Mầm có bốn nét mặt vector gốc. PNG/WebP do người dùng nhập được xem trước sau kiểm tra rồi mới cài vào thư viện. Tính cách không phụ thuộc ảnh: hồ sơ chứa tên, ba giọng điệu, tối đa 18 mẫu lời thoại và ánh xạ sáu sự kiện sang biểu cảm. Chỉ chấp nhận biến `{name}`, `{task}`, `{summary}`; thay một lượt để giữ nguyên dấu ngoặc trong tên công việc. Tên tối đa 60 ký tự; mỗi mẫu tối đa 500 ký tự. Editor giữ bản nháp khi lỗi và kiểm tra hồ sơ gốc trong transaction để không ghi đè thay đổi đến từ đồng bộ.
+
+Engine nhận sự kiện từ thao tác hoặc Reminder Engine hiện có. Companion không tạo scheduler hay thông báo OS riêng. Một callback foreground có kiểu phân biệt nhắc việc/digest; khi nhân vật bị tắt hoặc ở trang khác, thông báo trong ứng dụng vẫn có đường hiển thị. Cooldown chung 30 giây; giờ yên lặng không phát lời thoại và dùng biểu cảm nghỉ tùy chỉnh. Gợi ý quá hạn chỉ chạy khi người dùng mở Hôm nay, tối đa một lần/ngày địa phương; dấu ngày lưu cục bộ để restart không lặp. Không có âm thanh tự động.
+
+Thẻ nằm trong luồng bố cục. Auto mặc định 80 dp; manual trái/phải và 40–144 dp. Điện thoại giới hạn 96 dp, chữ lớn giới hạn 56 dp; vùng hẹp chuyển sang cột. Không tạo lớp phủ lên FAB, bàn phím, dialog hoặc nút lưu. Low-resource giới hạn 56 dp, giải mã chân dung 128 px và cache ảnh 4 MiB (thông thường 256 px / 16 MiB); thumbnail thư viện giảm còn 64 px. Cache Flutter không phải toàn bộ RSS hoặc GPU memory.
+
+Nhập tĩnh: đúng extension và magic, tối đa 4 MiB/tệp, 2048×2048, đúng một frame, decode kiểm tra tối đa 256 px; không theo symlink. Thư viện tối đa 128 tệp/32 MiB. Cài/xóa tuần tự; tối đa bốn lượt nhập đang chờ, hash nội dung và rename staging nguyên tử. Nhập trùng không tốn thêm quota. Xóa ảnh dọn mọi tham chiếu chính/biểu cảm và cache; fallback vector luôn có sẵn. GIF/ZIP/Live2D vẫn bị từ chối ở giai đoạn này.
+
+Cloud chỉ nhận `companionProfile/primary`: tên, tính cách, templates và enum biểu cảm. Layout, low-resource, tên tệp và bytes nằm trong dữ liệu thiết bị; DTO từ chối trường ảnh/URL/đường dẫn. Hồ sơ chưa từng chỉnh không tự upload mặc định. Profile dùng outbox/CAS/conflict archive như dữ liệu khác, không chặn công việc khi xung đột. Chọn sao chép công việc local khi đăng nhập không tự sao chép hồ sơ/ảnh nhân vật; UI nêu phạm vi này.
+
+Kiểm chứng: unit/controller/UI phone 360/390 và desktop1440, chữ 100/200%; static WebP thực và WebP động bị từ chối, symlink/count/concurrent quota/preview; hai SQLite qua Firebase Emulator thật kiểm tra hội tụ và xung đột giữ hai phiên bản. Integration Android/Windows bổ sung `COMPANION_RESOURCE_POC`: tạo bốn ảnh2048², đổi24 lần với decode128, đo RSS trước/đỉnh mẫu, cache và thời gian. Chỉ đánh dấu cổng đo native sau khi có log CI; runner debug và emulator không thay thế máy cấu hình thấp thật.
+
+Tinh chỉnh probe: PNG indexed gốc được tạo offline để tránh cộng GPU surface dùng tạo fixture vào RSS renderer. Báo cáo tách RSS trước/sau nhập/sau dọn và thời gian nhập/đổi ảnh. Native phải xác nhận RawImage có frame≤128px và chân dung nằm trong viewport. Không dùng liveImageCount làm bằng chứng hiển thị vì clearLiveImages xóa bộ đếm dù widget còn sở hữu frame; hai ca headless tái hiện được sự khác biệt này.
+
+Tối ưu sau số đo native: nguồn giữ nguyên byte/hash; mọi Image UI dùng derivative PNG≤256px trong `.previews`, low-resource giải mã tiếp128px/chân dung hoặc64px/thumbnail. Quota32MiB tính cả derivative; cache cũ tái tạo một lượt tuần tự, xóa ảnh dọn cả nguồn và cache. Không tải ảnh gốc lớn trong menu lựa chọn. Thư viện cuộn ngang với ListView.builder để chỉ dựng vùng nhìn thấy; có hồi quy128 ảnh/chữ200%. Lời chào chỉ chạy sau khi ReminderCoordinator đã xác định múi giờ để không dùngUTC sai với quiet hours của thiết bị.
+
+Foreground delivery xét vùng lời thoại có thực sự nằm trong viewport hay bị cuộn khuất, thay vì chỉ dựa tên trang/companionEnabled. Khi không thấy lời thoại, dùng SnackBar có đường mở Notification Center; giữ nguyên một nhánh OS-or-in-app của Reminder Engine. Hai ca hồi quy tắt nhân vật và cuộn khuất (gồm chữ200%) kiểm tra cue vẫn nhìn thấy.
+
+Cổng cuối tại67c4a43:150 tests Android/Linux,149 +1 skip Windows;16 Emulator +7 AOT. Cả native jobs đạt; ba ca foreground UI kiểm tra tắt/cuộn khuất và không hiện trùng khi dialogue thực sự thấy được.

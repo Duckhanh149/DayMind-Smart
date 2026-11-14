@@ -1,15 +1,25 @@
+> **Preview0.8.0 đã qua cổng tự động**, nguồnD374/[CI](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895). [Windows0.8.0](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895/artifacts/14044235287) · [Android0.8.0](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895/artifacts/14044365559). Mặc định dùng dữ liệu cục bộ; Firebase production cần cấu hình project thật. [BUILD_STATUS](docs/BUILD_STATUS.md) ghi hash, RAM/CPU và giới hạn. Chưa ký/nghiệm thu phát hành chính thức.
+
 # DayMind SMART — Android & Windows
 
-Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10/11 x64**. Không phải vỏ WebView của website. Bản đầu tiên tập trung quản lý công việc cục bộ và Companion 2D tĩnh, có thể dùng không tài khoản.
+Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Có quản lý công việc cục bộ, nhắc việc, lịch/lặp lại, trợ lý/thống kê, tài khoản/đồng bộ Firebase Emulator và Companion tùy chỉnh. **Preview 0.8.0 đã qua cổng phần mềm tự động 0–9**; giai đoạn 8 dùng nhánh không Live2D. Dùng được không tài khoản. Nghiệm thu thiết bị thật và ký phát hành còn mở; [tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ giới hạn.
 
 ## Đã triển khai
 
 - UI tiếng Việt do DayMind thiết kế: nền dịu, xanh lá trầm, font Be Vietnam Pro. Điện thoại dùng điều hướng dưới; desktop có sidebar; sáng/tối/theo hệ thống.
 - Công việc: tạo/sửa, mô tả, 3 mức ưu tiên, 4 trạng thái, danh mục, Inbox, tìm kiếm, quá hạn, Sắp tới, xóa mềm/khôi phục. Hạn không bắt buộc; lịch bắt đầu/kết thúc tách riêng.
-- Drift/SQLite có transaction và migration v1→v2; revision chặn sửa/xóa từ biểu mẫu cũ. Mở lại app vẫn có dữ liệu.
+- Drift/SQLite có transaction và migration v1/2→v3; revision chặn sửa/xóa từ biểu mẫu cũ. Mở lại app vẫn có dữ liệu.
 - Companion **Mầm** là nhân vật gốc, mặc định im lặng; 3 tính cách, lời thoại trong app có cooldown, bật/tắt, kích thước tùy chỉnh. Companion nằm trong vùng riêng, không nổi trên các nút hay biểu mẫu.
-- Nhập/thư viện/chọn/xóa ảnh PNG/WebP tĩnh. Kiểm tra magic bytes, decode thật, tối đa 4 MB/tệp, 2048×2048 px, decode vừa trong 256×256, tổng thư viện 32 MB; tên hash, ghi nguyên tử và chặn đường dẫn vượt thư mục. Không nhận ZIP, GIF hoặc Live2D.
-- Android tắt automatic app backup; không có Firebase, không tự tải công việc/ảnh lên cloud.
+- Nhập/thư viện/chọn/xóa PNG/WebP/JPEG/BMP tĩnh, GIF động hoặc ZIP sprite DayMind. Preflight giới hạn trước codec, checksum/provenance/quyền sử dụng, preview/hủy, cài nguyên tử; giữ nguồn nguyên byte. Thư viện64MiB/128 mục, atlas128px/khung, tối đa120 khung/2048×1024, cadence≤12fps; ngừng/giải phóng atlas khi bị che, cuộn ra ngoài, background hoặc thu khay. Chế độ ít tài nguyên dùng ảnh tĩnh. Xem [định dạng gói](docs/CHARACTER_PACKAGE.md).
+- Companion nổi tùy chọn trên Windows, mặc định tắt: cùng tiến trình, không thêm Flutter engine/scheduler; kéo/đổi kích thước, phục hồi vị trí, topmost/click-through tường minh. Tôn trọng giờ yên lặng, fullscreen và trạng thái thông báo OS. Live2D giữ khóa, không bundle SDK/model; [đánh giá kỹ thuật/giấy phép](docs/LIVE2D_GATE.md), không coi ảnh PNG là model Live2D.
+- Nhắc việc: một nhắc theo ưu tiên hoặc tối đa 8 mốc tự đặt; xem giờ hiệu lực, giờ yên lặng, gộp, snooze, dismiss, hủy lịch cũ khi sửa/hoàn thành. Trung tâm thông báo có tất cả/chưa đọc/quá hạn. Không xin quyền tự động. Android có receiver và lịch inexact có guard; Windows đóng cửa sổ thu vào khay theo lựa chọn của người dùng để tiếp tục nhắc, có Mở/Thoát hẳn; phần native khay đã qua kiểm thử CI. Không tự khởi động cùng Windows.
+- Lịch ngày/tuần/tháng với múi giờ hiển thị; daily/weekly/monthly, khoảng lặp, thứ, số lần/ngày kết thúc, chọn rõ bỏ qua hay dùng cuối tháng thiếu ngày. Sửa một/từ lần này/toàn chuỗi, giữ lịch sử và ngoại lệ.
+- Trợ lý hằng ngày: tối đa ba gợi ý có lý do, không lặp nhiều lần của cùng chuỗi; tùy chỉnh các thẻ trang Hôm nay. Thống kê 7/30 ngày dùng ngày hoàn thành thật, hiển thị mẫu số và loại việc hủy/thùng rác.
+- Bản tóm tắt **mặc định tắt**, giờ gợi ý 07:00; một bản mỗi ngày địa phương khi bật. Đọc số liệu mới khi phát, không có nút hoàn thành/hoãn công việc. Đổi giờ/quyền không phát lại bản đã xử lý. Phần này đã đạt CI Android/Windows ở checkpoint giai đoạn 4.
+- Tài khoản/đồng bộ tùy chọn qua Firebase Emulator: kho SQLite và thư viện riêng theo tài khoản; phiên đăng nhập được mã hóa bằng Android Keystore hoặc Windows DPAPI. Sao chép dữ liệu cục bộ cần chọn tường minh. Outbox bền vững, retry, CAS và giao diện giữ cả hai bản xung đột; đồng bộ chuỗi/cấu hình nhắc theo nhóm để chặn nhắc trùng.
+- Chọn một thiết bị nhận nhắc chính khi online; thiết bị chính cũ mất mạng có thể còn báo theo lịch đã lưu. Đăng xuất giữ thay đổi chưa gửi trong kho riêng, trở về dữ liệu cục bộ. Xóa tài khoản cần nhập lại mật khẩu, giữ dấu UID đã xóa để chặn thiết bị cũ tải lại. Không đồng bộ ảnh nhân vật hoặc lịch sử thông báo.
+- Android tắt automatic app backup. Chưa cấu hình Firebase production; xem [cách chạy Emulator](firebase/README.md). Giai đoạn 5 đã qua CI Android/Windows với 121 Flutter tests, 25 receiver cases và luồng tài khoản thật trên Emulator.
+- Sao lưu có mật khẩu AES256-GCM/PBKDF2, gồm công việc/chuỗi/lịch sử/cấu hình và thư viện nhân vật. Khôi phục thêm bản sao, giữ dữ liệu hiện tại, ràng buộc tài khoản và xử lý gián đoạn bằng journal/transaction. Nhắc việc và digest tạm dừng sau restore, không phát lịch cũ; không sao lưu phiên đăng nhập. [Định dạng và giới hạn](docs/BACKUP_FORMAT.md).
 
 ## Chạy và build
 
@@ -19,6 +29,7 @@ Chạy trong thư mục này:
 
 ```sh
 flutter pub get --enforce-lockfile
+python tool/precache_sqlite.py  # Khi đường download GitHub release bị HTTP504
 flutter analyze
 flutter test
 flutter run -d <device-id>
@@ -32,9 +43,14 @@ flutter build windows --release
 flutter test integration_test/app_smoke_test.dart -d windows
 ```
 
-`.github/workflows/native-build.yml` build/test trên Linux và Windows, xuất APK, bộ ứng dụng Windows kèm runtime VC++ và bộ cài Inno Setup. Tải từ mục **Actions → Build Android and Windows → Artifacts** sau khi job tương ứng thành công. Build thành công không thay thế kiểm thử thiết bị thật.
+`.github/workflows/native-build.yml` build/test trên Linux và Windows, xuất APK ARM64, portable Windows kèm VC++ runtime và bộ cài Inno Setup. Preview **0.7.1**, nguồn `66e4ae5`, đã đạt cả hai jobs tại [Actions43225672366](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366). Tải artifact rồi giải nén:
 
-APK debug là bản cài thử bằng khóa phát triển. Bộ cài Windows chưa ký mã phát hành. Chưa có bản iPhone/iOS, Windows ARM64, Play Store hoặc Microsoft Store. Không cần cấp quyền báo thức, thông báo, overlay hoặc chạy lúc khởi động cho bản hiện tại.
+- [Android ARM64](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366/artifacts/13949065397): mở `app-arm64-v8a-release.apk`, Android 7/API24 trở lên.
+- [Windows 10/11 x64](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366/artifacts/13949435030): chạy `windows-installer/DayMind-Setup.exe`; hoặc giữ toàn bộ thư mục `windows/x64/runner/Release` để dùng portable.
+
+Cần đăng nhập GitHub để tải artifact; gói có hạn lưu theo Actions. [BUILD_STATUS](docs/BUILD_STATUS.md) và [báo cáo gói](docs/qa/USER_FIXES_071_PACKAGES.json) ghi nguồn, hash và giới hạn. [PR #1](https://github.com/Duckhanh149/DayMind-Smart/pull/1) vẫn mở, chưa merge hoặc xuất bản release. Build thành công không thay thế kiểm thử thiết bị thật.
+
+APK preview trong Actions được build tối ưu ARM64 nhưng vẫn ký bằng khóa phát triển; lệnh debug bên trên dành cho phát triển. Bộ cài Windows chưa ký mã phát hành. Cần kiểm chuỗi ký trước nâng cấp; không xóa bản cũ/dữ liệu chỉ để cài đè bản có chứng chỉ khác. Chưa có bản iPhone/iOS, Windows ARM64, Play Store hoặc Microsoft Store. Không cần quyền báo thức chính xác, overlay hoặc chạy lúc khởi động. Quyền thông báo Android chỉ hỏi khi bạn chọn trong cài đặt; từ chối vẫn quản lý công việc bình thường.
 
 ## UI đã render bằng Flutter test
 
@@ -42,12 +58,17 @@ APK debug là bản cài thử bằng khóa phát triển. Bộ cài Windows ch�
 
 ![Điện thoại](docs/ui/phone.png)
 ![Desktop](docs/ui/desktop.png)
+![Desktop 0.7.0 sáng](docs/ui/phase9-desktop-light.png)
+![Desktop 0.7.0 tối](docs/ui/phase9-desktop-dark.png)
 ![Companion](docs/ui/companion.png)
+![Trung tâm thông báo](docs/ui/notifications.png)
+![Lịch](docs/ui/calendar.png)
+![Thống kê](docs/ui/analytics.png)
 
 ## Kiểm chứng và phạm vi còn lại
 
-`flutter analyze`: không có lỗi/cảnh báo. `flutter test`: **28 kiểm thử đạt**: domain, SQLite, migration, restart, conflict, safe import, cấu hình đồng thời, bố cục 390/360/768/1440 px, chữ 200%, bàn phím và CRUD UI.
+Nguồn `66e4ae5` / Native43225672366: Android **233 Flutter tests, 27 receiver/recovery cases** và host integration đạt; Windows **231 tests + 2 symlink skip** do quyền host, DPAPI, policy12/component100/Win32 probes/khay/installer đạt. Sao lưu, PID isolation/concurrent SQLite integrity và tài khoản/thư viện thật đã kiểm. Installer Windows0.6.1→0.7.0→gỡ→cài lại giữ dữ liệu thử. Emulator43222966423 đạt16 ca thật+7 AOT; lib/backend/packages giống nguồn 837, đã so tree IDs.
 
-Nhắc việc nền, lịch lặp lại đầy đủ, daily digest, thống kê chuyên sâu, Firebase/sync, hoạt ảnh, cửa sổ Companion nổi và Live2D chưa được triển khai. Dữ liệu native và website hiện tách biệt; chưa có đồng bộ hoặc chuyển dữ liệu tự động. Gỡ app/xóa thư mục dữ liệu có thể làm mất công việc; chưa có backup/restore bằng mật khẩu.
+Giai đoạn8 giữ Live2D tắt theo fallback của đặc tả, duy trì contract renderer Dart và chặn nhập model; chưa có SDK/model được cấp phép hoặc render thật. Giai đoạn9 có backup/restore, migration guards, mutex Windows, diagnostics/consent; cổng tự động và gói preview đã đạt. **Nghiệm thu thiết bị thật và production signing/upgrade-chain còn thiếu**, chưa hoàn tất dự án. Xem [quyền riêng tư](docs/PRIVACY.vi.md), [ký/phát hành](docs/PRODUCTION_SIGNING.md) và [checklist thiết bị](docs/qa/DEVICE_CHECKLIST.md). Website và kho native tách dữ liệu; Firebase vẫn dùng Emulator.
 
-Cổng nghiệm thu Android thiết bị thật, Windows 10/11 thực tế và thông báo khi app đóng vẫn phải xác minh; không tuyên bố đã đạt chỉ từ widget tests hoặc compilation. Trạng thái build cụ thể xem `docs/BUILD_STATUS.md` và kết quả Actions. Các giai đoạn tính năng tiếp theo giữ theo master spec, không đánh dấu toàn bộ dự án đã hoàn tất.
+Cổng nghiệm thu Android thiết bị thật, Windows 10/11 thực tế và thông báo OEM/Doze/reboot vẫn phải xác minh. Số đo debug CI/emulator không thay cho hiệu năng bản release trên máy yếu. [Checkpoint](docs/WORK_CHECKPOINT.md) giữ điểm tiếp tục và các điều kiện còn thiếu.

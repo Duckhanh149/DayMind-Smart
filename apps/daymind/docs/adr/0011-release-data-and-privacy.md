@@ -1,0 +1,15 @@
+# ADR0011 — Sao lưu, vòng đời dữ liệu và phát hành
+
+Trạng thái: triển khai giai đoạn9, còn chờ cổng native/installer/package và nghiệm thu thiết bị/bản ký. Không gán kết quả kiểm thử local cho Android/Windows. Xem WORK_CHECKPOINT và BUILD_STATUS cho source/CI cụ thể.
+
+Sao lưu là tệp cục bộ có mật khẩu, formatDMSBKUP1, AES256-GCM/header AAD và PBKDF2-HMAC-SHA256600000; không có thuật toán/KDF tùy ý từ tệp. KDF/codec trong isolate để không chặn UI, worker giải mã tự khởi tạo timezone trước kiểm recurrence. Snapshot giữ task/series/history/cấu hình/nguyên bản ảnh/derivatives/license với giới hạn32MiB ảnh,48MiB payload; không chứa credential/device/outbox/delivery ledger. Không có cơ chế khôi phục mật khẩu; chỉ xóa best-effort buffer có quyền sở hữu, không hứa zeroize Dart string/GC. Chi tiết BACKUP_FORMAT.
+
+Restore chỉ nhận đúng không gian owner và thêm bản sao task/series/rule/occurrence có mã mới. Không ghi đè công việc hiện có; cấu hình được thay khi opt-in, floating luôn tắt và nhắc/digest tạm dừng. Không phục hồi alarm/delivery cũ. Host serialize cùng account switch/delete, ngừng sync/writes/native scheduler khi restore rồi resume cả khi lỗi. Relations được kiểm trong SQLite memory, ảnh preflight trong staging và kiểm lại qua importer hiện dùng (gồm khóa Live2D). Journal chỉ chứa mã/tên hash mới; transaction SQLite commit dữ liệu và marker cùng lúc, recovery giữ ảnh đã commit hoặc xóa đúng ảnh mới trước commit. Không xóa asset cũ. Startup dọn orphan UUID staging trước khi lộ workspace, không quét trong lúc import.
+
+Migration DDL trong transaction; từ chối schema mới hơn thay vì tự downgrade phá dữ liệu. Regression dùng ALTER thất bại thật và kiểm rollback/version/data. Layout cũ được chuyển một lần, không ghi đè layout mới. Windows giữ một tiến trình mỗi user SID bằng kernel mutex, lần chạy sau mở cửa sổ khay cũ, mutex tự giải phóng khi crash. Không thêm background service hoặc autostart; quy tắc Mở/Thoát của ADR0004 giữ nguyên.
+
+Chẩn đoán mặc định tắt, lưu whitelist tại thiết bị chỉ khi người dùng chọn; không tự gửi, không raw error/task/UID/token/path. UI tiếng Việt và chính sách PRIVACY.vi nêu rõ Emulator, file provider và Windows đọc notification/window geometry để ẩn Companion. Không ghi tên chương trình hoặc lịch sử hoạt động.
+
+Signing production phải opt-in, khớp public certificate SHA256 và không fallback debug; Windows cần trusted chain/timestamp. Tệp khóa nằm RUNNER_TEMP và được dọn trước chạy kiểm installer. Preview vẫn debug/unsigned. Push chỉ test/artifact; publish manual/main/publish=true và không ghi đè Release. Chưa có identity để kiểm đường production; không tạo/mua/thu thập khóa qua chat. Không merge main hoặc phát hành trong lượt này.
+
+Installer acceptance dùng baseline0.6.1 build từ pinned commit213a820, rồi silent install→upgrade→uninstall/reinstall trên runner riêng. Phải kiểm task/danh mục/series/completed history/reminder/profile và nguyên byte ảnh, PE version/hash, khay/launch2/Thoát/không startup. Không dùng compilation hoặc fixture rỗng thay cho quá trình cài thật. Hardware checklist và đường nâng cấp chữ ký sản xuất là các mục nghiệm thu riêng chưa chạy.

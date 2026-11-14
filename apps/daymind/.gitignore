@@ -49,3 +49,9 @@ app.*.map.json
 
 # Generated previews are copied to docs/ui only after review.
 test/previews/
+android/.kotlin/
+__pycache__/
+
+# Local Firebase client configuration; never package service-account keys.
+firebase.production.local.json
+*.service-account.json

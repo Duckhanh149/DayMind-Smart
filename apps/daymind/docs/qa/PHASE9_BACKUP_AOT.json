@@ -1,0 +1,38 @@
+{
+  "codecBlob": "d2fa50c963e9e3cddfb0ccf8b466162a27c267b3",
+  "source": "614deaddfe48a04ece5a015daee2e2041998d240",
+  "platform": "Linux x64 Dart3.13.7 AOT executable, codec only",
+  "smallFixture": {
+    "probe": "Linux AOT codec only; not native UI/restore or device performance",
+    "records": 2,
+    "cipherBytes": 1727,
+    "nonUtcRecurrenceRoundtrip": true,
+    "wrongPasswordRejected": true,
+    "authenticatedHeaderRejected": true,
+    "encryptMs": 3860,
+    "encryptAndDecryptMs": 7339,
+    "rssBytes": 11112448
+  },
+  "bulkFixture": {
+    "probe": "Linux AOT codec stress only, synthetic byte buffers, not image import/native UI/device acceptance",
+    "records": 452,
+    "assets": 64,
+    "sourceBytes": 33554432,
+    "cipherBytes": 48506578,
+    "roundtrip": true,
+    "encryptMs": 11131,
+    "encryptAndDecryptMs": 23595,
+    "rssBytes": 327696384
+  },
+  "bulkProcess": {
+    "elapsedSeconds": 24.431,
+    "maxRssKiB": 400388,
+    "exit": 0
+  },
+  "limits": [
+    "Synthetic byte assets exercise codec limits, not PNG/GIF validation or image import.",
+    "No Flutter UI, native database restore, physical device, release GPU or low-end hardware acceptance.",
+    "Peak process RSS includes both codec workers and input/output buffers; it is not the total RAM of the Android or Windows app.",
+    "The measured near-limit workload used 32MiB source buffers and produced 48,506,578 encrypted bytes. Physical low-memory acceptance remains open."
+  ]
+}

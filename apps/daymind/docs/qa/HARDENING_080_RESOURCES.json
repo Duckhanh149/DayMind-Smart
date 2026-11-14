@@ -1,0 +1,209 @@
+{
+  "schema": 1,
+  "version": "0.8.0+10",
+  "source": "d3749182de8afdcde62610f848ef0681eff91516",
+  "run": 43435282895,
+  "android": {
+    "job": 131918651394,
+    "summary": {
+      "platform": "android",
+      "buildMode": "profile",
+      "durationSeconds": 120,
+      "frames": 120,
+      "observedFrames": 60,
+      "sourceBytes": 37774986,
+      "cipherBytes": 50372677,
+      "syncWrites": 6,
+      "floatingStatus": "notReported",
+      "metricStages": [
+        "animatedImport",
+        "companionAndSyncSoak",
+        "largeImageImport",
+        "largeBackupCapture",
+        "largeBackupEncrypt",
+        "largeBackupDecrypt"
+      ],
+      "scope": "native Flutter process; no private receiver process CPU/RSS or physical low-end certification"
+    },
+    "stages": {
+      "animatedImport": {
+        "stage": "animatedImport",
+        "elapsedMs": 308,
+        "samples": 2,
+        "rssStart": 262774784,
+        "rssSamplePeak": 271425536,
+        "rssEnd": 262971392,
+        "processLifetimePeakRss": 273035264,
+        "cpuSupported": true,
+        "cpuMs": 284,
+        "cpuPercentOneCore": 92.37767164605539
+      },
+      "companionAndSyncSoak": {
+        "stage": "companionAndSyncSoak",
+        "elapsedMs": 120543,
+        "samples": 594,
+        "rssStart": 262971392,
+        "rssSamplePeak": 267689984,
+        "rssEnd": 267689984,
+        "processLifetimePeakRss": 273035264,
+        "cpuSupported": true,
+        "cpuMs": 51997,
+        "cpuPercentOneCore": 43.13588477300026
+      },
+      "largeImageImport": {
+        "stage": "largeImageImport",
+        "elapsedMs": 1019,
+        "samples": 8,
+        "rssStart": 267821056,
+        "rssSamplePeak": 322686976,
+        "rssEnd": 292560896,
+        "processLifetimePeakRss": 322818048,
+        "cpuSupported": true,
+        "cpuMs": 1123,
+        "cpuPercentOneCore": 110.23211957145647
+      },
+      "largeBackupCapture": {
+        "stage": "largeBackupCapture",
+        "elapsedMs": 1295,
+        "samples": 6,
+        "rssStart": 292560896,
+        "rssSamplePeak": 329781248,
+        "rssEnd": 306872320,
+        "processLifetimePeakRss": 329912320,
+        "cpuSupported": true,
+        "cpuMs": 1444,
+        "cpuPercentOneCore": 111.515011607968
+      },
+      "largeBackupEncrypt": {
+        "stage": "largeBackupEncrypt",
+        "elapsedMs": 16440,
+        "samples": 67,
+        "rssStart": 306872320,
+        "rssSamplePeak": 545669120,
+        "rssEnd": 497180672,
+        "processLifetimePeakRss": 545669120,
+        "cpuSupported": true,
+        "cpuMs": 19126,
+        "cpuPercentOneCore": 116.33727611764633
+      },
+      "largeBackupDecrypt": {
+        "stage": "largeBackupDecrypt",
+        "elapsedMs": 17672,
+        "samples": 72,
+        "rssStart": 497180672,
+        "rssSamplePeak": 660070400,
+        "rssEnd": 614281216,
+        "processLifetimePeakRss": 664752128,
+        "cpuSupported": true,
+        "cpuMs": 20768,
+        "cpuPercentOneCore": 117.52195081209616
+      }
+    }
+  },
+  "windows": {
+    "job": 131918651807,
+    "summary": {
+      "platform": "windows",
+      "buildMode": "profile",
+      "durationSeconds": 120,
+      "frames": 120,
+      "observedFrames": 63,
+      "sourceBytes": 37774986,
+      "cipherBytes": 50372677,
+      "syncWrites": 6,
+      "floatingStatus": "osPolicyReported",
+      "metricStages": [
+        "animatedImport",
+        "companionAndSyncSoak",
+        "largeImageImport",
+        "largeBackupCapture",
+        "largeBackupEncrypt",
+        "largeBackupDecrypt"
+      ],
+      "scope": "native Flutter process; no private receiver process CPU/RSS or physical low-end certification"
+    },
+    "stages": {
+      "animatedImport": {
+        "stage": "animatedImport",
+        "elapsedMs": 284,
+        "samples": 2,
+        "rssStart": 257417216,
+        "rssSamplePeak": 325562368,
+        "rssEnd": 325234688,
+        "processLifetimePeakRss": 347213824,
+        "cpuSupported": true,
+        "cpuMs": 531,
+        "cpuPercentOneCore": 186.94795368969278
+      },
+      "companionAndSyncSoak": {
+        "stage": "companionAndSyncSoak",
+        "elapsedMs": 120689,
+        "samples": 596,
+        "rssStart": 328851456,
+        "rssSamplePeak": 340574208,
+        "rssEnd": 187469824,
+        "processLifetimePeakRss": 347213824,
+        "cpuSupported": true,
+        "cpuMs": 22671,
+        "cpuPercentOneCore": 18.785286561921048
+      },
+      "largeImageImport": {
+        "stage": "largeImageImport",
+        "elapsedMs": 624,
+        "samples": 6,
+        "rssStart": 219557888,
+        "rssSamplePeak": 273383424,
+        "rssEnd": 273416192,
+        "processLifetimePeakRss": 347213824,
+        "cpuSupported": true,
+        "cpuMs": 937,
+        "cpuPercentOneCore": 150.00936058410045
+      },
+      "largeBackupCapture": {
+        "stage": "largeBackupCapture",
+        "elapsedMs": 501,
+        "samples": 3,
+        "rssStart": 273416192,
+        "rssSamplePeak": 304308224,
+        "rssEnd": 287498240,
+        "processLifetimePeakRss": 347213824,
+        "cpuSupported": true,
+        "cpuMs": 890,
+        "cpuPercentOneCore": 177.73043842669273
+      },
+      "largeBackupEncrypt": {
+        "stage": "largeBackupEncrypt",
+        "elapsedMs": 8362,
+        "samples": 35,
+        "rssStart": 287498240,
+        "rssSamplePeak": 429973504,
+        "rssEnd": 396992512,
+        "processLifetimePeakRss": 518594560,
+        "cpuSupported": true,
+        "cpuMs": 9093,
+        "cpuPercentOneCore": 108.74810083213599
+      },
+      "largeBackupDecrypt": {
+        "stage": "largeBackupDecrypt",
+        "elapsedMs": 9168,
+        "samples": 37,
+        "rssStart": 396992512,
+        "rssSamplePeak": 518545408,
+        "rssEnd": 508502016,
+        "processLifetimePeakRss": 574210048,
+        "cpuSupported": true,
+        "cpuMs": 9859,
+        "cpuPercentOneCore": 107.5380439945739
+      }
+    }
+  },
+  "limits": [
+    "AOT profile on Android emulator and Windows Server CI, not physical Windows 10/11 or Android OEM certification.",
+    "RSS baseline includes earlier native fixtures, not a fresh app idle measurement.",
+    "CPU uses one-core percentage and can exceed 100% across threads.",
+    "Sampled stage RSS peaks can miss transient allocations; lifetime peak includes earlier stages.",
+    "Flutter process only; private Android reminders process excluded.",
+    "120-second run does not certify multi-hour use, low-end RAM, all animated-image sizes, or the 64 MiB artwork/96 MiB plaintext maximum.",
+    "Windows floating Companion can be suppressed by OS quiet policy; inline animation was measured in a test dialog."
+  ]
+}

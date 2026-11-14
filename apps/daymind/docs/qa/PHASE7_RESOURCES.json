@@ -1,0 +1,146 @@
+{
+  "source": "e99303392f476fa842a793bbd28c09f538f94c27",
+  "tree": "a01a082368fe3bd592703b53469a5ff37b466a0f",
+  "run": 42757179906,
+  "note": "Debug API35 emulator and hosted Windows Server; not physical Android/Windows 10/11 or release memory measurements.",
+  "platforms": {
+    "android": {
+      "job": 129634149609,
+      "probes": {
+        "COMPANION_RESOURCE_POC": {
+          "platform": "android",
+          "sourcePixels": "2048x2048",
+          "images": 4,
+          "selections": 24,
+          "lowResourceDecode": 128,
+          "rssBefore": 550416384,
+          "rssAfterImport": 551628800,
+          "rssSamplePeak": 565796864,
+          "rssAfterCleanup": 530018304,
+          "imageCacheSamplePeak": 131072,
+          "importElapsedMs": 391,
+          "selectionElapsedMs": 13715
+        },
+        "ANIMATION_RESOURCE_POC": {
+          "platform": "android",
+          "frames": 3,
+          "atlasWidth": 384,
+          "atlasHeight": 128,
+          "observedFrames": 3,
+          "observationMs": 4762,
+          "rssBefore": 530411520,
+          "rssSamplePeak": 531623936,
+          "rssAfterPause": 538906624,
+          "imageCacheBytes": 0
+        },
+        "MAX_ATLAS_RESOURCE_POC": {
+          "platform": "android",
+          "frames": 120,
+          "cycles": 6,
+          "atlasWidth": 2048,
+          "atlasHeight": 1024,
+          "atlasRgbaBytes": 8388608,
+          "rssBefore": 540454912,
+          "rssSamplePeak": 564314112,
+          "rssAfterPause": 539529216,
+          "allTextureHandlesDisposed": true
+        }
+      }
+    },
+    "windows": {
+      "job": 129634150458,
+      "probes": {
+        "COMPANION_RESOURCE_POC": {
+          "platform": "windows",
+          "sourcePixels": "2048x2048",
+          "images": 4,
+          "selections": 24,
+          "lowResourceDecode": 128,
+          "rssBefore": 443961344,
+          "rssAfterImport": 565030912,
+          "rssSamplePeak": 569704448,
+          "rssAfterCleanup": 454217728,
+          "imageCacheSamplePeak": 131072,
+          "importElapsedMs": 248,
+          "selectionElapsedMs": 15696
+        },
+        "ANIMATION_RESOURCE_POC": {
+          "platform": "windows",
+          "frames": 3,
+          "atlasWidth": 384,
+          "atlasHeight": 128,
+          "observedFrames": 3,
+          "observationMs": 4617,
+          "rssBefore": 452399104,
+          "rssSamplePeak": 469680128,
+          "rssAfterPause": 461627392,
+          "imageCacheBytes": 0
+        },
+        "MAX_ATLAS_RESOURCE_POC": {
+          "platform": "windows",
+          "frames": 120,
+          "cycles": 6,
+          "atlasWidth": 2048,
+          "atlasHeight": 1024,
+          "atlasRgbaBytes": 8388608,
+          "rssBefore": 461660160,
+          "rssSamplePeak": 564637696,
+          "rssAfterPause": 559857664,
+          "allTextureHandlesDisposed": true
+        },
+        "COMPONENT_FLOATING_RESOURCE_POC": {
+          "cycles": 20,
+          "observedFrames": 3,
+          "gdiBefore": 14,
+          "gdiAfter": 14,
+          "surfaceBytes": 50176,
+          "rendersDuringObservation": 19,
+          "atlasWidth": 2048,
+          "atlasHeight": 1024,
+          "rssBefore": 14794752,
+          "rssSamplePeak": 25935872
+        },
+        "FLOATING_ANIMATION_POC": {
+          "osBlocked": true,
+          "observedFrames": 1,
+          "elapsedMs": 2697,
+          "renders": 0,
+          "cpuMs": 547
+        },
+        "FLOATING_RESOURCE_POC": {
+          "osBlocked": true,
+          "cycles": 20,
+          "gdiBefore": 18,
+          "gdiAfter": 18,
+          "surfaceBytes": 0,
+          "cpuMs": 6234,
+          "rssAfterCycles": 476143616
+        }
+      }
+    }
+  },
+  "validation": {
+    "flutterAndroidLinuxPassed": 199,
+    "flutterWindowsPassed": 197,
+    "windowsSkipped": 2,
+    "skipReason": "Host symlink privileges; both guards execute on Linux.",
+    "androidReceiverRecoveryCases": 25,
+    "pythonDriverGuards": 14,
+    "windowsPolicyChecks": 12,
+    "windowsComponentChecks": 94,
+    "componentNotificationReader": "Controlled inputs; real Win32/GDI+, zero Flutter engines.",
+    "actualAppWindowsNotificationState": 6,
+    "actualAppHonoredOsPolicy": true,
+    "emulatorSource": "99ee91b9ac407c8433d97cace88b1805749f8f94",
+    "emulatorRun": 42752885523,
+    "emulatorCases": 16,
+    "emulatorAotCases": 7,
+    "emulatorAppAndBackendSubtreesIdentical": true
+  },
+  "interpretation": [
+    "Windows app respected its real OS QUIET_TIME state: no overlay surface or rendered frames.",
+    "The separate component used controlled notification-state inputs and the production C++ class to test actual Windows interaction, GDI+ updates and maximum-atlas resources. It is not shipped.",
+    "Observation/selection timings include tester settling; they are not latency or publication-grade FPS measurements.",
+    "Process RSS is not GPU usage or release/physical low-end memory. Physical Windows 10/11 Focus Assist/DND and Android OEM/Doze remain final acceptance items."
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "version": "0.8.0+10",
+  "baseCommit": "d731111e5c929e54f625a982dc077d53f94a6852",
+  "local": {
+    "flutterTests": 247,
+    "analyze": "passed",
+    "pythonDriverGuards": 27,
+    "firebaseEmulator": {
+      "expandedSecurityRules": "passed",
+      "dartReal": 16,
+      "aot": 7
+    },
+    "supplementalReminderTests": 35
+  },
+  "native": "pending",
+  "resourceMetrics": "pending",
+  "productionFirebaseLiveVerified": false,
+  "physicalDevicesVerified": false,
+  "automatedContinuationEnabled": false,
+  "limitations": [
+    "Windows notifications require running process; no after-exit or reboot delivery",
+    "OS API acceptance/history is not visible banner confirmation",
+    "Production project and signing identities not configured",
+    "Live2D disabled pending technical and licensing checks"
+  ],
+  "note": "Full suite after explicit desktop delivery policy and redundant plaintext copy removal; native verification pending."
+}

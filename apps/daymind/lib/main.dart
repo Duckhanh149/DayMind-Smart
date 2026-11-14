@@ -1,37 +1,47 @@
 import 'dart:io';
 
-import 'package:drift/native.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show LicenseRegistry, LicenseEntryWithLineBreaks;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'app/app.dart';
 import 'app/controller.dart';
-import 'features/tasks/data/database.dart';
-import 'features/companion/data/asset_importer.dart';
+import 'app/workspace_host.dart';
+import 'platform/secure_session_store.dart';
+import 'features/account_sync/data/firebase_rest.dart';
+import 'features/account_sync/data/firestore_gateway.dart';
 
+bool _fontLicenseRegistered = false;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tzdata.initializeTimeZones();
+  if (!_fontLicenseRegistered) {
+    _fontLicenseRegistered = true;
+    LicenseRegistry.addLicense(() async* {
+      yield LicenseEntryWithLineBreaks([
+        'Be Vietnam Pro',
+      ], await rootBundle.loadString('assets/fonts/OFL.txt'));
+    });
+  }
   try {
     final support = await getApplicationSupportDirectory();
     await support.create(recursive: true);
-    final database = DaymindDatabase(
-      NativeDatabase.createInBackground(
-        File(p.join(support.path, 'daymind.sqlite')),
-      ),
+    final http = JsonTransport();
+    final endpoints = FirebaseEndpoints.fromBuild(android: Platform.isAndroid);
+    final host = WorkspaceHost(
+      support,
+      NativeSessionStore(namespace: endpoints.storageNamespace),
+      FirebaseRestAuth(endpoints, http),
+      FirestoreRestGateway(endpoints, http),
+      firebase: endpoints,
     );
-    final controller = WorkspaceController(
-      SqliteTaskRepository(database),
-      StaticAssetImporter(Directory(p.join(support.path, 'characters'))),
-    );
-    await controller.load();
-    runApp(
-      ProviderScope(
-        overrides: [workspaceProvider.overrideWith((ref) => controller)],
-        child: const DaymindApp(),
-      ),
-    );
+    await host.start();
+    runApp(WorkspaceApplication(host: host));
   } catch (error) {
     runApp(
       MaterialApp(
@@ -57,4 +67,50 @@ Future<void> main() async {
       ),
     );
   }
+}
+
+class WorkspaceApplication extends StatefulWidget {
+  const WorkspaceApplication({super.key, required this.host});
+  final WorkspaceHost host;
+  @override
+  State<WorkspaceApplication> createState() => _WorkspaceApplicationState();
+}
+
+class _WorkspaceApplicationState extends State<WorkspaceApplication> {
+  int? generation;
+  Widget? scope;
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.host,
+    builder: (context, _) {
+      final host = widget.host;
+      if (generation != host.generation) {
+        generation = host.generation;
+        final controller = host.controller!;
+        scope = ProviderScope(
+          key: ValueKey(generation),
+          overrides: [
+            workspaceProvider.overrideWith((ref) => controller),
+            workspaceHostProvider.overrideWithValue(host),
+          ],
+          child: const DaymindApp(),
+        );
+      }
+      return Stack(
+        textDirection: TextDirection.ltr,
+        children: [
+          scope!,
+          if (host.switching)
+            const Positioned.fill(
+              child: AbsorbPointer(
+                child: ColoredBox(
+                  color: Color(0xccf5f6f1),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
 }

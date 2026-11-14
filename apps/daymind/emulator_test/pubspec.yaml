@@ -1,0 +1,11 @@
+name: daymind_sync_emulator_tests
+publish_to: none
+environment:
+  sdk: ^3.13.7
+dependencies:
+  daymind_smart:
+    path: ..
+  test: 1.31.1
+  drift: 2.35.3
+  timezone: 0.11.2
+  uuid: 4.6.0

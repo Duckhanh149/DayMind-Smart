@@ -1,0 +1,43 @@
+{
+  "source": "70c3331b8e8fb07edfbd5f58f6ef677b393faa04",
+  "run": 43157911554,
+  "windows": {
+    "artifactId": 13917725566,
+    "zipBytes": 28737525,
+    "zipSha256": "61bdb26add03c2aed3e1b7a407a47be27650f30f5e0749d46f5b9315a1b6d522",
+    "version": "0.7.0",
+    "productionSigningVerified": false,
+    "crcPassed": true,
+    "files": 34,
+    "fontOflIncluded": true,
+    "cryptographyApacheNoticesIncluded": true,
+    "vcRuntimeIncluded": [
+      "msvcp140.dll",
+      "vcruntime140.dll",
+      "vcruntime140_1.dll"
+    ],
+    "gateProbesAndUserDataExcluded": true,
+    "exe": {
+      "bytes": 174592,
+      "sha256": "20af4d1da1df1e33d806a25d832093bf2418fdb692cbca3bcb5ba8ad997df261",
+      "peMachine": "0x8664",
+      "embeddedVersionVerified": true,
+      "authenticodeDirectorySize": 0
+    },
+    "installer": {
+      "bytes": 13224859,
+      "sha256": "e4c67c39ee12cd0949194b2450bd88930d572d8a67f319bc776413f04f662893",
+      "peMachine": "0x14c",
+      "embeddedVersionVerified": true,
+      "authenticodeDirectorySize": 0
+    }
+  },
+  "android": {
+    "result": "no artifact uploaded because the host integration runner failed; do not certify the APK from this run"
+  },
+  "limits": [
+    "Windows installer bootstrap is x86 with x64 app payload.",
+    "Windows app/installer unsigned preview; no production signing or physical OS acceptance.",
+    "Package metadata and license checks performed locally on the SHA256-verified GitHub artifact."
+  ]
+}

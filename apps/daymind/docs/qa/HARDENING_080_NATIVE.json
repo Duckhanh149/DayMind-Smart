@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "version": "0.8.0+10",
+  "source": "d3749182de8afdcde62610f848ef0681eff91516",
+  "tree": "b27186411272920070d9a6ecc500241b3ce93822",
+  "run": 43435282895,
+  "status": "success",
+  "android": {
+    "job": 131918651394,
+    "flutterPassed": 247,
+    "receiverRecoveryConfirmed": 27,
+    "scopedSessionPoc": true,
+    "coldOsNotification": true,
+    "sqliteIsolation": true,
+    "backup": {
+      "platform": "android",
+      "tasks": 7,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 90,
+      "cipherBytes": 6487,
+      "captureMs": 65,
+      "encryptMs": 3258,
+      "totalProbeMs": 12509,
+      "rssBefore": 364040192,
+      "rssAfter": 280309760,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "accountArtwork": true,
+    "sdkDrivePassed": true,
+    "receiverCounterScope": "Collector confirms ReminderRuntimeTest only; no unverified aggregate of other host suites."
+  },
+  "windows": {
+    "job": 131918651807,
+    "flutterPassed": 245,
+    "flutterSkipped": 2,
+    "skipReason": "Symlink privileges unavailable on Windows runner; Linux executes these cases.",
+    "componentChecks": 100,
+    "scopedSessionPoc": true,
+    "permission": {
+      "ready": true,
+      "permission": "unknown",
+      "osSetting": null,
+      "osState": 6,
+      "osQueryError": -2147023728
+    },
+    "trayNotification": {
+      "windowHidden": true,
+      "engineClaimed": true,
+      "osApiAccepted": true,
+      "osSetting": null,
+      "osState": 6,
+      "foundInOsHistory": false,
+      "bannerVisibilityConfirmed": false,
+      "deliveryAfterProcessExitSupported": false
+    },
+    "backup": {
+      "platform": "windows",
+      "tasks": 7,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 2,
+      "cipherBytes": 6487,
+      "captureMs": 5325,
+      "encryptMs": 2450,
+      "totalProbeMs": 27416,
+      "rssBefore": 261312512,
+      "rssAfter": 220479488,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "installer": {
+      "baseline": "0.6.1",
+      "current": "0.8.0",
+      "taskRows": 4,
+      "preservedArtworkFiles": 2,
+      "preservedDomainRecords": 6,
+      "upgradePreservedData": true,
+      "uninstallPreservedData": true,
+      "reinstallPassed": true,
+      "registeredVersionVerified": true
+    },
+    "sdkDrivePassed": true,
+    "componentScope": "Real Win32/GDI+ with controlled notification reader in component probe; app uses real OS reader."
+  },
+  "emulator": {
+    "run": 43435282802,
+    "job": 131918651339,
+    "source": "d3749182de8afdcde62610f848ef0681eff91516",
+    "status": "success",
+    "dartRealTests": 16,
+    "aotTests": 7,
+    "expandedSecurityRules": true
+  },
+  "previewPublish": "skipped",
+  "productionFirebaseLiveVerified": false,
+  "physicalDevicesVerified": false,
+  "productionSigningVerified": false,
+  "automationEnabled": false
+}

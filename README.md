@@ -1,6 +1,6 @@
 # DayMind SMART
 
-Ứng dụng **Android và Windows 10/11** nằm tại [apps/daymind](apps/daymind/README.md). Xem giao diện, Companion Mầm, cách build và trạng thái kiểm chứng trong thư mục đó. Website local-first hiện có được giữ ở root bên dưới.
+Ứng dụng **Android ARM64 và Windows 10/11 x64** nằm tại [apps/daymind](apps/daymind/README.md). Preview native **0.8.0** có lịch lặp, nhắc việc, trợ lý/thống kê, sao lưu có mật khẩu, tài khoản/đồng bộ Firebase có cấu hình tách Emulator/production (build mặc định chỉ local) và Companion Mầm/ảnh động; có cửa sổ nhân vật nổi tùy chọn trên Windows. Các cổng phần mềm tự động 0–9 đã đạt (8 dùng raster fallback, Live2D vẫn tắt). **Nghiệm thu thiết bị thật và ký phát hành còn thiếu**, chưa hoàn tất toàn dự án. [Tải preview và xem bằng chứng](apps/daymind/docs/BUILD_STATUS.md), [tiến độ](apps/daymind/docs/PHASE_STATUS.md), [PR #1](https://github.com/Duckhanh149/DayMind-Smart/pull/1). Website được giữ ở root bên dưới, dữ liệu tách khỏi app native.
 
 ## DayMind SMART · Web
 
@@ -36,7 +36,7 @@ Xóa dữ liệu trình duyệt, chế độ riêng tư hoặc cơ chế dọn d
 
 Các thẻ dashboard là số đếm cục bộ đơn giản, chưa phải module analytics giai đoạn 4. Nhịp độ = việc hoàn thành trong ngày / (việc hoàn thành trong ngày + việc chưa hoàn thành có hạn hoặc lịch bắt đầu hôm nay); loại công việc đã xóa/hủy, không phải on-time rate.
 
-Chưa triển khai các giai đoạn 2–9: Reminder Engine, recurrence/calendar đầy đủ, daily digest, analytics chuyên sâu, Firebase sync, Companion, animation/floating window, Live2D, đóng gói native. Không tự chuyển giai đoạn trước khi kiểm thử và chốt các quyết định liên quan.
+Bản web này chưa triển khai các giai đoạn 2–9: Reminder Engine, recurrence/calendar đầy đủ, daily digest, analytics chuyên sâu, Firebase sync, Companion, animation/floating window, Live2D, đóng gói native. Không tự chuyển giai đoạn trước khi kiểm thử và chốt các quyết định liên quan.
 
 ## Triển khai
 

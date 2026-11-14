@@ -1,0 +1,267 @@
+package dev.daymind.daymind_smart
+
+import android.Manifest
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
+import org.json.JSONObject
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+import java.io.File
+import java.util.Calendar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.security.MessageDigest
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
+class ReminderRuntimeTest {
+    private lateinit var context: Context
+    private lateinit var file: File
+    private lateinit var db: SQLiteDatabase
+    private val notifications get() = shadowOf(context.getSystemService(NotificationManager::class.java))
+    private val now get() = System.currentTimeMillis()
+    @Before fun setup() {
+        context=RuntimeEnvironment.getApplication()
+        file=File(context.filesDir,"${UUID.randomUUID()}.sqlite")
+        db=SQLiteDatabase.openOrCreateDatabase(file,null)
+        db.execSQL("CREATE TABLE tasks(id TEXT PRIMARY KEY,title TEXT,status INTEGER,revision INTEGER,deleted_at INTEGER,updated_at INTEGER,completed_at INTEGER,owner_id TEXT,due_at INTEGER,scheduled_start_at INTEGER,scheduled_end_at INTEGER)")
+        db.execSQL("CREATE TABLE extension_records(area TEXT,id TEXT,value TEXT,updated_ms INTEGER,PRIMARY KEY(area,id))")
+        db.execSQL("CREATE TABLE reminder_events(platform_id INTEGER PRIMARY KEY AUTOINCREMENT,event_key TEXT UNIQUE,task_id TEXT,rule_id TEXT,occurrence_id TEXT,occurrence_revision INTEGER,task_revision INTEGER,scheduled_ms INTEGER,expires_ms INTEGER,state TEXT,read INTEGER,title TEXT,priority INTEGER,updated_ms INTEGER)")
+        db.execSQL("CREATE TABLE delivery_logs(id TEXT PRIMARY KEY,event_key TEXT,outcome TEXT,at_ms INTEGER)")
+        db.execSQL("INSERT INTO tasks(id,title,status,revision,deleted_at,updated_at,completed_at,owner_id) VALUES('t','Việc',0,1,NULL,0,NULL,'')")
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("groupingMinutes",10))
+        context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).edit().putString("database",file.path).commit()
+        ReminderRuntime.attachClient(null,false);MainActivity.bridge=null
+        ReminderRuntime.channel(context)
+    }
+    @After fun cleanup(){db.close();file.delete();ReminderRuntime.attachClient(null,false)}
+    private fun configure(settings:JSONObject){db.execSQL("INSERT OR REPLACE INTO extension_records VALUES('notifications','settings',?,?)",arrayOf<Any?>(settings.toString(),now))}
+    private fun event(key:String="event",at:Long=now-1000,expires:Long=now+900000,priority:Int=1){
+        db.execSQL("INSERT INTO reminder_events(event_key,task_id,rule_id,task_revision,scheduled_ms,expires_ms,state,read,title,priority,updated_ms) VALUES(?,'t','default',1,?,?,'scheduled',0,'Việc',?,?)",arrayOf<Any?>(key,at,expires,priority,now))
+    }
+    private fun state(key:String="event")=db.rawQuery("SELECT state FROM reminder_events WHERE event_key=?",arrayOf(key)).use{it.moveToFirst();it.getString(0)}
+    private fun count(sql:String)=db.rawQuery(sql,null).use{it.moveToFirst();it.getInt(0)}
+    @Test fun duplicateAlarmDoesNotRepeatDisplayAttempt(){
+        event();ReminderRuntime.fire(context,"event");ReminderRuntime.fire(context,"event")
+        assertEquals("unknown",state());assertEquals(1,notifications.size())
+        assertEquals(1,count("SELECT COUNT(*) FROM delivery_logs WHERE outcome='display_attempt'"))
+    }
+    @Test fun completedOrEditedTaskInvalidatesPendingEvent(){
+        event();db.execSQL("UPDATE tasks SET revision=2 WHERE id='t'")
+        ReminderRuntime.fire(context,"event");assertEquals("cancelled",state());assertEquals(0,notifications.size())
+        db.execSQL("UPDATE tasks SET revision=1,status=2 WHERE id='t'");event("other")
+        ReminderRuntime.fire(context,"other");assertEquals("cancelled",state("other"));assertEquals(0,notifications.size())
+    }
+    @Test fun expiredAlarmNeverReplays(){
+        event(expires=now-100);ReminderRuntime.fire(context,"event")
+        assertEquals("expired",state());assertEquals(0,notifications.size())
+    }
+    @Test fun earlyBroadcastRearmsWithoutDisplaying(){
+        event(at=now+600000);ReminderRuntime.fire(context,"event")
+        assertEquals("scheduled",state());assertEquals(0,notifications.size())
+        assertEquals(1,shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.size)
+    }
+    @Test fun cancellingAnEventRemovesItsVisibleGroup(){
+        event();ReminderRuntime.fire(context,"event");assertEquals(1,notifications.size())
+        val id=count("SELECT platform_id FROM reminder_events WHERE event_key='event'")
+        ReminderRuntime.cancel(context,id);assertEquals(0,notifications.size())
+    }
+    @Test fun switchingDatabaseAtColdStartClearsPreviousProfileAlarmsAndVisibleContent() {
+        event();ReminderRuntime.fire(context,"event");assertEquals(1,notifications.size())
+        val at=now+600000;event("future",at=at)
+        val id=count("SELECT platform_id FROM reminder_events WHERE event_key='future'")
+        ReminderRuntime.arm(context,id,"future",at)
+        val next=File(context.filesDir,"next-${UUID.randomUUID()}.sqlite")
+        try {
+            SQLiteDatabase.openOrCreateDatabase(next,null).close()
+            ReminderRuntime.switchDatabase(context,next.path)
+            assertEquals(next.path,context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).getString("database",null))
+            assertEquals(0,notifications.size())
+            assertEquals(0,shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.size)
+        } finally { next.delete() }
+    }
+    @Test fun quietHoursAndSecondaryDeviceSuppressWithoutCompletingTask(){
+        val calendar=Calendar.getInstance();val minute=calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE)
+        configure(JSONObject().put("quietEnabled",true).put("quietStart",minute).put("quietEnd",(minute+60)%1440))
+        event();ReminderRuntime.fire(context,"event");assertEquals("suppressed",state())
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",false))
+        event("secondary");ReminderRuntime.fire(context,"secondary");assertEquals("suppressed",state("secondary"))
+        assertEquals(0,notifications.size());assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+    }
+    @Test fun foregroundProducesInAppActivityWithoutOSToast(){
+        ReminderRuntime.attachClient(android.os.Messenger(android.os.Handler(android.os.Looper.getMainLooper())),true);event();ReminderRuntime.fire(context,"event")
+        assertEquals("unknown",state());assertEquals(0,notifications.size())
+        assertEquals(1,count("SELECT COUNT(*) FROM delivery_logs WHERE outcome='in_app'"))
+    }
+    @Test fun visibleFlagWithoutLiveFlutterClientUsesOSToast(){
+        ReminderRuntime.attachClient(null,true);event();ReminderRuntime.fire(context,"event")
+        assertEquals("unknown",state());assertEquals(1,notifications.size())
+        assertEquals(1,count("SELECT COUNT(*) FROM delivery_logs WHERE outcome='display_attempt'"))
+    }
+    @Test fun invalidDatabaseIsNeverDeletedOrRecreated(){
+        val invalid=File(context.filesDir,"${UUID.randomUUID()}.sqlite")
+        val bytes="Synthetic invalid database fixture".toByteArray();invalid.writeBytes(bytes)
+        context.getSharedPreferences("daymind_runtime",Context.MODE_PRIVATE).edit().putString("database",invalid.path).commit()
+        try {
+            val attempt=runCatching { ReminderRuntime.database(context)?.use { database -> database.rawQuery("PRAGMA integrity_check",null).use { it.moveToFirst() } } }
+            assertTrue(attempt.isFailure)
+            assertTrue(invalid.exists());assertArrayEquals(bytes,invalid.readBytes())
+        } finally { invalid.delete() }
+    }
+    @Test fun twentyNearTimeAlarmsGroupIntoOneToastAndPreserveHighPriority(){
+        for(i in 0..19){event("e$i",priority=if(i==19)2 else 1);ReminderRuntime.fire(context,"e$i")}
+        assertEquals(1,notifications.size());assertEquals(20,count("SELECT COUNT(*) FROM reminder_events WHERE state='unknown'"))
+        assertTrue(notifications.allNotifications.single().extras.getCharSequence("android.title").toString().contains("Ưu tiên cao"))
+    }
+    @Test fun dismissDoesNotCompleteAndDoubleSnoozeCreatesOneReplacement(){
+        event();ReminderRuntime.fire(context,"event")
+        val snooze=Intent().setAction("DAYMIND_snooze").putExtra("key","event")
+        ReminderRuntime.action(context,snooze);ReminderRuntime.action(context,snooze)
+        assertEquals("snoozed",state());assertEquals(2,count("SELECT COUNT(*) FROM reminder_events"))
+        assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+        event("dismiss");ReminderRuntime.fire(context,"dismiss")
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_DISMISS").putExtra("key","dismiss").putExtra("start",now-60000).putExtra("end",now+60000))
+        assertEquals("dismissed",state("dismiss"));assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+    }
+    @Test fun explicitDoneCompletesAndCancelsFutureTaskEvents(){
+        event();event("future",at=now+600000);ReminderRuntime.fire(context,"event")
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_done").putExtra("key","event"))
+        assertEquals(2,count("SELECT status FROM tasks WHERE id='t'"));assertEquals("cancelled",state("future"))
+    }
+    @Test fun rebootRecoverySkipsPastEventsAndOnlyArmsFuture(){
+        event();event("future",at=now+600000)
+        val complete=CountDownLatch(1);ReminderRuntime.recover(context,true){complete.countDown()}
+        assertTrue(complete.await(5,TimeUnit.SECONDS));assertEquals("expired",state());assertEquals("scheduled",state("future"))
+        assertEquals(1,shadowOf(context.getSystemService(AlarmManager::class.java)).scheduledAlarms.size)
+        assertEquals(0,notifications.size())
+    }
+    @Test @Config(sdk=[33]) fun deniedAndroid13PermissionNeverDisplays(){
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        event();ReminderRuntime.fire(context,"event");assertFalse(ReminderRuntime.granted(context))
+        assertEquals("suppressed",state());assertEquals(0,notifications.size())
+    }
+    private fun occurrence(id:String,taskId:String="t",status:String="todo",revision:Int=1) {
+        val value=JSONObject().put("id",id).put("taskId",taskId).put("ruleId","series-rule").put("status",status).put("revision",revision)
+        db.execSQL("INSERT OR REPLACE INTO extension_records VALUES('occurrences',?,?,?)",arrayOf<Any?>(id,value.toString(),now))
+    }
+    private fun scopedEvent(key:String,id:String,at:Long=now-1000) {
+        occurrence(id);event(key,at=at)
+        db.execSQL("UPDATE reminder_events SET occurrence_id=?,occurrence_revision=1 WHERE event_key=?",arrayOf<Any?>(id,key))
+    }
+    @Test fun completingOneOccurrenceNeverCompletesSeriesOrCancelsAnotherDate() {
+        scopedEvent("first","o1");scopedEvent("next","o2",at=now+600000)
+        ReminderRuntime.fire(context,"first")
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_done").putExtra("key","first"))
+        assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"));assertEquals("scheduled",state("next"))
+        val data=db.rawQuery("SELECT value FROM extension_records WHERE area='occurrences' AND id='o1'",null).use { it.moveToFirst();JSONObject(it.getString(0)) }
+        assertEquals("completed",data.getString("status"));assertEquals(2,data.getInt("revision"))
+    }
+    @Test fun staleOrForeignOccurrenceCannotPostNotification() {
+        scopedEvent("stale","o1");occurrence("o1",revision=2)
+        ReminderRuntime.fire(context,"stale");assertEquals("cancelled",state("stale"))
+        scopedEvent("foreign","o2");occurrence("o2",taskId="some-other-task")
+        ReminderRuntime.fire(context,"foreign");assertEquals("cancelled",state("foreign"));assertEquals(0,notifications.size())
+    }
+    @Test fun instanceNotificationOffDoesNotDisableOtherOccurrences() {
+        scopedEvent("off","o1");scopedEvent("on","o2")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','o1',?,?)",arrayOf<Any?>(JSONObject().put("mode","off").toString(),now))
+        ReminderRuntime.fire(context,"off");ReminderRuntime.fire(context,"on")
+        assertEquals("cancelled",state("off"));assertEquals("unknown",state("on"));assertEquals(1,notifications.size())
+    }
+    @Test fun segmentCustomRuleIsAcceptedThroughOccurrenceInheritance() {
+        scopedEvent("custom","o1")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','series-rule',?,?)",arrayOf<Any?>(JSONObject().put("mode","custom").toString(),now))
+        db.execSQL("INSERT INTO extension_records VALUES('reminder_rules','custom-rule',?,?)",arrayOf<Any?>(JSONObject().put("taskId","series-rule").put("enabled",true).toString(),now))
+        db.execSQL("UPDATE reminder_events SET rule_id='custom-rule' WHERE event_key='custom'")
+        ReminderRuntime.fire(context,"custom");assertEquals("unknown",state("custom"));assertEquals(1,notifications.size())
+    }
+    @Test fun inheritedAbsoluteRuleIsRejectedButOwnOccurrenceAbsoluteIsAccepted() {
+        scopedEvent("inherited","o1")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','series-rule',?,?)",arrayOf<Any?>(JSONObject().put("mode","custom").toString(),now))
+        val rule=JSONObject().put("taskId","series-rule").put("kind","absolute").put("enabled",true)
+        db.execSQL("INSERT INTO extension_records VALUES('reminder_rules','absolute-rule',?,?)",arrayOf<Any?>(rule.toString(),now))
+        db.execSQL("UPDATE reminder_events SET rule_id='absolute-rule' WHERE event_key='inherited'")
+        ReminderRuntime.fire(context,"inherited");assertEquals("cancelled",state("inherited"));assertEquals(0,notifications.size())
+        scopedEvent("own","o2")
+        db.execSQL("INSERT INTO extension_records VALUES('task_reminders','o2',?,?)",arrayOf<Any?>(JSONObject().put("mode","custom").toString(),now))
+        rule.put("taskId","o2")
+        db.execSQL("UPDATE extension_records SET value=? WHERE area='reminder_rules' AND id='absolute-rule'",arrayOf<Any?>(rule.toString()))
+        db.execSQL("UPDATE reminder_events SET rule_id='absolute-rule' WHERE event_key='own'")
+        ReminderRuntime.fire(context,"own");assertEquals("unknown",state("own"));assertEquals(1,notifications.size())
+    }
+
+    private fun digestKey(date:String)=MessageDigest.getInstance("SHA-256").digest("__digest__:local|$date".toByteArray()).joinToString(""){"%02x".format(it)}
+    private fun digestEvent():String {
+        val local=Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault());val minute=local.hour*60+local.minute
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",minute))
+        val date=local.toLocalDate().toString();val key=digestKey(date)
+        event(key,at=ReminderRuntime.digestWallInstant(ZoneId.systemDefault(),local.toLocalDate(),minute)!!);db.execSQL("UPDATE reminder_events SET task_id='__digest__:local',rule_id='digest',task_revision=0 WHERE event_key=?",arrayOf<Any?>(key))
+        db.execSQL("INSERT INTO extension_records VALUES('digest_slots',?,?,?)",arrayOf<Any?>(key,JSONObject().put("date",date).put("ownerId","local").toString(),now))
+        return key
+    }
+    @Test fun nativeDigestUsesFreshCountsAndHasNoTaskActions() {
+        db.execSQL("UPDATE tasks SET due_at=? WHERE id='t'",arrayOf<Any?>((now-60000)/1000))
+        db.execSQL("INSERT INTO tasks(id,title,status,revision,due_at) VALUES('series','Root',0,1,?)",arrayOf<Any?>((now-60000)/1000))
+        db.execSQL("INSERT INTO extension_records VALUES('recurrence','r',?,?)",arrayOf<Any?>(JSONObject().put("taskId","series").toString(),now))
+        val o=JSONObject().put("taskId","series").put("status","todo").put("draft",JSONObject().put("scheduledEndAt",Instant.ofEpochMilli(now).toString()))
+        db.execSQL("INSERT INTO extension_records VALUES('occurrences','daily',?,?)",arrayOf<Any?>(o.toString(),now))
+        val key=digestEvent();ReminderRuntime.fire(context,key)
+        val notice=notifications.allNotifications.single()
+        assertEquals("Nhịp ngày mới",notice.extras.getCharSequence("android.title").toString())
+        assertEquals("Hôm nay: 2 việc cần làm · 1 quá hạn",notice.extras.getCharSequence("android.text").toString())
+        assertEquals(0,notice.actions?.size ?: 0);assertEquals("unknown",state(key))
+    }
+    @Test fun digestAndTaskGroupsStaySeparateAndDismissOnlyTheirOwnKind() {
+        event("work");ReminderRuntime.fire(context,"work")
+        val key=digestEvent();ReminderRuntime.fire(context,key);assertEquals(2,notifications.size())
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_DISMISS").putExtra("key",key).putExtra("group",999999999).putExtra("digest",true).putExtra("start",now-60000).putExtra("end",now+60000))
+        assertEquals("dismissed",state(key));assertEquals("unknown",state("work"));assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+    }
+    @Test fun digestDoesNotAcceptForgedDoneOrSnoozeAndNeverChangesTask() {
+        val key=digestEvent();ReminderRuntime.fire(context,key)
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_done").putExtra("key",key))
+        ReminderRuntime.action(context,Intent().setAction("DAYMIND_snooze").putExtra("key",key))
+        assertEquals("unknown",state(key));assertEquals(1,count("SELECT COUNT(*) FROM reminder_events"));assertEquals(0,count("SELECT status FROM tasks WHERE id='t'"))
+    }
+    @Test fun rollingDigestPlanExtendsAndTimeEditCannotRepeatAnAttemptedDate() {
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",420))
+        val day=LocalDate.of(2026,1,5);val zone=ZoneId.systemDefault();val at=day.atStartOfDay(zone).toInstant().toEpochMilli()
+        ReminderRuntime.ensureDigestSlots(context,db,at);assertEquals(3,count("SELECT COUNT(*) FROM reminder_events"))
+        val key=digestKey(day.toString());db.execSQL("UPDATE reminder_events SET state='unknown' WHERE event_key=?",arrayOf<Any?>(key))
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",480))
+        ReminderRuntime.ensureDigestSlots(context,db,at+7*3600000);assertEquals("unknown",state(key));assertEquals(3,count("SELECT COUNT(*) FROM reminder_events"))
+        ReminderRuntime.ensureDigestSlots(context,db,day.plusDays(3).atStartOfDay(zone).toInstant().toEpochMilli())
+        assertEquals(6,count("SELECT COUNT(*) FROM reminder_events"));assertEquals(1,count("SELECT COUNT(*) FROM reminder_events WHERE event_key='${digestKey("2026-01-10")}'"))
+    }
+    @Test fun digestWallClockHandlesGapAndFirstFoldLikeDart() {
+        val zone=ZoneId.of("America/New_York")
+        assertEquals(Instant.parse("2026-03-08T07:00:00Z").toEpochMilli(),ReminderRuntime.digestWallInstant(zone,LocalDate.of(2026,3,8),150)!!)
+        assertEquals(Instant.parse("2026-11-01T05:30:00Z").toEpochMilli(),ReminderRuntime.digestWallInstant(zone,LocalDate.of(2026,11,1),90)!!)
+    }
+    @Test fun staleDigestDateOrOwnerCannotDisplay() {
+        val key=digestEvent()
+        db.execSQL("UPDATE extension_records SET value=? WHERE area='digest_slots' AND id=?",arrayOf<Any?>(JSONObject().put("date","2000-01-01").put("ownerId","local").toString(),key))
+        ReminderRuntime.fire(context,key);assertEquals("cancelled",state(key));assertEquals(0,notifications.size())
+    }
+
+    @Test fun changingDigestTimeRejectsAnObsoleteAlarmBeforeReplanning() {
+        val key=digestEvent();val local=Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault());val minute=(local.hour*60+local.minute+1)%1440
+        configure(JSONObject().put("quietEnabled",false).put("primaryDevice",true).put("digestEnabled",true).put("digestMinute",minute))
+        ReminderRuntime.fire(context,key);assertEquals("cancelled",state(key));assertEquals(0,notifications.size())
+    }
+
+}

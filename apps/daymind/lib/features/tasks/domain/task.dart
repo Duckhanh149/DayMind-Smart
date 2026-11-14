@@ -18,6 +18,12 @@ class Task {
     this.completedAt,
     this.deletedAt,
     this.revision = 1,
+    this.seriesId,
+    this.occurrenceId,
+    this.recurrenceRuleId,
+    this.recurrenceRevision,
+    this.seriesRevision,
+    this.detached = false,
   });
   final String id, title, description;
   final TaskPriority priority;
@@ -30,6 +36,11 @@ class Task {
       deletedAt;
   final DateTime createdAt, updatedAt;
   final int revision;
+  final String? seriesId, occurrenceId, recurrenceRuleId;
+  final int? recurrenceRevision, seriesRevision;
+  final bool detached;
+  String get reminderTaskId => seriesId ?? id;
+  int get reminderRevision => seriesRevision ?? revision;
   bool get terminal =>
       status == TaskStatus.completed || status == TaskStatus.cancelled;
   bool overdue(DateTime now) =>
@@ -62,6 +73,28 @@ class TaskDraft {
   final TaskStatus status;
   final String? categoryId;
   final DateTime? dueAt, scheduledStartAt, scheduledEndAt;
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'description': description,
+    'priority': priority.name,
+    'status': status.name,
+    'categoryId': categoryId,
+    'dueAt': dueAt?.toUtc().toIso8601String(),
+    'scheduledStartAt': scheduledStartAt?.toUtc().toIso8601String(),
+    'scheduledEndAt': scheduledEndAt?.toUtc().toIso8601String(),
+  };
+  factory TaskDraft.fromJson(Map<String, dynamic> value) => TaskDraft(
+    title: value['title'] as String,
+    description: value['description'] as String? ?? '',
+    priority: TaskPriority.values.byName(
+      value['priority'] as String? ?? 'medium',
+    ),
+    status: TaskStatus.values.byName(value['status'] as String? ?? 'todo'),
+    categoryId: value['categoryId'] as String?,
+    dueAt: readInstant(value['dueAt']),
+    scheduledStartAt: readInstant(value['scheduledStartAt']),
+    scheduledEndAt: readInstant(value['scheduledEndAt']),
+  );
   void validate() {
     if (title.trim().isEmpty) {
       throw const ValidationException('Hãy đặt tên cho công việc.');
@@ -81,6 +114,9 @@ class TaskDraft {
     }
   }
 }
+
+DateTime? readInstant(Object? value) =>
+    value == null ? null : DateTime.parse(value as String).toUtc();
 
 class Category {
   const Category(this.id, this.name, this.color);

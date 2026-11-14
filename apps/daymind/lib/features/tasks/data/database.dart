@@ -44,23 +44,84 @@ class Preferences extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Categories, Tasks, Preferences])
+class ExtensionRecords extends Table {
+  TextColumn get area => text()();
+  TextColumn get id => text()();
+  TextColumn get value => text()();
+  IntColumn get updatedMs => integer()();
+  @override
+  Set<Column> get primaryKey => {area, id};
+}
+
+@DataClassName('ReminderEventRecord')
+class ReminderEvents extends Table {
+  TextColumn get eventKey => text()();
+  TextColumn get taskId => text()();
+  TextColumn get ruleId => text()();
+  TextColumn get occurrenceId => text().nullable()();
+  IntColumn get occurrenceRevision => integer().nullable()();
+  IntColumn get taskRevision => integer()();
+  IntColumn get scheduledMs => integer()();
+  IntColumn get expiresMs => integer()();
+  TextColumn get state => text()();
+  IntColumn get platformId => integer().autoIncrement()();
+  BoolColumn get read => boolean().withDefault(const Constant(false))();
+  TextColumn get title => text()();
+  IntColumn get priority => integer()();
+  IntColumn get updatedMs => integer()();
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {eventKey},
+  ];
+}
+
+class DeliveryLogs extends Table {
+  TextColumn get id => text()();
+  TextColumn get eventKey => text()();
+  TextColumn get outcome => text()();
+  IntColumn get atMs => integer()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [
+    Categories,
+    Tasks,
+    Preferences,
+    ExtensionRecords,
+    ReminderEvents,
+    DeliveryLogs,
+  ],
+)
 class DaymindDatabase extends _$DaymindDatabase {
   DaymindDatabase(super.executor);
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      if (from == 1) {
-        await m.addColumn(tasks, tasks.scheduledStartAt);
-        await m.addColumn(tasks, tasks.scheduledEndAt);
-        await m.addColumn(tasks, tasks.revision);
-        await m.createTable(preferences);
+      if (from < 1 || from > to || to != schemaVersion) {
+        throw StateError(
+          'Phiên bản dữ liệu chưa được hỗ trợ. Hãy dùng phiên bản DayMind mới hơn; dữ liệu vẫn được giữ.',
+        );
       }
+      await transaction(() async {
+        if (from == 1) {
+          await m.addColumn(tasks, tasks.scheduledStartAt);
+          await m.addColumn(tasks, tasks.scheduledEndAt);
+          await m.addColumn(tasks, tasks.revision);
+          await m.createTable(preferences);
+        }
+        if (from < 3) {
+          await m.createTable(extensionRecords);
+          await m.createTable(reminderEvents);
+          await m.createTable(deliveryLogs);
+        }
+      });
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

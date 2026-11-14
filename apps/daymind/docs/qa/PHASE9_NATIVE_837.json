@@ -1,0 +1,118 @@
+{
+  "source": "8372826a11389aaaa886b9230eff242b9b8d75d9",
+  "sourceTree": "a8f60fff07c2383c8ec8491977091dd0ba82d69b",
+  "verifiedOn": "2026-11-12",
+  "nativeRun": 43160174675,
+  "automatedNativeGatePassed": true,
+  "projectReleaseAcceptanceComplete": false,
+  "emulator": {
+    "source": "70c3331b8e8fb07edfbd5f58f6ef677b393faa04",
+    "run": 43157911425,
+    "job": 130982037755,
+    "result": "success",
+    "realCases": 16,
+    "aotCases": 7,
+    "reuseReason": "Identical lib, Firebase, emulator_test, integration_test, Android/Windows and pubspec blobs/trees in source 70c3331 and 8372826a; only host adapter/workflow paths/docs changed.",
+    "identicalTrees": {
+      "apps/daymind/lib": "7f3c8308c9c3835e0389b1f328647606b6b6bdf3",
+      "apps/daymind/firebase": "67fb9ba8fc4e12103e9d36dff95b933204a2bd5c",
+      "apps/daymind/emulator_test": "41e7c1fad25cbab98dde3a7bd7c21a401ec11e63",
+      "apps/daymind/pubspec.yaml": "bf5615d0b716c8b699f5fafcdeef434181a6d19f",
+      "apps/daymind/pubspec.lock": "27ecf7a6912fbe139b47006efb7c5954287e1f55"
+    }
+  },
+  "android": {
+    "job": 130989190737,
+    "result": "success",
+    "flutterPassed": 225,
+    "receiverTests": 27,
+    "pythonDriverGuards": 25,
+    "analyze": "no issues",
+    "hostAdapter": "Official integration_test_driver.dart via flutter drive --no-dds; original app_smoke_test target/assertions, required markers and 600s outer/5min adapter deadlines.",
+    "hostAllTestsPassed": true,
+    "keystoreRoundtripPassed": true,
+    "coldNotificationAndDigestPassed": true,
+    "privateProcessAndFiveConcurrentIntegrityCyclesPassed": true,
+    "restoreIntegrityCheckPassed": true,
+    "backup": {
+      "platform": "android",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 90,
+      "cipherBytes": 4062,
+      "captureMs": 108,
+      "encryptMs": 3009,
+      "totalProbeMs": 11698,
+      "rssBefore": 535617536,
+      "rssAfter": 546746368,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "accountArtworkAndVerifiedDeletionPassed": true
+  },
+  "windows": {
+    "job": 130989190950,
+    "result": "success",
+    "flutterPassed": 223,
+    "hostPrivilegeSymlinkSkipped": 2,
+    "pythonDriverGuards": 25,
+    "analyze": "no issues",
+    "policyChecks": 12,
+    "componentChecks": 100,
+    "componentFailures": 0,
+    "windowChecks": [
+      15,
+      7,
+      7,
+      7
+    ],
+    "dpapiRoundtripPassed": true,
+    "backup": {
+      "platform": "windows",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 2,
+      "cipherBytes": 4062,
+      "captureMs": 6383,
+      "encryptMs": 2447,
+      "totalProbeMs": 70033,
+      "rssBefore": 517754880,
+      "rssAfter": 532176896,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "installer": {
+      "baseline": "0.6.1",
+      "current": "0.7.0",
+      "taskRows": 3,
+      "preservedArtworkFiles": 2,
+      "preservedDomainRecords": 4,
+      "upgradePreservedData": true,
+      "uninstallPreservedData": true,
+      "reinstallPassed": true
+    },
+    "accountArtworkAndVerifiedDeletionPassed": true,
+    "secondLaunchTrayOpenQuitNoAutostart": true,
+    "actualOsNotificationState": 6,
+    "actualAppRespectedQuietState": true
+  },
+  "publish": {
+    "job": 130994253356,
+    "result": "skipped",
+    "expected": true,
+    "mergedToMain": false,
+    "releaseCreated": false
+  },
+  "limits": [
+    "Emulator/Windows Server debug-native tests do not replace physical Android OEM/Doze/reboot, Windows10/11 DND/DPI or low-end release performance acceptance.",
+    "Android RSS covers the Flutter process only; the private native receiver process is additional.",
+    "Backup totalProbeMs includes UI/sync/poll/KDF/assertions/cleanup, not pure restore latency; Windows captures wait for the current reminder poll to quiesce.",
+    "Preview Android uses Android Debug certificate; Windows app/installer unsigned. No production signing identity/trust/upgrade-chain verification.",
+    "Firebase production intentionally unconfigured; Emulator first by user request.",
+    "Live2D SDK/model remains disabled and unbundled; technical/licensing gates for enabling Live2D are still open. Raster fallback is accepted by the master specification."
+  ]
+}

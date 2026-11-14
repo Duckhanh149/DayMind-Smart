@@ -14,7 +14,9 @@ class DaymindApp extends ConsumerStatefulWidget {
 
 class _DaymindAppState extends ConsumerState<DaymindApp> {
   late final router = GoRouter(
-    initialLocation: '/today',
+    initialLocation: ref.read(workspaceProvider).notificationOpenRequest > 0
+        ? '/notifications'
+        : '/today',
     routes: [
       GoRoute(
         path: '/:page',
@@ -59,6 +61,16 @@ class _DaymindAppState extends ConsumerState<DaymindApp> {
         backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
       ),
+      listTileTheme: ListTileThemeData(
+        titleTextStyle: TextStyle(
+          fontFamily: 'BeVietnamPro',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurface,
+        ),
+        textColor: scheme.onSurface,
+        selectedColor: scheme.onSecondaryContainer,
+      ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         elevation: 0,
         focusElevation: 0,
@@ -76,6 +88,12 @@ class _DaymindAppState extends ConsumerState<DaymindApp> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(
+      workspaceProvider.select((c) => c.notificationOpenRequest),
+      (previous, next) {
+        router.go('/notifications');
+      },
+    );
     final prefs = ref.watch(workspaceProvider).preferences;
     return MaterialApp.router(
       title: 'DayMind SMART',

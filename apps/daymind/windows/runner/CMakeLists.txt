@@ -8,6 +8,9 @@ project(runner LANGUAGES CXX)
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
+  "floating_companion.cpp"
+  "secure_store.cpp"
+  "single_instance.cpp"
   "main.cpp"
   "utils.cpp"
   "win32_window.cpp"
@@ -19,6 +22,7 @@ add_executable(${BINARY_NAME} WIN32
 # Apply the standard set of build settings. This can be removed for applications
 # that need different build settings.
 apply_standard_settings(${BINARY_NAME})
+set_target_properties(${BINARY_NAME} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
 
 # Add preprocessor definitions for the build version.
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION=\"${FLUTTER_VERSION}\"")
@@ -34,7 +38,32 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "shell32.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "crypt32.lib" "ole32.lib" "uuid.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "advapi32.lib" "windowsapp.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "gdiplus.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+# Native gate probes are built for CI but stay outside the distributed bundle.
+add_executable(daymind_companion_policy_tests "companion_policy_test.cpp")
+apply_standard_settings(daymind_companion_policy_tests)
+target_compile_definitions(daymind_companion_policy_tests PRIVATE "NOMINMAX")
+set_target_properties(daymind_companion_policy_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")
+add_executable(daymind_companion_window_probe "companion_window_probe.cpp")
+apply_standard_settings(daymind_companion_window_probe)
+target_compile_definitions(daymind_companion_window_probe PRIVATE "NOMINMAX")
+target_link_libraries(daymind_companion_window_probe PRIVATE "user32.lib")
+set_target_properties(daymind_companion_window_probe PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")
+add_executable(daymind_companion_component_probe
+  "companion_component_probe.cpp" "floating_companion.cpp")
+apply_standard_settings(daymind_companion_component_probe)
+target_compile_definitions(daymind_companion_component_probe PRIVATE "NOMINMAX")
+target_link_libraries(daymind_companion_component_probe PRIVATE
+  flutter flutter_wrapper_app "gdiplus.lib" "shell32.lib" "ole32.lib" "psapi.lib")
+set_target_properties(daymind_companion_component_probe PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/companion-tests/$<CONFIG>")

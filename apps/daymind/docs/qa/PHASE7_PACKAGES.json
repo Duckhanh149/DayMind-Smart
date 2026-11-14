@@ -1,0 +1,59 @@
+{
+  "source": "e99303392f476fa842a793bbd28c09f538f94c27",
+  "run": 42757179906,
+  "artifacts": {
+    "android": {
+      "zipBytes": 11284344,
+      "zipSha256": "bb39c6c0f74d50e8b997a4027d64e13991dc16216b932ece0b6c060ca36b561e",
+      "crcPassed": true,
+      "files": 1,
+      "artifactId": 13736237923,
+      "apkBytes": 23751875,
+      "apkSha256": "41ccfaa0305d45cfe225a8064e3a8c90e2e1a6591a2c8e522cde45b47abc22d3",
+      "apkCrcPassed": true,
+      "abi": "arm64-v8a",
+      "fontOflIncluded": true,
+      "version": "0.6.0",
+      "versionCode": 2006,
+      "minSdk": 24,
+      "targetSdk": 36,
+      "v2SignaturePassed": true,
+      "certificateSubject": "Android Debug (preview only)",
+      "certificateSha256": "0152144bcf64cfaa4ad63d430523eaa77ed6cc4a6bbb9cd0daf237c6bb3c6182",
+      "releaseDebugEndpointExcluded": true
+    },
+    "windows": {
+      "zipBytes": 28560777,
+      "zipSha256": "92a15ac95101a4de6f7c1fae16ced2746125334cf571dfc1cdbb761e399dd72e",
+      "crcPassed": true,
+      "files": 34,
+      "exe": {
+        "bytes": 172032,
+        "sha256": "dd49561412d1b86778f06e8e22527ad97cd6f9bf7c34df556c84575ad081bdd9",
+        "peMachine": "0x8664"
+      },
+      "installer": {
+        "bytes": 13149832,
+        "sha256": "dd1a18f173f27c616c7437699d1e7e3a7a2432d2b4076812e66678eb707093aa",
+        "peMachine": "0x14c"
+      },
+      "artifactId": 13735829615,
+      "fontOflIncluded": true,
+      "vcRuntimeIncluded": [
+        "msvcp140.dll",
+        "vcruntime140.dll",
+        "vcruntime140_1.dll"
+      ],
+      "gateProbesExcluded": true,
+      "userDatabaseExcluded": true,
+      "version": "0.6.0",
+      "appArchitecture": "x64",
+      "installerBootstrap": "x86 with x64 payload",
+      "productionSigningVerified": false
+    }
+  },
+  "limitations": [
+    "APK uses a Debug certificate; production signing and a verified upgrade chain remain in phase 9.",
+    "Native package checks and CI do not replace physical Android OEM/Doze and Windows 10/11 installation acceptance."
+  ]
+}

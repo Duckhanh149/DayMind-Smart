@@ -1,0 +1,15 @@
+{
+  "name": "daymind-firebase-emulator-poc",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test:emulator": "firebase emulators:exec --config firebase.json --project demo-daymind --only auth,firestore \"node verify.mjs\""
+  },
+  "devDependencies": {
+    "firebase-tools": "15.35.0"
+  }
+}

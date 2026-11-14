@@ -1,0 +1,155 @@
+{
+  "source": "8372826a11389aaaa886b9230eff242b9b8d75d9",
+  "nativeRun": 43160174675,
+  "verifiedOn": "2026-11-12",
+  "android": {
+    "companion": {
+      "platform": "android",
+      "sourcePixels": "2048x2048",
+      "images": 4,
+      "selections": 24,
+      "lowResourceDecode": 128,
+      "rssBefore": 537890816,
+      "rssAfterImport": 538443776,
+      "rssSamplePeak": 553369600,
+      "rssAfterCleanup": 526462976,
+      "imageCacheSamplePeak": 131072,
+      "importElapsedMs": 349,
+      "selectionElapsedMs": 14711
+    },
+    "animation": {
+      "platform": "android",
+      "frames": 3,
+      "atlasWidth": 384,
+      "atlasHeight": 128,
+      "observedFrames": 3,
+      "observationMs": 4747,
+      "rssBefore": 526856192,
+      "rssSamplePeak": 528134144,
+      "rssAfterPause": 537653248,
+      "imageCacheBytes": 0
+    },
+    "maxAtlas": {
+      "platform": "android",
+      "frames": 120,
+      "cycles": 6,
+      "atlasWidth": 2048,
+      "atlasHeight": 1024,
+      "atlasRgbaBytes": 8388608,
+      "rssBefore": 540798976,
+      "rssSamplePeak": 540798976,
+      "rssAfterPause": 531464192,
+      "allTextureHandlesDisposed": true
+    },
+    "backup": {
+      "platform": "android",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 90,
+      "cipherBytes": 4062,
+      "captureMs": 108,
+      "encryptMs": 3009,
+      "totalProbeMs": 11698,
+      "rssBefore": 535617536,
+      "rssAfter": 546746368,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    }
+  },
+  "windows": {
+    "companion": {
+      "platform": "windows",
+      "sourcePixels": "2048x2048",
+      "images": 4,
+      "selections": 24,
+      "lowResourceDecode": 128,
+      "rssBefore": 439623680,
+      "rssAfterImport": 561344512,
+      "rssSamplePeak": 573140992,
+      "rssAfterCleanup": 460791808,
+      "imageCacheSamplePeak": 131072,
+      "importElapsedMs": 301,
+      "selectionElapsedMs": 16474
+    },
+    "animation": {
+      "platform": "windows",
+      "frames": 3,
+      "atlasWidth": 384,
+      "atlasHeight": 128,
+      "observedFrames": 3,
+      "observationMs": 4634,
+      "rssBefore": 461533184,
+      "rssSamplePeak": 471400448,
+      "rssAfterPause": 464019456,
+      "imageCacheBytes": 0
+    },
+    "maxAtlas": {
+      "platform": "windows",
+      "frames": 120,
+      "cycles": 6,
+      "atlasWidth": 2048,
+      "atlasHeight": 1024,
+      "atlasRgbaBytes": 8388608,
+      "rssBefore": 464121856,
+      "rssSamplePeak": 564117504,
+      "rssAfterPause": 522706944,
+      "allTextureHandlesDisposed": true
+    },
+    "floatingComponent": {
+      "cycles": 20,
+      "observedFrames": 3,
+      "gdiBefore": 14,
+      "gdiAfter": 14,
+      "surfaceBytes": 50176,
+      "rendersDuringObservation": 18,
+      "atlasWidth": 2048,
+      "atlasHeight": 1024,
+      "rssBefore": 14786560,
+      "rssSamplePeak": 25968640
+    },
+    "floatingActualApp": {
+      "cycles": 20,
+      "observedFrames": 3,
+      "gdiBefore": 14,
+      "gdiAfter": 14,
+      "surfaceBytes": 50176,
+      "rendersDuringObservation": 18,
+      "atlasWidth": 2048,
+      "atlasHeight": 1024,
+      "rssBefore": 14786560,
+      "rssSamplePeak": 25968640
+    },
+    "floatingAnimationActualApp": {
+      "osBlocked": true,
+      "observedFrames": 1,
+      "elapsedMs": 2625,
+      "renders": 0,
+      "cpuMs": 281
+    },
+    "backup": {
+      "platform": "windows",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 2,
+      "cipherBytes": 4062,
+      "captureMs": 6383,
+      "encryptMs": 2447,
+      "totalProbeMs": 70033,
+      "rssBefore": 517754880,
+      "rssAfter": 532176896,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    }
+  },
+  "limits": [
+    "Debug CI/emulator measurements are sampled RSS/cache/GDI, not physical release latency/FPS or acceptance on low-memory devices.",
+    "Windows actual app has OS quiet state 6, renders zero frames and holds no floating surface. Visible rendering exercised by controlled notification reader in a separate Win32/GDI+ component executable, excluded from packages.",
+    "All max-atlas texture handles disposed; process RSS need not return to baseline because allocator/VM may retain memory.",
+    "Android Flutter RSS excludes :reminders private native process.",
+    "Near-limit Linux AOT codec-only measurements are in PHASE9_BACKUP_AOT.json; synthetic raw buffers are not valid image-import/restore fixtures."
+  ]
+}

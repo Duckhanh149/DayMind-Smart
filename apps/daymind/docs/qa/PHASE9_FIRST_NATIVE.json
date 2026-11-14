@@ -1,0 +1,41 @@
+{
+  "phase": 9,
+  "source": "4738d3bf0f66c3ea98ac5991cb77f2f17cf3e880",
+  "nativeRun": 42785443753,
+  "emulator": {
+    "run": 42785444194,
+    "job": 129725372858,
+    "result": "success"
+  },
+  "windows": {
+    "job": 129725368986,
+    "result": "success",
+    "componentChecks": 100,
+    "componentFailures": 0,
+    "secondLaunchRestoredOriginalWindow": true,
+    "trayOpenQuitNoAutostart": true,
+    "backupProbe": {
+      "tasks": 1,
+      "assets": 1,
+      "cipherBytes": 2750,
+      "encryptMs": 1968,
+      "totalProbeMs": 7197,
+      "rssBefore": 524746752,
+      "rssAfter": 554823680,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    }
+  },
+  "limits": [
+    "Windows Server runner/debug app; not physical Windows 10/11 or low-end release performance",
+    "Backup fixture is small, not a maximum-size performance test",
+    "No production signing identity; production signer path is not certified by guard/parser tests",
+    "Installer upgrade fixture and stronger pre-restore scheduled-alarm probe are subsequent changes, not part of this run",
+    "The first probe encryptMs includes capture work; totalProbeMs includes UI settling, wrong-password KDF and cloud sync. These are not pure restore latency/FPS measurements."
+  ],
+  "android": {
+    "job": 129725368745,
+    "result": "failed before test discovery",
+    "detail": "VM/DDS connection opened, integration extension discovery stalled; helper timed out at600s with zero tests. Native account/backup gate not passed."
+  }
+}

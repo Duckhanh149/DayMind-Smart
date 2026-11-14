@@ -1,0 +1,30 @@
+{
+  "source": "614deaddfe48a04ece5a015daee2e2041998d240",
+  "nativeRun": 42802618726,
+  "gatePassed": false,
+  "emulator": {"run": 42802618924, "job": 129783709296, "realTests": 16, "aotTests": 7, "result": "success"},
+  "windows": {
+    "job": 129783704618,
+    "result": "failure after backup probe",
+    "flutterPassed": 220,
+    "hostPrivilegeSymlinkSkipped": 2,
+    "nativeComponentChecks": 100,
+    "nativeComponentFailures": 0,
+    "backup": {"tasks": 1, "assets": 1, "recurrenceGroups": 1, "preservedOccurrences": 1, "scheduledBefore": 90, "cipherBytes": 4063, "captureMs": 109, "encryptMs": 1895, "totalProbeMs": 21513, "rssBefore": 517382144, "rssAfter": 537055232, "wrongPasswordRejected": true, "atomicCopyAndNoReplay": true},
+    "failure": "app_smoke_test.dart:319 primaryDevice cached false after a confirmed primary request; installer upgrade skipped"
+  },
+  "android": {
+    "job": 129783705057,
+    "result": "failure after native test entry",
+    "receiverTests": 25,
+    "coldNotificationAndDigestPassed": true,
+    "authenticatedDirectVmEntryPassed": true,
+    "scheduledBeforeRestore": 90,
+    "failure": "SQLITE_CORRUPT11 selecting delivery_logs after restore; backup/account gate not passed"
+  },
+  "limits": [
+    "Results apply to source614 only, not subsequent IPC/cache fixes.",
+    "No production signing identities, physical Android/Windows10/11 acceptance or installer-upgrade result.",
+    "Backup timing/RSS is a small fixture in a debug Windows Server runner; total includes KDF/UI/sync work."
+  ]
+}

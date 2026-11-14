@@ -257,6 +257,66 @@ void main() {
       contains('hoàn thành'),
     );
   });
+  test('a newer database is rejected without downgrading its version or changing tasks', () async {
+    final temp = await Directory.systemTemp.createTemp('daymind-newer-schema-');
+    final file = File('${temp.path}/data.sqlite');
+    final original = DaymindDatabase(NativeDatabase(file));
+    await SqliteTaskRepository(original)
+        .save(const TaskDraft(title: 'Keep newer data'));
+    await original.close();
+    final raw = sqlite.sqlite3.open(file.path);
+    raw.execute('PRAGMA user_version=4');
+    raw.close();
+    final older = DaymindDatabase(NativeDatabase(file));
+    await expectLater(SqliteTaskRepository(older).list(), throwsStateError);
+    await older.close();
+    final check = sqlite.sqlite3.open(file.path);
+    expect(check.select('PRAGMA user_version').single['user_version'], 4);
+    expect(
+      check.select('SELECT title FROM tasks').single['title'],
+      'Keep newer data',
+    );
+    check.close();
+    await temp.delete(recursive: true);
+  });
+  test('a failed migration rolls back earlier DDL and retains the original version', () async {
+    final temp = await Directory.systemTemp.createTemp(
+      'daymind-migration-rollback-',
+    );
+    final file = File('${temp.path}/data.sqlite');
+    final original = DaymindDatabase(NativeDatabase(file));
+    await SqliteTaskRepository(original)
+        .save(const TaskDraft(title: 'Keep old data'));
+    await original.close();
+    final raw = sqlite.sqlite3.open(file.path);
+    raw.execute('ALTER TABLE tasks DROP COLUMN scheduled_start_at');
+    raw.execute('ALTER TABLE tasks DROP COLUMN scheduled_end_at');
+    raw.execute('PRAGMA user_version=1');
+    raw.close();
+    // Two ALTERs succeed before the deliberately existing revision column makes
+    // the third ALTER fail. The earlier DDL must roll back as well.
+    final broken = DaymindDatabase(NativeDatabase(file));
+    await expectLater(SqliteTaskRepository(broken).list(), throwsA(anything));
+    await broken.close();
+    final check = sqlite.sqlite3.open(file.path);
+    expect(check.select('PRAGMA user_version').single['user_version'], 1);
+    expect(
+      check
+          .select('PRAGMA table_info(tasks)')
+          .where(
+            (row) =>
+                row['name'] == 'scheduled_start_at' ||
+                row['name'] == 'scheduled_end_at',
+          ),
+      isEmpty,
+    );
+    expect(
+      check.select('SELECT title FROM tasks').single['title'],
+      'Keep old data',
+    );
+    check.close();
+    await temp.delete(recursive: true);
+  });
   test('invalid companion metadata cannot escape local asset directory', () {
     expect(
       AppPreferences.fromJson({'assetName': '../private.txt'}).assetName,

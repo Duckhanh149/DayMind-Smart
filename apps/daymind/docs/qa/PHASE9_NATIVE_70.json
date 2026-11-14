@@ -1,0 +1,77 @@
+{
+  "source": "70c3331b8e8fb07edfbd5f58f6ef677b393faa04",
+  "nativeRun": 43157911554,
+  "gatePassed": false,
+  "emulator": {
+    "run": 43157911425,
+    "job": 130982037755,
+    "result": "success"
+  },
+  "windows": {
+    "job": 130982038553,
+    "result": "success",
+    "flutterPassed": 223,
+    "hostPrivilegeSymlinkSkipped": 2,
+    "componentChecks": 100,
+    "componentFailures": 0,
+    "backup": {
+      "platform": "windows",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 1,
+      "cipherBytes": 4062,
+      "captureMs": 5763,
+      "encryptMs": 1867,
+      "totalProbeMs": 23535,
+      "rssBefore": 527990784,
+      "rssAfter": 529166336,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "installer": {
+      "baseline": "0.6.1",
+      "current": "0.7.0",
+      "taskRows": 3,
+      "preservedArtworkFiles": 2,
+      "preservedDomainRecords": 4,
+      "upgradePreservedData": true,
+      "uninstallPreservedData": true,
+      "reinstallPassed": true
+    },
+    "secondLaunchTrayOpenQuitNoAutostart": true
+  },
+  "android": {
+    "job": 130982038129,
+    "result": "native assertions passed, host loader failed",
+    "flutterPassed": 225,
+    "receiverTests": 27,
+    "coldNotificationAndDigestPassed": true,
+    "privateProcessAndFiveConcurrentIntegrityCyclesPassed": true,
+    "backup": {
+      "platform": "android",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 90,
+      "cipherBytes": 4062,
+      "captureMs": 95,
+      "encryptMs": 2367,
+      "totalProbeMs": 9322,
+      "rssBefore": 538984448,
+      "rssAfter": 546668544,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "accountArtworkAndVerifiedDeletionPassed": true,
+    "hostFailure": "streamListen Invalid params: integration_test.VmServiceProxyGoldenFileComparator under flutter test --no-dds; 1 test passed, 1 loading failure. Not accepted as a successful job."
+  },
+  "limits": [
+    "Windows Server/debug and Android emulator; physical OEM/Doze/Windows10/11/low-memory acceptance is separate.",
+    "Android backup/native integrity tests passed, but the host failure must be fixed and a clean native job obtained.",
+    "Android RSS covers the Flutter process only; the private native receiver process is additional.",
+    "No production signing identity or upgrade-chain verification."
+  ]
+}

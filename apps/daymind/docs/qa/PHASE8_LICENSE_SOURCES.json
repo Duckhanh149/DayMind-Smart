@@ -1,0 +1,36 @@
+{
+  "assessmentUtc": "2026-11-10",
+  "decision": "disabled; no SDK downloaded or agreement accepted",
+  "sources": [
+    {
+      "name": "proprietary",
+      "url": "https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html",
+      "textSha256": "142babacc416b7b1beb8472e5dced83ff05e75ba3664f07f7f11d7ec10b9297e",
+      "retrievedUtc": "2026-11-10T05:10:06.718494+00:00"
+    },
+    {
+      "name": "open",
+      "url": "https://www.live2d.com/eula/live2d-open-software-license-agreement_en.html",
+      "textSha256": "480a3d4f45d06e8fd153801534c9a4cf5a78999d8892891e99a234d8de1599ca",
+      "retrievedUtc": "2026-11-10T05:10:06.702199+00:00"
+    },
+    {
+      "name": "release",
+      "url": "https://www.live2d.com/en/download/cubism-sdk/release-license/",
+      "textSha256": "4ba79e2d110b88c6501a310491806cfc3bf7f917857dd4daf2e60b0078b41e36",
+      "retrievedUtc": "2026-11-10T05:10:08.035047+00:00"
+    },
+    {
+      "name": "models",
+      "url": "https://www.live2d.com/eula/live2d-sample-model-terms_en.html",
+      "textSha256": "847f6dc9dc1e657376b0164b7805cf43fc8e0d7959de78e7b8b7f8b3b13114ac",
+      "retrievedUtc": "2026-11-10T05:10:06.497375+00:00"
+    },
+    {
+      "name": "wrapper",
+      "url": "https://pub.dev/api/packages/live2d_flutter",
+      "textSha256": "362a4f83c30b34c836e73489073dc6f18041024e420f280399f1991257f590df",
+      "retrievedUtc": "2026-11-10T05:10:06.126866+00:00"
+    }
+  ]
+}

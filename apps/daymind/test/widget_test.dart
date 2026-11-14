@@ -1,4 +1,15 @@
 import 'dart:io';
+import 'dart:convert';
+
+import '../integration_test/companion_fixtures.dart';
+
+import 'package:go_router/go_router.dart';
+import 'package:daymind_smart/features/companion/domain/companion.dart';
+
+import 'package:daymind_smart/features/recurrence/application/recurrence_service.dart';
+import 'package:daymind_smart/features/recurrence/domain/recurrence.dart';
+import 'package:daymind_smart/features/calendar/presentation/calendar_page.dart';
+import 'package:daymind_smart/features/assistant/presentation/assistant_pages.dart';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -11,10 +22,18 @@ import 'package:daymind_smart/features/tasks/domain/task.dart';
 import 'package:daymind_smart/features/tasks/data/database.dart';
 import 'package:daymind_smart/features/companion/data/asset_importer.dart';
 import 'package:daymind_smart/features/companion/presentation/companion_card.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:daymind_smart/features/reminders/application/reminder_engine.dart';
+import 'package:daymind_smart/features/reminders/application/reminder_coordinator.dart';
+import 'package:daymind_smart/features/reminders/presentation/notification_pages.dart';
+import 'package:daymind_smart/features/reminders/presentation/reminder_editor.dart';
+
+import 'reminder_engine_test.dart' show FakeScheduler;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
+    tzdata.initializeTimeZones();
     final loader = FontLoader('BeVietnamPro');
     for (final weight in [400, 500, 600, 700]) {
       loader.addFont(
@@ -31,6 +50,7 @@ void main() {
     Size size, {
     bool seed = false,
     double scale = 1,
+    bool notifications = false,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -70,6 +90,14 @@ void main() {
       clock: () => now,
     );
     await controller.load();
+    if (notifications) {
+      final coordinator = ReminderCoordinator(
+        ReminderEngine(db, FakeScheduler(), clock: () => now),
+        repo.list,
+      );
+      controller.attachReminders(coordinator);
+      await coordinator.refresh();
+    }
     await tester.pumpWidget(
       ProviderScope(
         overrides: [workspaceProvider.overrideWith((ref) => controller)],
@@ -86,6 +114,535 @@ void main() {
       tester.platformDispatcher.clearTextScaleFactorTestValue();
     });
     return (db, controller);
+  }
+
+  for (final size in [const Size(390, 844), const Size(1440, 960)]) {
+    for (final theme in ['light', 'dark']) {
+      testWidgets('accessible dashboard and task form ${size.width}px $theme', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          final (_, controller) = await mount(tester, size, seed: true);
+          await controller.configure((p) => p.copyWith(theme: theme));
+          await tester.pumpAndSettle();
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          if (const bool.fromEnvironment('GENERATE_GOLDENS') &&
+              size.width > 1000) {
+            await expectLater(
+              find.byType(DaymindApp),
+              matchesGoldenFile('previews/phase9-desktop-$theme.png'),
+            );
+          }
+          await tester.tap(find.byKey(const Key('add-task')));
+          await tester.pumpAndSettle();
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          expect(tester.takeException(), isNull);
+        } finally {
+          semantics.dispose();
+        }
+      });
+    }
+  }
+
+  testWidgets(
+    'desktop keyboard opens and dismisses a task without mouse or data changes',
+    (tester) async {
+      final (_, controller) = await mount(tester, const Size(1440, 960));
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('task-title')), findsOneWidget);
+      expect(find.byKey(const Key('save-task')), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+      expect(controller.tasks, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final scenario in [
+    (const Size(360, 800), 1.0),
+    (const Size(390, 844), 2.0),
+    (const Size(1440, 960), 1.0),
+    (const Size(1440, 960), 2.0),
+  ]) {
+    testWidgets(
+      'companion editor preview, validation and save at ${scenario.$1.width}px / ${scenario.$2} text',
+      (tester) async {
+        final (_, c) = await mount(tester, scenario.$1, scale: scenario.$2);
+        await c.updateCompanionLayout(
+          (v) => v.copy(placement: CompanionPlacement.right, size: 144),
+        );
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .go('/companion');
+        await tester.pumpAndSettle();
+        final portrait = find.byKey(const Key('companion-portrait'));
+        expect(
+          tester.getSize(portrait).width,
+          scenario.$1.width < 600 ? (scenario.$2 == 2 ? 56 : 96) : 144,
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const Key('edit-companion-profile')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('edit-companion-profile')));
+        await tester.pumpAndSettle();
+        var saves = 0;
+        c.onLocalChange = () => saves++;
+        await tester.enterText(
+          find.byKey(const Key('companion-name')),
+          'Lá nhỏ',
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('companion-template')));
+        await tester.enterText(
+          find.byKey(const Key('companion-template')),
+          '{unknown}',
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const Key('preview-companion-reply')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('preview-companion-reply')));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Chỉ dùng {name}'), findsOneWidget);
+        expect(c.companion.name, 'Mầm');
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('companion-template')));
+        await tester.enterText(
+          find.byKey(const Key('companion-template')),
+          '{name} sẵn sàng cùng bạn.',
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const Key('preview-companion-reply')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('preview-companion-reply')));
+        await tester.pumpAndSettle();
+        expect(find.text('Lá nhỏ sẵn sàng cùng bạn.'), findsOneWidget);
+        expect(saves, 0);
+        expect(
+          await c.recurrence.records.get('companion_profile', 'primary'),
+          isNull,
+        );
+        expect(
+          find.byKey(const Key('save-companion-profile')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('GENERATE_COMPANION_GOLDENS') &&
+            scenario.$2 == 1) {
+          await tester.ensureVisible(find.text('Lá nhỏ sẵn sàng cùng bạn.'));
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(DaymindApp),
+            matchesGoldenFile(
+              'previews/companion-editor-${scenario.$1.width.toInt()}.png',
+            ),
+          );
+        }
+        await tester.tap(find.byKey(const Key('save-companion-profile')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('save-companion-profile')), findsNothing);
+        expect(c.companion.name, 'Lá nhỏ');
+        expect(
+          c.companion.messageFor(CompanionEvent.appOpen),
+          'Lá nhỏ sẵn sàng cùng bạn.',
+        );
+        expect(saves, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'a 128-image library builds a bounded visible set with large text',
+    (tester) async {
+      final (_, c) = await mount(tester, const Size(390, 844), scale: 2);
+      await c.updateCompanionLayout((v) => v.copy(lowResource: true));
+      final installed = await tester.runAsync(
+        () => c.importer.installBytes(
+          base64Decode(companionPngFixtures.first),
+          'fixture.png',
+        ),
+      );
+      final source = c.importer.resolve(installed)!;
+      final thumbnail = (await tester.runAsync(
+        () => c.importer.renderFile(installed),
+      ))!;
+      final names = <String>[];
+      for (var i = 0; i < 127; i++) {
+        final name = '${i.toRadixString(16).padLeft(64, '0')}.png';
+        source.copySync('${c.importer.directory.path}/$name');
+        thumbnail.copySync('${thumbnail.parent.path}/$name.png');
+        names.add(name);
+      }
+      expect(c.importer.installed(), hasLength(128));
+      // Warm only the first viewport/cache extent in the real async zone.
+      await tester.runAsync(() async {
+        for (final name in names.take(10)) {
+          await precacheImage(
+            ResizeImage(
+              FileImage((await c.importer.renderFile(name))!),
+              width: 64,
+              height: 64,
+              policy: ResizeImagePolicy.fit,
+              allowUpscaling: false,
+            ),
+            tester.element(find.byType(Scaffold).first),
+          );
+        }
+      });
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/companion');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('companion-library')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(CompanionAssetImage).evaluate().length,
+        lessThanOrEqualTo(10),
+      );
+      expect(
+        find.byKey(const Key('companion-library')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(find.text('Nhân vật 128'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final hiddenBySettings in [true, false]) {
+    testWidgets(
+      'foreground reminders stay visible when companion is hidden (settings=$hiddenBySettings)',
+      (tester) async {
+        final (_, c) = await mount(
+          tester,
+          const Size(390, 844),
+          seed: true,
+          scale: hiddenBySettings ? 1 : 2,
+        );
+        if (hiddenBySettings) {
+          await c.configure((p) => p.copyWith(companionEnabled: false));
+          await tester.pumpAndSettle();
+          expect(find.byType(CompanionCard), findsNothing);
+        } else {
+          await tester.drag(
+            find.byType(ListView).first,
+            const Offset(0, -1200),
+          );
+          await tester.pumpAndSettle();
+        }
+        const message = 'Đến giờ: Kiểm tra nhắc trong ứng dụng';
+        c.foregroundReminder(
+          const CompanionCue(
+            CompanionEvent.reminderDue,
+            message,
+            task: 'Kiểm tra nhắc',
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(message), findsOneWidget);
+        expect(find.text('Xem'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'visible companion cooldown preserves required foreground announcements',
+    (tester) async {
+      final (_, c) = await mount(
+        tester,
+        const Size(390, 844),
+        seed: true,
+        notifications: true,
+      );
+      await c.reminders!.configure({'quietEnabled': false});
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(c.dialogue));
+      c.foregroundReminder(
+        const CompanionCue(
+          CompanionEvent.reminderDue,
+          'Lời nhắc đầu',
+          task: 'Việc đầu',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(c.dialogue, contains('Việc đầu'));
+      await tester.ensureVisible(find.text(c.dialogue));
+      await tester.pumpAndSettle();
+      const second = 'Nhắc việc mới trong thời gian nghỉ lời thoại';
+      c.foregroundReminder(
+        const CompanionCue(
+          CompanionEvent.reminderDue,
+          second,
+          task: 'Việc tiếp theo',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        c.dialogue,
+        contains('Việc đầu'),
+      ); // Companion cooldown still applies.
+      expect(find.text(second), findsOneWidget);
+      expect(find.text('Xem'), findsOneWidget);
+      expect((c.reminders!.engine.scheduler as FakeScheduler).shown, isEmpty);
+    },
+  );
+
+  testWidgets('visible companion dialogue is the only foreground cue', (
+    tester,
+  ) async {
+    final (_, c) = await mount(
+      tester,
+      const Size(390, 844),
+      seed: true,
+      notifications: true,
+    );
+    await c.reminders!.configure({'quietEnabled': false});
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(c.dialogue));
+    await tester.pumpAndSettle();
+    c.foregroundReminder(
+      const CompanionCue(
+        CompanionEvent.reminderDue,
+        'Thông báo dự phòng không được hiện trùng',
+        task: 'Đọc sách',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(c.dialogue, contains('Đọc sách'));
+    expect(find.text(c.dialogue), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    expect((c.reminders!.engine.scheduler as FakeScheduler).shown, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'calendar browsing loads the adjacent month outside the rolling horizon',
+    (tester) async {
+      final (_, controller) = await mount(tester, const Size(390, 844));
+      await controller.save(
+        TaskDraft(title: 'Chuỗi dài', dueAt: controller.now()),
+        repetition: const RepeatChange(
+          enabled: true,
+          spec: RepeatSpec(
+            frequency: RepeatFrequency.daily,
+            firstDate: '2026-11-08',
+            zone: 'UTC',
+          ),
+        ),
+      );
+      await tester.tap(find.text('Lịch').last);
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(find.byTooltip('Khoảng sau'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Tháng 5 / 2027'), findsOneWidget);
+      expect(
+        controller.recurrence.occurrences.any((o) => o.date == '2027-06-30'),
+        isFalse,
+      );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('calendar-date-2027-06-01')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('calendar-date-2027-06-01')));
+      await tester.pumpAndSettle();
+      expect(
+        controller.recurrence.occurrences.any((o) => o.date == '2027-06-30'),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('analytics uses real completion data at scale $scale', (
+      tester,
+    ) async {
+      final (_, c) = await mount(
+        tester,
+        const Size(360, 800),
+        seed: true,
+        scale: scale,
+      );
+      await c.toggle(c.tasks.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thống kê').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(AnalyticsPage), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Đúng hạn khi hoàn thành'),
+        150,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('100%'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {
+        await tester.drag(
+          find.byKey(const Key('analytics-page')),
+          const Offset(0, 900),
+        );
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(DaymindApp),
+          matchesGoldenFile('previews/analytics.png'),
+        );
+      }
+    });
+  }
+  testWidgets(
+    'daily digest requires opt-in and never offers task completion actions',
+    (tester) async {
+      final (_, c) = await mount(
+        tester,
+        const Size(390, 844),
+        notifications: true,
+      );
+      c.openNotifications();
+      await tester.pumpAndSettle();
+      final toggle = find.widgetWithText(
+        SwitchListTile,
+        'Bản tóm tắt hằng ngày',
+      );
+      await tester.scrollUntilVisible(toggle, 150);
+      await tester.pumpAndSettle();
+      expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(c.reminders!.preferences.digestEnabled, isTrue);
+      expect(c.reminders!.events.where((e) => e.ruleId == 'digest').length, 3);
+      expect(find.text('Hoàn thành'), findsNothing);
+      expect(find.text('Hoãn…'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  for (final scale in [1.0, 2.0]) {
+    testWidgets(
+      'calendar month week day and recurrence scope at scale $scale',
+      (tester) async {
+        final (_, controller) = await mount(
+          tester,
+          const Size(360, 800),
+          scale: scale,
+        );
+        await controller.save(
+          TaskDraft(
+            title: 'Việc lặp kiểm thử',
+            scheduledStartAt: controller.now(),
+            scheduledEndAt: controller.now().add(const Duration(hours: 1)),
+            dueAt: controller.now().add(const Duration(hours: 5)),
+          ),
+          repetition: const RepeatChange(
+            enabled: true,
+            spec: RepeatSpec(
+              frequency: RepeatFrequency.daily,
+              firstDate: '2026-11-08',
+              zone: 'UTC',
+              count: 3,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Lịch').last);
+        await tester.pumpAndSettle();
+        expect(find.byType(CalendarPage), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {
+          await expectLater(
+            find.byType(DaymindApp),
+            matchesGoldenFile('previews/calendar.png'),
+          );
+        }
+        await tester.tap(find.byKey(const Key('calendar-week')));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.byKey(const Key('calendar-day')));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Việc lặp kiểm thử').first,
+          150,
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Việc lặp kiểm thử').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Việc lặp kiểm thử').first);
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('task-title')),
+          'Chỉ sửa một lần',
+        );
+        await tester.tap(find.byKey(const Key('save-task')));
+        await tester.pumpAndSettle();
+        expect(find.text('Áp dụng thay đổi cho'), findsOneWidget);
+        await tester.tap(find.text('Chỉ lần này'));
+        await tester.pumpAndSettle();
+        expect(
+          controller.visibleTasks
+              .where((t) => t.title == 'Chỉ sửa một lần')
+              .length,
+          1,
+        );
+        expect(
+          controller.visibleTasks
+              .where((t) => t.title == 'Việc lặp kiểm thử')
+              .length,
+          2,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  for (final scale in [1.0, 2.0]) {
+    testWidgets(
+      'notification center and advanced reminder form at text scale $scale',
+      (tester) async {
+        final (_, controller) = await mount(
+          tester,
+          const Size(360, 800),
+          scale: scale,
+          notifications: true,
+        );
+        controller.openNotifications();
+        await tester.pumpAndSettle();
+        expect(find.byType(NotificationCenterPage), findsOneWidget);
+        if (const bool.fromEnvironment('GENERATE_GOLDENS') && scale == 1) {
+          await expectLater(
+            find.byType(DaymindApp),
+            matchesGoldenFile('previews/notifications.png'),
+          );
+        }
+        await tester.scrollUntilVisible(
+          find.text('Hiện một thông báo thử im lặng'),
+          250,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.byType(DrawerButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Tất cả công việc').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add-task')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Chi tiết & lên lịch'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(ReminderEditor),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   for (final (name, size, scale) in [
@@ -128,7 +685,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.tasks.single.title, 'Gọi điện cho mẹ');
       expect(controller.tasks.single.dueAt, isNull);
-      await tester.tap(find.text('Công việc').last);
+      await tester.tap(find.byType(DrawerButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tất cả công việc').last);
       await tester.pumpAndSettle();
       expect(find.text('Gọi điện cho mẹ'), findsOneWidget);
       await tester.tap(find.byType(Checkbox).first);
@@ -184,6 +743,13 @@ void main() {
     tester,
   ) async {
     await mount(tester, const Size(390, 844));
+    await tester.tap(find.byType(DrawerButton));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Companion').last,
+      150,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Companion').last);
     await tester.pumpAndSettle();
     expect(find.text('Một người bạn nhỏ.'), findsOneWidget);

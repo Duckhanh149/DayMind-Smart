@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "version": "0.8.0+10",
+  "source": "df802d8d78c8e40bd4cbff687cb4b6721dbabe1d",
+  "run": 43430905225,
+  "job": 131903844268,
+  "fullNativeSuite": "failed_in_backup_fixture_cleanup",
+  "resourceStages": "passed",
+  "summary": {
+    "platform": "android",
+    "buildMode": "profile",
+    "durationSeconds": 120,
+    "frames": 120,
+    "observedFrames": 68,
+    "sourceBytes": 37774986,
+    "cipherBytes": 50372677,
+    "syncWrites": 6,
+    "floatingStatus": "notReported",
+    "metricStages": [
+      "animatedImport",
+      "companionAndSyncSoak",
+      "largeImageImport",
+      "largeBackupCapture",
+      "largeBackupEncrypt",
+      "largeBackupDecrypt"
+    ],
+    "scope": "native Flutter process; no private receiver process CPU/RSS or physical low-end certification"
+  },
+  "stages": {
+    "animatedImport": {
+      "stage": "animatedImport",
+      "elapsedMs": 309,
+      "samples": 2,
+      "rssStart": 263565312,
+      "rssSamplePeak": 272216064,
+      "rssEnd": 262926336,
+      "processLifetimePeakRss": 272216064,
+      "cpuSupported": true,
+      "cpuMs": 277,
+      "cpuPercentOneCore": 89.71749916873542
+    },
+    "companionAndSyncSoak": {
+      "stage": "companionAndSyncSoak",
+      "elapsedMs": 120817,
+      "samples": 600,
+      "rssStart": 263610368,
+      "rssSamplePeak": 267624448,
+      "rssEnd": 267624448,
+      "processLifetimePeakRss": 272216064,
+      "cpuSupported": true,
+      "cpuMs": 40742,
+      "cpuPercentOneCore": 33.72243786029939
+    },
+    "largeImageImport": {
+      "stage": "largeImageImport",
+      "elapsedMs": 628,
+      "samples": 6,
+      "rssStart": 267886592,
+      "rssSamplePeak": 320811008,
+      "rssEnd": 291844096,
+      "processLifetimePeakRss": 322281472,
+      "cpuSupported": true,
+      "cpuMs": 701,
+      "cpuPercentOneCore": 111.57618297283102
+    },
+    "largeBackupCapture": {
+      "stage": "largeBackupCapture",
+      "elapsedMs": 854,
+      "samples": 5,
+      "rssStart": 291844096,
+      "rssSamplePeak": 316751872,
+      "rssEnd": 316751872,
+      "processLifetimePeakRss": 328437760,
+      "cpuSupported": true,
+      "cpuMs": 803,
+      "cpuPercentOneCore": 94.11826686787964
+    },
+    "largeBackupEncrypt": {
+      "stage": "largeBackupEncrypt",
+      "elapsedMs": 11095,
+      "samples": 45,
+      "rssStart": 316751872,
+      "rssSamplePeak": 594604032,
+      "rssEnd": 495874048,
+      "processLifetimePeakRss": 594604032,
+      "cpuSupported": true,
+      "cpuMs": 12834,
+      "cpuPercentOneCore": 115.67470830882162
+    },
+    "largeBackupDecrypt": {
+      "stage": "largeBackupDecrypt",
+      "elapsedMs": 12190,
+      "samples": 50,
+      "rssStart": 495874048,
+      "rssSamplePeak": 666554368,
+      "rssEnd": 611934208,
+      "processLifetimePeakRss": 666947584,
+      "cpuSupported": true,
+      "cpuMs": 14083,
+      "cpuPercentOneCore": 115.52914739497474
+    }
+  },
+  "limits": [
+    "AOT profile on Android emulator, not physical device or release certification.",
+    "RSS baseline includes earlier native fixtures; not freshly launched idle app RAM.",
+    "Flutter process only; private Android reminders process excluded.",
+    "Does not certify 64 MiB artwork library / 96 MiB plaintext maximum on low-end hardware.",
+    "Restore assertions before cleanup succeeded; cleanup tried to delete already-deleted restored trash. That fixture bug is fixed in the next source.",
+    "Next source removes a redundant owned plaintext copy; remeasure before claiming a reduction."
+  ]
+}

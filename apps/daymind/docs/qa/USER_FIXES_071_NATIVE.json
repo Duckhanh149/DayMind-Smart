@@ -1,0 +1,98 @@
+{
+  "source": "66e4ae5d68ac2639619b4da6ca98917111c94607",
+  "tree": "db2c111089172027e9f11fcc9c005f1ec4f4a596",
+  "version": "0.7.1+9",
+  "nativeRun": 43225672366,
+  "nativeResult": "success",
+  "android": {
+    "job": 131208073702,
+    "flutterPassed": 233,
+    "receiverCases": 27,
+    "coldNotificationAndDigestPassed": true,
+    "privateProcessAndConcurrentIntegrityPassed": true,
+    "backup": {
+      "platform": "android",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 9,
+      "cipherBytes": 4063,
+      "captureMs": 365,
+      "encryptMs": 1591,
+      "totalProbeMs": 7342,
+      "rssBefore": 545677312,
+      "rssAfter": 548208640,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "hostAllTestsPassed": true
+  },
+  "windows": {
+    "job": 131208073178,
+    "flutterPassed": 231,
+    "hostPrivilegeSkipped": 2,
+    "componentChecks": 100,
+    "backup": {
+      "platform": "windows",
+      "tasks": 1,
+      "assets": 1,
+      "recurrenceGroups": 1,
+      "preservedOccurrences": 1,
+      "scheduledBefore": 3,
+      "cipherBytes": 4063,
+      "captureMs": 3039,
+      "encryptMs": 2449,
+      "totalProbeMs": 20133,
+      "rssBefore": 507613184,
+      "rssAfter": 531415040,
+      "wrongPasswordRejected": true,
+      "atomicCopyAndNoReplay": true
+    },
+    "installer": {
+      "baseline": "0.6.1",
+      "current": "0.7.1",
+      "taskRows": 3,
+      "preservedArtworkFiles": 2,
+      "preservedDomainRecords": 4,
+      "upgradePreservedData": true,
+      "uninstallPreservedData": true,
+      "reinstallPassed": true,
+      "registeredVersionVerified": true
+    },
+    "traySecondLaunchQuitNoStartup": true
+  },
+  "emulator": {
+    "source": "dacd03b3df3fa28d081ed74c3ed01f09cd07a06e",
+    "run": 43222966423,
+    "job": 131198918278,
+    "result": "success",
+    "integrationCases": 16,
+    "aotCases": 7,
+    "reuseReason": "Identical lib/backend/emulator_test/pubspec/integration/Android/workflow trees, verified locally. Source66 changes only Windows installer/gate/checkpoint.",
+    "identicalTrees": {
+      "apps/daymind/lib": "cd2b1f7661f8a5b3a7d95902dfbcfe67de2d610e",
+      "apps/daymind/android": "b7d9d5ecfdea547b6e79c95557f30a7a1db76b37",
+      "apps/daymind/assets": "fe0024cb25866a2c217ab01bcd88dfb487c11d79",
+      "apps/daymind/firebase": "67fb9ba8fc4e12103e9d36dff95b933204a2bd5c",
+      "apps/daymind/emulator_test": "e9a521f6a35c7998c9248f6737c7b165fae3a353",
+      "apps/daymind/pubspec.yaml": "179b387b20af64720740a4c0c50850bb50f493c6",
+      "apps/daymind/pubspec.lock": "27ecf7a6912fbe139b47006efb7c5954287e1f55",
+      "apps/daymind/integration_test": "6c52cae776e8459f15530274dba0758ad46c618e",
+      "apps/daymind/test_driver": "07715b64f5ea2386adeb2a48e67a5f234fc2f519",
+      ".github/workflows/native-build.yml": "d4da8f3c690a8bd1cc105cb3ca0f83d752cbc9cb"
+    }
+  },
+  "publish": {
+    "job": 131214639652,
+    "result": "skipped",
+    "officialRelease": false,
+    "automationEnabled": false
+  },
+  "limits": [
+    "CI emulator/Windows Server and debug RSS do not replace physical Android OEM/Doze/Windows10/11/DND/release performance acceptance.",
+    "Cutout is edge-connected flat-color removal and trim, local preview<=256px with undo; not AI semantic segmentation, not animated background removal.",
+    "Raised backup96MiB cap has no new near-limit physical/low-end performance certification.",
+    "Android Debug certificate and unsigned Windows preview, no production signing chain."
+  ]
+}

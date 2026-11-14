@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function own(uid) { return request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider == 'password'; }
+    function active(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)) && get(/databases/$(database)/documents/users/$(uid)).data.active == true;
+    }
+    function userStatus() {
+      return request.resource.data.keys().hasOnly(['active', 'schema']) && request.resource.data.schema == 1 && request.resource.data.active is bool;
+    }
+    match /users/{uid} {
+      allow read: if own(uid);
+      allow create: if own(uid) && userStatus();
+      allow update: if own(uid) && userStatus() && resource.data.active == true && request.resource.data.active == false;
+      // A minimal marker prevents stale offline clients from recreating deleted data.
+      allow delete: if false;
+      match /records/{recordKey} {
+        allow read, delete: if own(uid);
+        allow create, update: if own(uid) && active(uid)
+          && recordKey.matches('^[a-f0-9]{64}$')
+          && request.resource.data.keys().hasOnly(['schema', 'kind', 'recordId', 'payload', 'deleted'])
+          && request.resource.data.schema == 1
+          && request.resource.data.kind in ['task', 'category', 'recurrence', 'occurrence', 'reminderConfig', 'companionProfile']
+          && request.resource.data.recordId is string && request.resource.data.recordId.size() >= 1 && request.resource.data.recordId.size() <= 160
+          && request.resource.data.payload is string && request.resource.data.payload.size() >= 1 && request.resource.data.payload.size() <= 131072
+          && request.resource.data.deleted is bool;
+      }
+      match /settings/{setting} {
+        allow read, delete: if own(uid);
+        allow create, update: if own(uid) && active(uid) && setting == 'primary'
+          && request.resource.data.keys().hasOnly(['schema', 'deviceId']) && request.resource.data.schema == 1
+          && request.resource.data.deviceId is string && request.resource.data.deviceId.matches('^[A-Za-z0-9_-]{1,128}$');
+      }
+      match /devices/{deviceId} {
+        allow read, delete: if own(uid);
+        allow create, update: if own(uid) && active(uid)
+          && deviceId.matches('^[A-Za-z0-9_-]{1,128}$')
+          && request.resource.data.keys().hasOnly(['schema', 'name']) && request.resource.data.schema == 1
+          && request.resource.data.name is string && request.resource.data.name.size() <= 80;
+      }
+    }
+  }
+}
