@@ -1,8 +1,10 @@
-# Bản0.8.0+10 đang kiểm — 13/11/2026
+# Tiến độ 0.8.0+10 — 14/11/2026
 
-Đã sửa Windows permission/lifecycle limits, diagnostic opt-in, Firebase production build configuration và namespace/security rules. Local245 Flutter tests/analyze/27 Python guards và Firebase Emulator security+16 Dart+7AOT đã đạt. **Native và đo tài nguyên nguồn mới đang chờ CI**; chưa có kết quả0.8.0 hoặc phát hành chính thức. Bằng chứng0.7.1 bên dưới là lịch sử.
+Nguồn `d3749182de8afdcde62610f848ef0681eff91516` đã qua [Native CI](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895) và Firebase Emulator43435282802. Android247 tests/27 receiver, Windows245+2skip/component100, SDK native profile, restore/no replay, scoped credentials và installer retention đạt. [BUILD_STATUS](BUILD_STATUS.md) chứa gói đã kiểm và hash; [native](qa/HARDENING_080_NATIVE.json), [RAM/CPU](qa/HARDENING_080_RESOURCES.json).
 
-Firebase production thật/thiết bị AndroidOEM/Windows10/11/kýproduction chưa được cung cấp. Hướng dẫn [Firebase production](FIREBASE_PRODUCTION.md), [đo tài nguyên và nghiệm thu thật](RESOURCE_AND_DEVICE_ACCEPTANCE.md). Automation vẫn tắt, không merge main/Release. Windows chỉ nhắc khi tiến trình còn chạy (close→tray nếu khay sẵn sàng); quit/reboot không nhắc.
+Các yêu cầu mới đã có code và cổng tự động: Windows lifecycle/OS attempt và giới hạn rõ trong cài đặt; cấu hình Firebase production tách Emulator; chẩn đoán không PII; profile120s/GIF120 khung/sync/backup>36MiB; công cụ thu thập và ma trận thiết bị thật. **Firebase production live và nghiệm thu phần cứng chưa hoàn tất** vì chưa có project/thiết bị. Windows CI chỉ xác nhận API nhận yêu cầu lúc ẩn, không xác nhận banner trong quiet state6.
+
+Các cổng phần mềm 0–9 tiếp tục đạt; giai đoạn8 là raster fallback, Live2D không được bật hoặc coi là đã có giấy phép. Không phải phát hành chính thức: ký/trust/chuỗi nâng cấp production và thiết bị thật còn mở. Không merge main, không bật lại automation. Bảng lịch sử dưới đây giữ nguồn bằng chứng từng giai đoạn; số đo cũ không thay số đo0.8.0.
 
 ---
 

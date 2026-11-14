@@ -1,4 +1,4 @@
-> Lượt sửa0.8.0 đang kiểm chứng. Có [hướng dẫn/script đo trên thiết bị thật](../RESOURCE_AND_DEVICE_ACCEPTANCE.md); chưa có máy thật kết nối nên không đổi các mục đó thành PASS.
+> Bản0.8.0 đã đạt CI native và kiểm gói; thiết bị thật/Firebase live/kýproduction vẫn chưa nghiệm thu. Xem [ma trận và công cụ thu thập](../RESOURCE_AND_DEVICE_ACCEPTANCE.md). Không suy diễn CI Server/Emulator thành nghiệm thu phần cứng.
 
 # Nghiệm thu thiết bị và bản ký — đang chờ
 

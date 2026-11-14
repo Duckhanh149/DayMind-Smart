@@ -1,36 +1,31 @@
-# Bản0.8.0+10 đang kiểm — 13/11/2026
+# Preview 0.8.0+10 — cập nhật 14/11/2026
 
-Đã sửa Windows permission/lifecycle limits, diagnostic opt-in, Firebase production build configuration và namespace/security rules. Local245 Flutter tests/analyze/27 Python guards và Firebase Emulator security+16 Dart+7AOT đã đạt. **Native và đo tài nguyên nguồn mới đang chờ CI**; chưa có kết quả0.8.0 hoặc phát hành chính thức. Bằng chứng0.7.1 bên dưới là lịch sử.
+Nguồn phần mềm đã kiểm: `d3749182de8afdcde62610f848ef0681eff91516`, tree `b27186411272920070d9a6ecc500241b3ce93822`. [Native CI](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895) **đạt cả Android và Windows**; [Firebase Emulator](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282802) đạt. Chưa hợp nhất main hoặc phát hành chính thức. Các commit tài liệu sau nguồn này không tạo build mới.
 
-Firebase production thật/thiết bị AndroidOEM/Windows10/11/kýproduction chưa được cung cấp. Hướng dẫn [Firebase production](FIREBASE_PRODUCTION.md), [đo tài nguyên và nghiệm thu thật](RESOURCE_AND_DEVICE_ACCEPTANCE.md). Automation vẫn tắt, không merge main/Release. Windows chỉ nhắc khi tiến trình còn chạy (close→tray nếu khay sẵn sàng); quit/reboot không nhắc.
+## Tải bản đã kiểm
 
----
-
-# Bản sửa preview0.7.1+9 — 12/11/2026
-
-**Native Android/Windows đã đạt trên nguồn66e4ae5d68ac2639619b4da6ca98917111c94607**, [CI43225672366](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366). Các commit sau chỉ cập nhật docs, không phải build mới. Chưa phát hành chính thức/merge main.
-
-- Android job131208073702:233 Flutter tests, 27 receiver/recovery cases, Keystore/cold OS notification+digest/quiet/no replay, SQLite process isolation+5 overlapping integrity cycles, backup/account/artwork và host allTestsPassed đạt.
-- Windows job131208073178:231 Flutter tests+2 symlink skip do host privilege (Linux chạy đủ), 100 component checks, DPAPI/backup/account/tray/launch2/quit/no startup đạt. Cài0.6.1→nâng0.7.1→gỡ→cài lại giữ dữ liệu; kiểm cả PE và registry DisplayVersion0.7.1 đạt.
-- Emulator43222966423/job131198918278/source dacd03b:16 ca thật+7AOT đạt; lib/backend/package/integration/Android trees giống66, đã kiểm. Publish131214639652 SKIPPED.
-
-## Tải và kiểm gói
-
-Cần đăng nhập GitHub; artifact có hạn lưu trongActions.
+Cần đăng nhập GitHub để tải artifact; hạn lưu đến 11/02/2027.
 
 | Gói | Cách dùng |
 | --- | --- |
-| [Windows10/11 x64 ZIP13949435030](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366/artifacts/13949435030) | Giải nén, chạy windows-installer/DayMind-Setup.exe để cập nhật. Portable:giữ toàn bộ windows/x64/runner/Release rồi chạydaymind_smart.exe. Không cần gỡ bản cũ có dữ liệu. |
-| [Android ARM64 ZIP13949065397](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43225672366/artifacts/13949065397) | Giải nén app-arm64-v8a-release.apk; Android7/API24+, ARM64, target36, code2009. Vẫn Android Debug preview; khác chứng thư phải dừng, không gỡ app có dữ liệu để vượt lỗi ký. |
+| [Windows 10/11 x64 ZIP](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895/artifacts/14044235287) | Giải nén và chạy `windows-installer/DayMind-Setup.exe`. Portable: giữ nguyên toàn bộ `windows/x64/runner/Release`, chạy `daymind_smart.exe`. |
+| [Android ARM64 ZIP](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895/artifacts/14044365559) | Giải nén `app-arm64-v8a-release.apk`; Android 7/API24+, ARM64, target36, versionCode2010. |
 
-Windows ZIP SHA256`a9039d3674dd61c39f360a322ef85d6e86df31b04a112fe27568d2a2c8d8a55b`; installer`5dbe0ac6933051ab90696ebbf71809b8a7d77fd75b647e61c5b1262f3d1791ab`. Android ZIP`c8af4cb567aa84dc343a6b568852645077a39e0c6eb8a46707c7dd85871a20d5`; APK`17479d989bd4447e408c89fd451c47c00a6665821f2022454de10df9a08a415e`.
+Đây là preview: Windows chưa ký Authenticode, APK dùng chứng thư Android Debug. **Không gỡ app đang có dữ liệu để vượt lỗi khác chữ ký**. Xuất và kiểm tra bản sao lưu trước nâng cấp; xem [ký production](PRODUCTION_SIGNING.md). Bản build mặc định dùng SQLite cục bộ; chưa kết nối Firebase production. Hướng dẫn cấu hình ở [FIREBASE_PRODUCTION](FIREBASE_PRODUCTION.md).
 
-[Package evidence](qa/USER_FIXES_071_PACKAGES.json) ghi bytes/cert/CRC/version/OFL/Apache/runtime/private receivers/no probes-userdata. AppWindowsx64, installerbootstrapx86/payloadx64; metadata0.7.1 lấy từ EXE, không còn số0.7.0 ghi tay. App/installerWindows chưa ký Authenticode. [Native evidence](qa/USER_FIXES_071_NATIVE.json), [local tests](qa/USER_FIXES_071.json).
+Windows ZIP SHA256 `a94d22cc3466460211af90e154311e80ea9312d455c67ec3b317cd6ee3ea61d1`; installer `5b60bda597f925915351c64963dd9bce1be12a7da3193ffc7af250c2f91fc9e7`. Android ZIP `3dfa8843c4ba45c49406bc146b635f64162408d9b2226fab7b09723d4af1f9e5`; APK `fc8c385e13188d0ed68c79093e4d997c47bda5fa286e19b41fa3b11426cd4da4`. Đã đối chiếu digest GitHub, CRC, phiên bản PE/APK, ABI, runtime VC++, font OFL/Apache notices và không có debug receiver/tệp probe/dữ liệu người dùng/khóa ký trong gói. [Báo cáo gói](qa/HARDENING_080_PACKAGES.json).
 
-## Thay đổi và nghiệm thu còn lại
+## Thay đổi và kiểm chứng
 
-SửaAsia/Saigon→Asia/Ho_Chi_Minh làm chặn lên lịch Windows, thêm JPEG/BMP, ảnh16MiB/4096², thư viện64MiB. Preview ảnh tĩnh có xóa nền màu phẳng/cắt viền local≤256px và hoàn tác. Nền phức tạp không có AI segmentation; hoạt ảnh không áp dụng. [Character formats](CHARACTER_PACKAGE.md), [backup](BACKUP_FORMAT.md).
+- Windows dùng AppUserModelID thống nhất, đọc trạng thái OS và phân biệt quyền đã biết với khả năng gửi yêu cầu. Quyền không đọc được vẫn hiển thị **chưa xác định**, không coi là được cấp. CI thực sự gửi qua OS khi cửa sổ ẩn và được API chấp nhận; runner đang quiet state6, Setting trả `0x80070490`, không có toast trong history và **chưa xác nhận banner**. Không sửa DND/chính sách OS. Close→tray chỉ khi khay sẵn sàng; Thoát hẳn/đăng xuất/reboot không nhắc, autostart tắt.
+- Firebase tách local/Emulator/production; production chỉ dùng HTTPS chính thức, không chuyển token theo redirect. Session, workspace và owner của backup cách ly theo project, giữ nguyên UID của SQLite/sync. Rules kiểm chủ sở hữu, provider password, schema/kích thước và tombstone. Không có project thật nên chưa deploy hoặc nghiệm thu production.
+- Chẩn đoán mặc định tắt, chỉ xuất khi người dùng yêu cầu; tối đa128 mã trạng thái trong phiên, thời gian tương đối và HRESULT dạng số. Không ghi task/title/email/UID/token/đường dẫn hoặc thông báo lỗi thô. Bỏ một bản sao plaintext không cần thiết khi mã hóa backup lớn.
+- Android:247 Flutter tests,27 receiver/recovery được bộ thu thập xác nhận, Keystore/scoped session, cold OS notification/digest/quiet/no replay, SQLite process isolation +5 vòng ghi/recovery, backup/account/artwork và SDK drive đạt. Namespace host test bổ sung nằm trong Gradle task; bộ đếm receiver chỉ đếm ReminderRuntimeTest nên không gán tổng28 cho báo cáo.
+- Windows:245 Flutter tests +2 symlink skip do đặc quyền runner (Linux chạy đủ),100 component checks Win32/GDI+ với notification reader được kiểm soát; DPAPI/scoped session, live hidden-window OS attempt, backup/account/artwork, tray/Mở/Thoát/không autostart đạt. Cài0.6.1→nâng0.8.0→gỡ→cài lại giữ4 task rows/2 ảnh/6 domain records và registry DisplayVersion đúng.
+- Firebase Emulator: security mở rộng,16 Dart thật +7 AOT đạt. Local:247 Flutter, analyze sạch,35 targeted reminder/diagnostic và27 Python guards đạt. [Báo cáo native](qa/HARDENING_080_NATIVE.json), [local](qa/HARDENING_080_LOCAL.json).
 
-Thiết bị AndroidOEM/Doze/reboot/máy yếu, Windows10/11/DND/DPI/file dialog thật và production signing/trust/upgrade-chain còn mở:[DEVICE_CHECKLIST](qa/DEVICE_CHECKLIST.md), [PRODUCTION_SIGNING](PRODUCTION_SIGNING.md). Giới hạn backup plaintext96MiB mới chưa nghiệm thu RAM/latency trên máy yếu; debug/synthetic measurements cũ không thay nghiệm thu này. Firebase vẫnEmulator theo lựa chọn người dùng, Live2D OFF. Automation đãtắt theo yêu cầu, không tự bật lại.
+## RAM/CPU và cổng còn mở
 
-Nguồnf7fc156 thất bại enforce-lockfile trướctests; dacd03b quaappnative nhưng installermetadata0.7.0, chưa qua packagegate. Nguồn66 ở trên là gói0.7.1 đã sửa và kiểm đầy đủ các cổng tự động. Bằng chứng0–9 của0.7.0 trước đó tại qa/PHASE9_*837 và git history. Chưa coi toàn dự án nghiệm thu phát hành chính thức.
+Profile AOT chạy Companion120 khung và sync6 lần trong120 giây, nhập ba BMP hợp lệ tổng hơn36MiB, capture/encrypt/decrypt dữ liệu thật. Soak: Android peak RSS255,3MiB/CPU43,1% một core; Windows324,8MiB/18,8%. Lifetime peak sau backup lớn khoảng634MiB Android và548MiB Windows; máy ít RAM vẫn cần kiểm. CPU có thể >100% khi cộng nhiều thread. Đây là tiến trình Flutter sau các fixture khác, không phải RAM idle mới mở app, không gồm process Android reminders hoặc chứng nhận trên thiết bị thật. Floating Windows bị OS quiet policy chi phối; bài soak đo animation trong dialog. [Số đo đầy đủ](qa/HARDENING_080_RESOURCES.json), [cách thu thập và nghiệm thu](RESOURCE_AND_DEVICE_ACCEPTANCE.md).
+
+Chưa có thiết bị Android OEM/Windows10/11 thật, project Firebase production hoặc danh tính ký phát hành. Battery saver/Doze/reboot/DND/nâng cấp trên thiết bị thật, tải sát64MiB assets/96MiB plaintext và chạy nhiều giờ còn mở. Firebase cloud không phải E2EE; ảnh nhân vật không đồng bộ. Live2D vẫn tắt chờ kỹ thuật/giấy phép. Automation kiểm tra định kỳ đã tắt theo yêu cầu và giữ tắt.

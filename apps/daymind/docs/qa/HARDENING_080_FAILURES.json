@@ -54,6 +54,53 @@
         "failure": "Initial editor Dialog remained after pumpAndSettle under AOT",
         "nextVerification": "Bounded wait for async SQLite editor route to close; no save retry; fixed numeric failure metadata only"
       }
+    },
+    {
+      "source": "bf9446cbac151fc93c96247b0050e24dafba6d9f",
+      "run": 43429883617,
+      "windows": {
+        "job": 131900443134,
+        "observedEditorState": {
+          "titleLength": 0,
+          "savingIndicatorCount": 0
+        },
+        "cause": "Unregistered integration test IME sends clientId=-1, accepted only by debug assertion; AOT ignores it.",
+        "fix": "Register test IME before opening editor, verify actual field content, then restore native handler."
+      }
+    },
+    {
+      "source": "df802d8d78c8e40bd4cbff687cb4b6721dbabe1d",
+      "run": 43430905225,
+      "android": {
+        "job": 131903844268,
+        "resourceStages": "passed",
+        "restoreAssertionsBeforeCleanup": "passed",
+        "failure": "Fixture cleanup tried to delete copied tasks already in trash; EditConflict correctly prevented it.",
+        "fix": "Delete only active copied fixtures; verify original active IDs and original trash separately."
+      },
+      "windows": {
+        "job": 131903844742,
+        "ready": true,
+        "permission": "unknown",
+        "osState": 6,
+        "failure": "Treating unavailable permission query as inability to attempt OS delivery.",
+        "fix": "Keep permission unknown, expose numeric HRESULT, permit ready desktop adapter to attempt OS delivery unless a known denial exists. Assert actual OS show acceptance; never infer banner or permission."
+      }
     }
-  ]
+  ],
+  "historicalUnconfirmedColdTiming": {
+    "run": 43427667848,
+    "job": 131893006241,
+    "failure": "Cold inexact-alarm OS notification was not observed within 360 seconds.",
+    "cause": "unconfirmed",
+    "handling": "Failure remained failed; added fixed metadata after failure without changing timeout or fabricating delivery. D374 full cold suite passed. Physical OEM/battery/Doze testing remains open."
+  },
+  "resolution": {
+    "source": "d3749182de8afdcde62610f848ef0681eff91516",
+    "run": 43435282895,
+    "nativeStatus": "success",
+    "emulatorRun": 43435282802,
+    "emulatorStatus": "success",
+    "productionAndPhysicalAcceptance": "pending"
+  }
 }

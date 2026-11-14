@@ -12,6 +12,21 @@ Profile hoạt ảnh dùng MediaQuery tắt reduced-motion **chỉ bên trong di
 
 Driver dùng deadline có giới hạn: SDK12min/Android outer20min khi soak, default driver5min/outer10min khi không soak. Windows wrapper20min. Nếu thiếu RESOURCE_SOAK_POC hoặc có assertion failure, không coi profiling đạt. Số đo profile trên VM/emulator không phải low-end/physical certification hoặc bản release đã ký.
 
+## Kết quả CI 0.8.0 đã kiểm
+
+Nguồn D374, Native43435282895, AOT profile. RSS theo mẫu250ms (MiB); CPU theo một core, có thể vượt100%. Số đo gồm các fixture chạy trước đó, không phải mức RAM idle mới mở app.
+
+| Bước | Android RSS peak / CPU / thời gian | Windows RSS peak / CPU / thời gian |
+| --- | --- | --- |
+| Nhập GIF120 khung | 258.9MiB / 92.4% / 0.31s | 310.5MiB / 186.9% / 0.28s |
+| Animation +6 lần sync | 255.3MiB / 43.1% / 120.54s | 324.8MiB / 18.8% / 120.69s |
+| Nhập ba BMP>36MiB | 307.7MiB / 110.2% / 1.02s | 260.7MiB / 150.0% / 0.62s |
+| Capture backup lớn | 314.5MiB / 111.5% / 1.29s | 290.2MiB / 177.7% / 0.50s |
+| Mã hóa backup lớn | 520.4MiB / 116.3% / 16.44s | 410.1MiB / 108.7% / 8.36s |
+| Giải mã backup lớn | 629.5MiB / 117.5% / 17.67s | 494.5MiB / 107.5% / 9.17s |
+
+Lifetime peak đến cuối workload: Android633,96MiB, Windows547,61MiB; có thể lớn hơn peak theo mẫu. Encrypt đã bỏ bản sao plaintext thừa, nhưng decrypt vẫn dùng nhiều RAM. Không dùng kết quả này để khẳng định máy ít RAM hoặc toàn bộ quota64/96MiB đã đạt. [JSON đầy đủ](qa/HARDENING_080_RESOURCES.json), [giới hạn và gói](BUILD_STATUS.md).
+
 ## Android thật — chỉ thu thập, không đổi cài đặt
 
 Chạy app bằng dữ liệu thử, chọn chế độ battery saver/Doze/DND trên máy. Từ máy có Android platform-tools:
@@ -26,7 +41,7 @@ Thử quyền thông báo bị từ chối/kênh bị tắt, đóng tiến trìn
 
 ## Windows10/11 thật — chỉ thu thập
 
-Chạy trên cả Windows10 build17763+ và Windows11 x64; cùng bản cài/hash đã xác nhận. Thu từng scenario riêng trong PowerShell:
+Chạy trên cả Windows10 build17763+ và Windows11 x64; cùng bản cài/hash đã xác nhận. Thu từng scenario riêng trong PowerShell7 (`pwsh`, phiên bản parser được CI kiểm):
 
 ```powershell
 ./tool/windows_device_report.ps1 -Scenario tray -Seconds 600 -OutputPath windows-tray.json
