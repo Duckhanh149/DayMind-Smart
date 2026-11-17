@@ -1,3 +1,11 @@
+# iPhone device Release — 17/11/2026
+
+User requested an iPhone build without owning a Mac. Device CI [44114612190](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44114612190) SUCCESS at source c357355f7a862f21b4cae1dc043fabe3caac6088, Xcode26.6. [Download unsigned IPA + source + install guide](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44114612190/artifacts/14343135944). Version0.8.0+10, iPhoneOS ARM64 Release/AOT, minimum iOS15. IPA10,042,994 bytes, SHA256 1fd1b5c20c79706d7715f2a5050b269c1fe96a5cb6f3785be06fc3751d5572ec. Outer artifact SHA2566f4e482ff916345059b144a5a2d3f9cf2a9f6e0c2eee618bdd857642bf645a34. Independently downloaded and checked outer/inner ZIP CRC, hashes, Payload/Runner.app, metadata and all five Mach-O binaries including native SQLite: every slice ARM64/iPhoneOS, no Simulator. Artifacts retained30 days.
+
+**Unsigned: local signing/provisioning still required before installation.** [Windows AltStore guide](ios/08_WINDOWS_SIDELOAD.md). No Apple credentials/certificates were requested or committed. Installation, latest iOS compatibility, device Keychain, notifications/Focus/reboot, upgrades and RAM/CPU on physical iPhone remain PENDING. Prior Simulator/shared/Emulator gates unchanged because runtime source unchanged. No TestFlight/App Store release, merge, production Firebase or periodic monitoring enabled.
+
+---
+
 # iOS software verification — 17/11/2026
 
 **Phases0–6 software gates PASS; phase7 needs signed install and real iPhone tests (Windows signing alternative available).** [Draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2), branch `feature/ios-support`; PR1/main unmerged, no official release, periodic automation OFF. Runtime source `4b9963a3371f8eb30448cc39cccee98d2a5b2425`. [iOS/macOS CI44086368066](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368066) passes259 tests,2 native Keychain tests, real Flutter/SQLite/files smoke and packaging. [Android/Windows44086368080](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368080) and [Emulator44087260988](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44087260988) pass; Emulator CI-only auth9904e53 preserves identical runtime. [iOS status](ios/STATUS.md), [QA report](qa/IOS_PORT_20261117.json), [device acceptance](ios/07_DEVICE_ACCEPTANCE.md).
