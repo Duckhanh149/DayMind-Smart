@@ -468,36 +468,66 @@ class ReminderEngine {
             );
   }
 
-  Future<ReminderEventRecord?> acceptOsForeground(String key) async {
-    final matches = (await events()).where((e) => e.eventKey == key);
-    if (matches.isEmpty) return null;
-    final e = matches.first, now = clock(), prefs = await preferences();
-    if (e.state != 'scheduled' ||
-        e.scheduledMs > now.millisecondsSinceEpoch ||
-        e.expiresMs < now.millisecondsSinceEpoch ||
-        !prefs.primaryDevice ||
-        prefs.quietAt(now) ||
-        !await notificationAttemptAllowed(scheduler)) {
-      return null;
-    }
-    if (e.ruleId == 'digest') {
-      if (!await _validDigest(e, prefs, now)) return null;
-    } else {
-      final tasks = await _freshTasks();
-      final task = tasks
-          .where((t) => t.id == (e.occurrenceId ?? e.taskId))
-          .firstOrNull;
-      if (task == null ||
-          task.terminal ||
-          task.deletedAt != null ||
-          task.reminderRevision != e.taskRevision ||
-          (e.occurrenceId != null && task.revision != e.occurrenceRevision)) {
+  Future<ReminderEventRecord?> acceptOsForeground(String key) => db.transaction(
+    () async {
+      final matches = (await events()).where((e) => e.eventKey == key);
+      if (matches.isEmpty) return null;
+      final e = matches.first, now = clock(), prefs = await preferences();
+      if (!['scheduled', 'unknown'].contains(e.state) ||
+          e.scheduledMs > now.millisecondsSinceEpoch ||
+          e.expiresMs < now.millisecondsSinceEpoch ||
+          !prefs.primaryDevice ||
+          prefs.quietAt(now) ||
+          !await notificationAttemptAllowed(scheduler)) {
         return null;
       }
-    }
-    await _state(e, ReminderState.unknown, 'os_foreground_callback');
-    return e;
-  }
+      final callbacks =
+          await (db.select(db.deliveryLogs)..where(
+                (l) =>
+                    l.eventKey.equals(key) &
+                    l.outcome.equals('os_foreground_callback'),
+              ))
+              .get();
+      if (callbacks.isNotEmpty) return null;
+      if (e.state == 'unknown') {
+        final unconfirmed =
+            await (db.select(db.deliveryLogs)..where(
+                  (l) =>
+                      l.eventKey.equals(key) &
+                      l.outcome.equals('os_delivery_unconfirmed'),
+                ))
+                .get();
+        if (unconfirmed.isEmpty) return null;
+      }
+      if (e.ruleId == 'digest') {
+        if (!await _validDigest(e, prefs, now)) return null;
+        final summary = DaySummary.calculate(
+          await _freshTasks(),
+          now,
+          prefs.timezoneId,
+        ).digest;
+        await (db.update(db.reminderEvents)
+              ..where((r) => r.eventKey.equals(key)))
+            .write(ReminderEventsCompanion(title: Value(summary)));
+        await _state(e, ReminderState.unknown, 'os_foreground_callback');
+        return e.copyWith(title: summary);
+      } else {
+        final tasks = await _freshTasks();
+        final task = tasks
+            .where((t) => t.id == (e.occurrenceId ?? e.taskId))
+            .firstOrNull;
+        if (task == null ||
+            task.terminal ||
+            task.deletedAt != null ||
+            task.reminderRevision != e.taskRevision ||
+            (e.occurrenceId != null && task.revision != e.occurrenceRevision)) {
+          return null;
+        }
+      }
+      await _state(e, ReminderState.unknown, 'os_foreground_callback');
+      return e;
+    },
+  );
 
   Future<void> dismiss(ReminderEventRecord event) async {
     await scheduler.cancel(event.platformId);

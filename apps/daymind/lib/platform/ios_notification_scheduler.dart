@@ -2,13 +2,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+class IosNotificationContent {
+  const IosNotificationContent(this.title, {this.digest = false});
+  final String title;
+  final bool digest;
+}
+
 /// Native transport is replaceable in tests; production always uses the OS plugin.
 abstract interface class IosNotificationBackend {
   Future<bool> initialize(void Function(String, String) onResponse);
   Future<bool> granted();
   Future<bool> requestPermission();
   Future<Set<int>> pending();
-  Future<void> schedule(int id, String key, DateTime at, String title);
+  Future<void> schedule(
+    int id,
+    String key,
+    DateTime at,
+    IosNotificationContent content,
+  );
   Future<void> show(int id, String title, String body);
   Future<void> cancel(int id);
   Future<void> cancelAll();
@@ -20,17 +31,21 @@ class DarwinNotificationBackend implements IosNotificationBackend {
       .resolvePlatformSpecificImplementation<
         IOSFlutterLocalNotificationsPlugin
       >()!;
-  static const details = NotificationDetails(
-    iOS: DarwinNotificationDetails(
-      presentAlert: false,
-      presentBanner: false,
-      presentList: false,
-      presentBadge: false,
-      presentSound: false,
-      categoryIdentifier: 'daymind.reminder.v1',
-      interruptionLevel: InterruptionLevel.passive,
-    ),
-  );
+  static NotificationDetails details({bool digest = false}) =>
+      NotificationDetails(
+        iOS: DarwinNotificationDetails(
+          presentAlert: false,
+          presentBanner: false,
+          presentList: false,
+          presentBadge: false,
+          presentSound: false,
+          categoryIdentifier: digest
+              ? 'daymind.digest.v1'
+              : 'daymind.reminder.v1',
+          threadIdentifier: digest ? 'daymind.digests' : 'daymind.reminders',
+          interruptionLevel: InterruptionLevel.passive,
+        ),
+      );
   @override
   Future<bool> initialize(void Function(String, String) onResponse) async {
     final ready =
@@ -48,6 +63,19 @@ class DarwinNotificationBackend implements IosNotificationBackend {
               defaultPresentBadge: false,
               defaultPresentSound: false,
               notificationCategories: [
+                DarwinNotificationCategory(
+                  'daymind.digest.v1',
+                  actions: [
+                    DarwinNotificationAction.plain(
+                      'dismiss',
+                      'Bỏ qua',
+                      options: {
+                        DarwinNotificationActionOption.foreground,
+                        DarwinNotificationActionOption.authenticationRequired,
+                      },
+                    ),
+                  ],
+                ),
                 DarwinNotificationCategory(
                   'daymind.reminder.v1',
                   actions: [
@@ -87,7 +115,7 @@ class DarwinNotificationBackend implements IosNotificationBackend {
   @override
   Future<bool> granted() async {
     final state = await ios.checkPermissions();
-    return state != null && state.isEnabled && state.isAlertEnabled;
+    return state != null && state.isEnabled;
   }
 
   @override
@@ -104,22 +132,26 @@ class DarwinNotificationBackend implements IosNotificationBackend {
   Future<Set<int>> pending() async =>
       (await plugin.pendingNotificationRequests()).map((x) => x.id).toSet();
   @override
-  Future<void> schedule(int id, String key, DateTime at, String title) =>
-      plugin.zonedSchedule(
-        id: id,
-        title: 'DayMind · Nhắc việc',
-        body: title,
-        scheduledDate: tz.TZDateTime.from(at.toUtc(), tz.UTC),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        notificationDetails: details,
-        payload: key,
-      );
+  Future<void> schedule(
+    int id,
+    String key,
+    DateTime at,
+    IosNotificationContent content,
+  ) => plugin.zonedSchedule(
+    id: id,
+    title: content.digest ? 'DayMind · Nhịp ngày mới' : 'DayMind · Nhắc việc',
+    body: content.title,
+    scheduledDate: tz.TZDateTime.from(at.toUtc(), tz.UTC),
+    androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    notificationDetails: details(digest: content.digest),
+    payload: key,
+  );
   @override
   Future<void> show(int id, String title, String body) => plugin.show(
     id: id,
     title: title,
     body: body,
-    notificationDetails: details,
+    notificationDetails: details(),
   );
   @override
   Future<void> cancel(int id) => plugin.cancel(id: id);
@@ -138,7 +170,7 @@ class IosNotificationAdapter {
   static const limit = 60;
   static const channel = MethodChannel('daymind/ios-reminders');
   bool ready = false, handedOff = false, _active = false;
-  Future<String?> Function(String)? resolveTitle;
+  Future<IosNotificationContent?> Function(String)? resolveContent;
   Future<void> Function(String, String)? onEvent;
   final _buffer = <(String, String)>[];
   Future<void> _serial = Future.value();
@@ -185,9 +217,11 @@ class IosNotificationAdapter {
     if (!pending.contains(id) && pending.length >= limit) {
       throw StateError('ios_window_full');
     }
-    final title = await resolveTitle?.call(key);
-    if (title == null || title.isEmpty) throw StateError('ios_event_missing');
-    await backend.schedule(id, key, at, title);
+    final content = await resolveContent?.call(key);
+    if (content == null || content.title.isEmpty) {
+      throw StateError('ios_event_missing');
+    }
+    await backend.schedule(id, key, at, content);
     if (!(await backend.pending()).contains(id)) {
       throw StateError('ios_handoff_unconfirmed');
     }

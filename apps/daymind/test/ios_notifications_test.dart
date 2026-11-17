@@ -1,3 +1,7 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import 'package:daymind_smart/platform/ios_notification_scheduler.dart';
 import 'package:daymind_smart/features/reminders/application/reminder_engine.dart';
 import 'package:daymind_smart/features/reminders/application/reminder_coordinator.dart';
@@ -28,7 +32,12 @@ class Backend implements IosNotificationBackend {
   @override
   Future<Set<int>> pending() async => Set.of(ids);
   @override
-  Future<void> schedule(int id, String key, DateTime at, String title) async {
+  Future<void> schedule(
+    int id,
+    String key,
+    DateTime at,
+    IosNotificationContent content,
+  ) async {
     if (accept) {
       ids.add(id);
       instants[id] = at;
@@ -67,7 +76,8 @@ void main() {
   setUp(() async {
     backend = Backend();
     adapter = IosNotificationAdapter(backend: backend, clock: () => now);
-    adapter.resolveTitle = (_) async => 'private title';
+    adapter.resolveContent = (_) async =>
+        const IosNotificationContent('private title');
     await adapter.initialize();
   });
   tearDown(() => adapter.deactivate());
@@ -88,7 +98,7 @@ void main() {
       );
       backend.permission = true;
       await expectLater(adapter.schedule(1, key, now), throwsStateError);
-      adapter.resolveTitle = (_) async => null;
+      adapter.resolveContent = (_) async => null;
       await expectLater(
         adapter.schedule(1, key, now.add(const Duration(minutes: 1))),
         throwsStateError,
@@ -131,6 +141,85 @@ void main() {
       expect(received, ['snooze10']);
     },
   );
+  test('real Darwin transport serializes silent UTC categories and never asks on launch', () async {
+    const channel = MethodChannel('dexterous.com/flutter/local_notifications');
+    final calls = <MethodCall>[];
+    final previous = debugDefaultTargetPlatformOverride;
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    IOSFlutterLocalNotificationsPlugin.registerWith();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return switch (call.method) {
+            'initialize' || 'requestPermissions' => true,
+            'checkPermissions' => {'isEnabled': true, 'isAlertEnabled': false},
+            'getNotificationAppLaunchDetails' => {
+              'notificationLaunchedApp': false,
+            },
+            'pendingNotificationRequests' => <Map<String, Object>>[],
+            _ => null,
+          };
+        });
+    try {
+      final native = DarwinNotificationBackend();
+      expect(await native.initialize((_, _) {}), isTrue);
+      expect(calls.any((c) => c.method == 'requestPermissions'), isFalse);
+      final init =
+          calls.firstWhere((c) => c.method == 'initialize').arguments as Map;
+      for (final flag in [
+        'requestAlertPermission',
+        'requestSoundPermission',
+        'requestBadgePermission',
+        'requestProvisionalPermission',
+        'requestCriticalPermission',
+        'defaultPresentBanner',
+        'defaultPresentList',
+        'defaultPresentSound',
+      ]) {
+        expect(init[flag], false, reason: flag);
+      }
+      final categories = (init['notificationCategories'] as List).cast<Map>();
+      final digest = categories.singleWhere(
+        (x) => x['identifier'] == 'daymind.digest.v1',
+      );
+      expect(
+        (digest['actions'] as List).cast<Map>().map((x) => x['identifier']),
+        ['dismiss'],
+      );
+      expect(
+        await native.granted(),
+        isTrue,
+      ); // Authorized center-only is not a banner claim.
+      await native.requestPermission();
+      final request =
+          calls.lastWhere((c) => c.method == 'requestPermissions').arguments
+              as Map;
+      expect(request['alert'], true);
+      expect(request['sound'], false);
+      expect(request['critical'], false);
+      final at = DateTime.now().toUtc().add(const Duration(days: 1));
+      await native.schedule(
+        42,
+        key,
+        at,
+        const IosNotificationContent('Snapshot summary', digest: true),
+      );
+      final args =
+          calls.lastWhere((c) => c.method == 'zonedSchedule').arguments as Map;
+      expect(args['timeZoneName'], anyOf('UTC', 'Etc/UTC'));
+      expect(args['payload'], key);
+      expect(args['body'], 'Snapshot summary');
+      final details = args['platformSpecifics'] as Map;
+      expect(details['categoryIdentifier'], 'daymind.digest.v1');
+      expect(details['threadIdentifier'], 'daymind.digests');
+      expect(details['presentSound'], false);
+      expect(details['presentBanner'], false);
+    } finally {
+      debugDefaultTargetPlatformOverride = previous;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    }
+  });
   test('failed initialization is never ready', () async {
     await adapter.deactivate();
     backend.initialized = false;
@@ -212,6 +301,47 @@ void main() {
       coordinator.dispose();
     },
   );
+  test('iOS foreground digest reads current SQLite summary, not scheduled snapshot', () async {
+    var clock = DateTime.utc(2026, 11, 17, 6, 59);
+    final db = DaymindDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final scheduler = WindowScheduler();
+    final engine = ReminderEngine(db, scheduler, clock: () => clock);
+    final repo = SqliteTaskRepository(db, clock: () => clock);
+    await engine.configure(
+      const NotificationPreferences(
+        preset: ReminderPreset.minimal,
+        digestEnabled: true,
+        quietEnabled: false,
+      ),
+    );
+    await engine.reconcile([]);
+    final event = (await engine.events())
+        .where(
+          (e) =>
+              e.scheduledMs ==
+              DateTime.utc(2026, 11, 17, 7).millisecondsSinceEpoch,
+        )
+        .single;
+    await repo.save(
+      TaskDraft(
+        title: 'Added after scheduling',
+        dueAt: DateTime.utc(2026, 11, 17, 8),
+      ),
+    );
+    clock = DateTime.utc(2026, 11, 17, 7);
+    await engine.reconcile(
+      await repo.list(),
+    ); // Resume may reconcile just before OS callback.
+    final callbacks = await Future.wait([
+      engine.acceptOsForeground(event.eventKey),
+      engine.acceptOsForeground(event.eventKey),
+    ]);
+    expect(callbacks.whereType<ReminderEventRecord>().length, 1);
+    final accepted = callbacks.whereType<ReminderEventRecord>().single;
+    expect(accepted.title, contains('1 việc cần làm'));
+    expect(await engine.acceptOsForeground(event.eventKey), isNull);
+  });
   test('foreground cue is validated, deduplicated and snooze callback creates exactly one slot', () async {
     final db = DaymindDatabase(NativeDatabase.memory());
     addTearDown(db.close);

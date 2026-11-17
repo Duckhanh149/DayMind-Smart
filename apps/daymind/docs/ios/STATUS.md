@@ -10,9 +10,9 @@ Branch feature/ios-support; draft PR2 → native/flutter-app; PR1/main not merge
 | 3 offline/files | PASS44 local DB/backup/asset/workspace tests; Swift Keychain XCTest prepared, Apple pending6; commitd7ccd4c |
 | 4 sync | PASS12 local config/sync-record tests; default offline, production project missing; commit4232d13 |
 | 5 UI/Companion | PASS33 widget tests incl3 new iOS notch/keyboard/large-text cases; real editor overflow fixed; commit023fde9 |
-| 6 macOS CI | First run44069212891 failed at simulator bootstatus variable before app build; fixed same-step env use, corrected run pending; native XCTest/smoke prepared; no signing secrets |
+| 6 macOS CI | Runs44069212891/44070028121 exposed clean-runner setup failures (same-step simulator env and nested Emulator pub get); both fixed, next run pending; native XCTest/smoke prepared; no signing secrets |
 | 7 real iPhone | BLOCKED: user has iPhone, no Mac; local signing needs borrowed/rented Mac; see07_DEVICE_ACCEPTANCE.md |
 
-Local final full regression: **257/257 passed**, flutter analyze clean; workflow YAML parsed. No claim of signed build, iPhone banner, real cross-device production sync, iPhone RAM/CPU measurements or official release. Native Android/Windows+Emulator regression CI also needs to complete for this branch.
+Local baseline full regression: **257/257 passed**. Follow-up iOS/digest17 tests pass with actual Darwin transport serialization, dismiss-only digest actions, snapshot summary and atomic foreground callbacks. Updated full regression/Apple build pending; workflow YAML parsed. No claim of signed build, iPhone banner, real cross-device production sync, iPhone RAM/CPU measurements or official release. Native Android/Windows+Emulator regression CI also needs to complete for this branch.
 
 Resume: inspect git status and latest branch/workflow SHAs before editing; do not start another worker if a turn is already active. Read WORK_CHECKPOINT/PHASE_STATUS/BUILD_STATUS plus this table. Complete actual macOS run and resolve failures before phase7. Keep uncommitted work; no reset-hard, merge main, release or production config changes. Live2D remains OFF.

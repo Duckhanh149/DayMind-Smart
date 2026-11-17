@@ -62,6 +62,7 @@ jobs:
           set -o pipefail
           flutter --version | tee build/ios-evidence/flutter.txt
           flutter pub get --enforce-lockfile
+          (cd emulator_test && flutter pub get --enforce-lockfile)
           flutter analyze --no-pub | tee build/ios-evidence/analyze.txt
       - name: Shared unit and widget regressions
         run: |
