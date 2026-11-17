@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'dart:io';
 import 'dart:convert';
 
@@ -739,6 +741,56 @@ void main() {
       tester.view.resetViewInsets();
     },
   );
+  for (final (size, scale, theme) in [
+    (const Size(320, 568), 2.0, 'light'),
+    (const Size(402, 874), 1.0, 'dark'),
+    (const Size(874, 402), 1.5, 'light'),
+  ]) {
+    testWidgets(
+      'iOS safe areas keyboard and companion ${size.width} $theme $scale',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        try {
+          addTearDown(() {
+            debugDefaultTargetPlatformOverride = null;
+            tester.view.resetPadding();
+            tester.view.resetViewPadding();
+            tester.view.resetViewInsets();
+          });
+          tester.view.padding = const FakeViewPadding(top: 47, bottom: 34);
+          tester.view.viewPadding = const FakeViewPadding(top: 47, bottom: 34);
+          final (_, c) = await mount(tester, size, scale: scale);
+          await c.configure((p) => p.copyWith(theme: theme));
+          await tester.pumpAndSettle();
+          expect(c.companionLayout.size, 80);
+          expect(tester.takeException(), isNull);
+          await tester.tap(find.byKey(const Key('add-task')));
+          await tester.pumpAndSettle();
+          tester.view.viewInsets = FakeViewPadding(
+            bottom: size.height > 500 ? 260 : 120,
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(CompanionCard, skipOffstage: false), findsNothing);
+          expect(
+            find.byKey(const Key('save-task')).hitTestable(),
+            findsOneWidget,
+          );
+          await tester.enterText(
+            find.byKey(const Key('task-title')),
+            'iPhone offline',
+          );
+          await tester.tap(find.byKey(const Key('save-task')));
+          await tester.pumpAndSettle();
+          expect(c.tasks.single.title, 'iPhone offline');
+          tester.view.resetViewInsets();
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      },
+    );
+  }
   testWidgets('companion page displays mascot and settings on phone', (
     tester,
   ) async {

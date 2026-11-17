@@ -174,16 +174,26 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(workspaceProvider);
-    final compact = MediaQuery.sizeOf(context).width < 600;
+    final media = MediaQuery.of(context);
+    final compact = media.size.width < 600;
+    final short =
+        media.size.height - media.viewInsets.bottom - media.padding.vertical <
+        420;
     final warning = end != null && due != null && end!.isAfter(due!)
         ? 'Lịch kết thúc sau hạn hoàn thành. Bạn vẫn có thể lưu nếu đây là chủ ý của bạn.'
         : null;
     return Dialog(
-      insetPadding: EdgeInsets.all(compact ? 12 : 32),
+      insetPadding: EdgeInsets.all(
+        short
+            ? 8
+            : compact
+            ? 12
+            : 32,
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 620, maxHeight: 800),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(short ? 8 : 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -195,7 +205,11 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                       widget.task == null
                           ? 'Một công việc mới'
                           : 'Chi tiết công việc',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      maxLines: short ? 1 : null,
+                      overflow: short ? TextOverflow.ellipsis : null,
+                      style: short
+                          ? Theme.of(context).textTheme.titleMedium
+                          : Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
                   IconButton(
@@ -205,7 +219,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: short ? 8 : 12),
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(
@@ -380,7 +394,7 @@ class _TaskEditorState extends ConsumerState<TaskEditor> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: short ? 8 : 16),
               FilledButton.icon(
                 key: const Key('save-task'),
                 onPressed: saving ? null : save,
