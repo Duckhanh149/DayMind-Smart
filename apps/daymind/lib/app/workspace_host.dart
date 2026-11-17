@@ -479,6 +479,8 @@ class WorkspaceHost extends ChangeNotifier {
         deviceId: deviceId,
         deviceName: Platform.isWindows
             ? 'DayMind trên Windows'
+            : Platform.isIOS
+            ? 'DayMind trên iOS'
             : 'DayMind trên Android',
         onChanged: c.refreshFromSync,
         onPrimary: (here) async {
