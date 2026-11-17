@@ -2,6 +2,14 @@
 
 Current task: implement iOS phases0–7 on `feature/ios-support`, [draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2) targeting `native/flutter-app`. Phases0–5 local gates passed; macOS CI/native checks are phase6 and real iPhone/signing phase7 remains pending. See [iOS status](ios/STATUS.md) and [device acceptance](ios/07_DEVICE_ACCEPTANCE.md) before changes. Preserve workspace and inspect CI; no parallel coding turn, no merge/main/release, no secrets. Automation remains OFF. Existing0.8.0 Android/Windows download evidence below remains valid for its original source commit, not a signed iOS release.
 
+## Active iOS CI checkpoint — 17/11/2026
+
+App runtime source `793cb7ebdad6edbc67575fd13855e54c7eef9355` (tree `3b73fcd056950c258f7d6eefd3ab34674c9534d6`):259 Linux/Mac shared tests and analyze pass. Native Android/Windows [44071902509](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44071902509) and Firebase Emulator [44071902475](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44071902475) pass. Runtime/lib/ios/Android/Windows sources unchanged by subsequent CI-only corrections.
+
+Current CI config `fa479345369efcc2e62370731aec76a98c0efa5b`; last [iOS run44081494455](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44081494455), job134032944054. It passed both native Keychain tests/identity verification and failed Flutter smoke on readiness. Pinned FLN22 returns NO for no permission request while initialized; runtime fix now probes native settings/pending instead, retains denied authorization. Local17 targeted tests/analyze pass. New corrected CI will run after this commit; inspect latest branch run before editing. Previous native roundtrip failed-34018 with explicit no-signing override; manual signature attempt then failed launch (Taskgated Invalid Signature), removed. Corrected run lets Xcode embed Simulator entitlements using normal signing and verifies __TEXT sections read-only. No app Keychain fallback or assertion weakening. See ios/06_CI_AND_DEVICE_TESTS.md for evidence and precise pending gate.
+
+User confirmed iPhone only/no Mac. Phase7 blocked on Mac+iPhone/local signing; latest real model/iOS and production Firebase still unverified. Do not request credentials, merge/release or restart periodic automation. README updates may remain uncommitted while CI runs; preserve them. Finish actual native Keychain/SQLite smoke and export Simulator/source ZIP before final status. A Simulator artifact is not an iPhone IPA.
+
 ---
 
 # Điểm tiếp tục — 14/11/2026

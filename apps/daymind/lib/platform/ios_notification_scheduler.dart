@@ -48,68 +48,73 @@ class DarwinNotificationBackend implements IosNotificationBackend {
       );
   @override
   Future<bool> initialize(void Function(String, String) onResponse) async {
-    final ready =
-        await plugin.initialize(
-          settings: InitializationSettings(
-            iOS: DarwinInitializationSettings(
-              requestAlertPermission: false,
-              requestSoundPermission: false,
-              requestBadgePermission: false,
-              requestProvisionalPermission: false,
-              requestCriticalPermission: false,
-              defaultPresentAlert: false,
-              defaultPresentBanner: false,
-              defaultPresentList: false,
-              defaultPresentBadge: false,
-              defaultPresentSound: false,
-              notificationCategories: [
-                DarwinNotificationCategory(
-                  'daymind.digest.v1',
-                  actions: [
-                    DarwinNotificationAction.plain(
-                      'dismiss',
-                      'Bỏ qua',
-                      options: {
-                        DarwinNotificationActionOption.foreground,
-                        DarwinNotificationActionOption.authenticationRequired,
-                      },
-                    ),
-                  ],
-                ),
-                DarwinNotificationCategory(
-                  'daymind.reminder.v1',
-                  actions: [
-                    DarwinNotificationAction.plain(
-                      'snooze10',
-                      'Hoãn 10 phút',
-                      options: {
-                        DarwinNotificationActionOption.foreground,
-                        DarwinNotificationActionOption.authenticationRequired,
-                      },
-                    ),
-                    DarwinNotificationAction.plain(
-                      'dismiss',
-                      'Bỏ qua',
-                      options: {
-                        DarwinNotificationActionOption.foreground,
-                        DarwinNotificationActionOption.authenticationRequired,
-                      },
-                    ),
-                  ],
+    await plugin.initialize(
+      settings: InitializationSettings(
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestProvisionalPermission: false,
+          requestCriticalPermission: false,
+          defaultPresentAlert: false,
+          defaultPresentBanner: false,
+          defaultPresentList: false,
+          defaultPresentBadge: false,
+          defaultPresentSound: false,
+          notificationCategories: [
+            DarwinNotificationCategory(
+              'daymind.digest.v1',
+              actions: [
+                DarwinNotificationAction.plain(
+                  'dismiss',
+                  'Bỏ qua',
+                  options: {
+                    DarwinNotificationActionOption.foreground,
+                    DarwinNotificationActionOption.authenticationRequired,
+                  },
                 ),
               ],
             ),
-          ),
-          onDidReceiveNotificationResponse: (r) =>
-              onResponse(r.payload ?? '', r.actionId ?? 'open'),
-        ) ??
-        false;
+            DarwinNotificationCategory(
+              'daymind.reminder.v1',
+              actions: [
+                DarwinNotificationAction.plain(
+                  'snooze10',
+                  'Hoãn 10 phút',
+                  options: {
+                    DarwinNotificationActionOption.foreground,
+                    DarwinNotificationActionOption.authenticationRequired,
+                  },
+                ),
+                DarwinNotificationAction.plain(
+                  'dismiss',
+                  'Bỏ qua',
+                  options: {
+                    DarwinNotificationActionOption.foreground,
+                    DarwinNotificationActionOption.authenticationRequired,
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      onDidReceiveNotificationResponse: (r) =>
+          onResponse(r.payload ?? '', r.actionId ?? 'open'),
+    );
+    // FLN22 iOS initialize returns the permission-request result. With every
+    // request flag false it returns false even after configuring the channel.
+    // Verify native API availability separately; never infer authorization.
+    if (await ios.checkPermissions() == null) {
+      throw StateError('ios_native_settings_unavailable');
+    }
+    await plugin.pendingNotificationRequests();
     final launch = await plugin.getNotificationAppLaunchDetails();
     if (launch?.didNotificationLaunchApp == true) {
       final r = launch!.notificationResponse;
       onResponse(r?.payload ?? '', r?.actionId ?? 'open');
     }
-    return ready;
+    return true;
   }
 
   @override
@@ -198,6 +203,8 @@ class IosNotificationAdapter {
   }
 
   Future<void> initialize() async {
+    ready = false;
+    handedOff = false;
     _active = true;
     ready = await backend.initialize(receive);
     if (!ready) throw StateError('ios_init_failed');

@@ -144,6 +144,9 @@ void main() {
   test('real Darwin transport serializes silent UTC categories and never asks on launch', () async {
     const channel = MethodChannel('dexterous.com/flutter/local_notifications');
     final calls = <MethodCall>[];
+    var authorized = false,
+        settingsUnavailable = false,
+        pendingUnavailable = false;
     final previous = debugDefaultTargetPlatformOverride;
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     IOSFlutterLocalNotificationsPlugin.registerWith();
@@ -151,12 +154,19 @@ void main() {
         .setMockMethodCallHandler(channel, (call) async {
           calls.add(call);
           return switch (call.method) {
-            'initialize' || 'requestPermissions' => true,
-            'checkPermissions' => {'isEnabled': true, 'isAlertEnabled': false},
+            'initialize' => false, // Native plugin returns NO when no permission is requested.
+            'requestPermissions' => authorized = true,
+            'checkPermissions' =>
+              settingsUnavailable
+                  ? null
+                  : {'isEnabled': authorized, 'isAlertEnabled': false},
             'getNotificationAppLaunchDetails' => {
               'notificationLaunchedApp': false,
             },
-            'pendingNotificationRequests' => <Map<String, Object>>[],
+            'pendingNotificationRequests' =>
+              pendingUnavailable
+                  ? throw PlatformException(code: 'native_unavailable')
+                  : <Map<String, Object>>[],
             _ => null,
           };
         });
@@ -186,11 +196,12 @@ void main() {
         (digest['actions'] as List).cast<Map>().map((x) => x['identifier']),
         ['dismiss'],
       );
+      expect(await native.granted(), isFalse);
+      await native.requestPermission();
       expect(
         await native.granted(),
         isTrue,
-      ); // Authorized center-only is not a banner claim.
-      await native.requestPermission();
+      ); // Center-only is not a banner claim.
       final request =
           calls.lastWhere((c) => c.method == 'requestPermissions').arguments
               as Map;
@@ -214,6 +225,14 @@ void main() {
       expect(details['threadIdentifier'], 'daymind.digests');
       expect(details['presentSound'], false);
       expect(details['presentBanner'], false);
+      settingsUnavailable = true;
+      await expectLater(native.initialize((_, _) {}), throwsStateError);
+      settingsUnavailable = false;
+      pendingUnavailable = true;
+      await expectLater(
+        native.initialize((_, _) {}),
+        throwsA(isA<PlatformException>()),
+      );
     } finally {
       debugDefaultTargetPlatformOverride = previous;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -221,7 +240,6 @@ void main() {
     }
   });
   test('failed initialization is never ready', () async {
-    await adapter.deactivate();
     backend.initialized = false;
     await expectLater(adapter.initialize(), throwsStateError);
     expect(adapter.ready, isFalse);
