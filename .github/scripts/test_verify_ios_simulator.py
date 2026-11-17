@@ -2,10 +2,10 @@ import plistlib
 import tempfile
 import unittest
 from pathlib import Path
-from sign_ios_simulator import simulator_bundle_id
+from verify_ios_simulator import simulator_bundle_id
 
 
-class SimulatorSigningBoundary(unittest.TestCase):
+class SimulatorVerificationBoundary(unittest.TestCase):
     def validate(self, platform, supported, bundle='dev.daymind.daymindSmart'):
         with tempfile.TemporaryDirectory() as temp:
             app = Path(temp)
