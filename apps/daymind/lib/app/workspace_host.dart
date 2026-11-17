@@ -453,6 +453,11 @@ class WorkspaceHost extends ChangeNotifier {
       c.openNotifications();
       if (window != null) unawaited(window!.show());
     };
+    scheduler.ios.resolveTitle = (key) async =>
+        (await ReminderEngine(db, scheduler).events())
+            .where((e) => e.eventKey == key && e.state == 'planned')
+            .firstOrNull
+            ?.title;
     final zone = await scheduler.initialize(path);
     final reminders = ReminderCoordinator(
       ReminderEngine(db, scheduler),

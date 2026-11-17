@@ -80,10 +80,15 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         unawaited(reloadFromNative());
       };
     }
+    if (Platform.isIOS && engine.scheduler is PlatformNotificationScheduler) {
+      final ios = (engine.scheduler as PlatformNotificationScheduler).ios;
+      ios.onEvent = _iosEvent;
+      ios.flush();
+    }
     WidgetsBinding.instance.addObserver(this);
     await refresh();
     _timer = Timer.periodic(
-      const Duration(seconds: 20),
+      Platform.isIOS ? const Duration(minutes: 5) : const Duration(seconds: 20),
       (_) => refresh(replan: false),
     );
   }
@@ -94,6 +99,51 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
     if (_foreground) {
       unawaited(reloadFromNative());
     }
+  }
+
+  Future<void> _iosEvent(String key, String action) async {
+    if (_disposed) return;
+    if (action == 'foreground') {
+      final e = await engine.acceptOsForeground(key);
+      if (e != null) {
+        _announce(
+          e.ruleId == 'digest'
+              ? CompanionCue(
+                  CompanionEvent.dailyDigest,
+                  e.title,
+                  summary: e.title,
+                )
+              : CompanionCue(
+                  CompanionEvent.reminderDue,
+                  'Đến giờ: ${e.title}',
+                  task: e.title,
+                ),
+        );
+      }
+    } else {
+      final e = (await engine.events())
+          .where((e) => e.eventKey == key)
+          .firstOrNull;
+      if (e == null) return;
+      if (action == 'snooze10') {
+        final task = (await getTasks())
+            .where((t) => t.id == (e.occurrenceId ?? e.taskId))
+            .firstOrNull;
+        if (task != null && e.ruleId != 'digest') {
+          await engine.snooze(
+            e,
+            task,
+            engine.clock().add(const Duration(minutes: 10)),
+          );
+        }
+      } else if (action == 'dismiss') {
+        await engine.dismiss(e);
+      } else {
+        await engine.markRead(key);
+      }
+      (engine.scheduler as PlatformNotificationScheduler).onOpen?.call();
+    }
+    await refresh();
   }
 
   Future<void> reloadFromNative() async {
@@ -146,7 +196,9 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
         _plannedDay = day;
       }
       if (_disposed) return;
-      if (!Platform.isAndroid) {
+      if (!Platform.isAndroid &&
+          !(engine.scheduler is NotificationQueueWindow &&
+              (engine.scheduler as NotificationQueueWindow).osOwnsDelivery)) {
         final due = await engine.claimDue(tasks);
         if (_disposed) return;
         final digests = due.where((e) => e.ruleId == 'digest').toList();
@@ -330,6 +382,15 @@ class ReminderCoordinator extends ChangeNotifier with WidgetsBindingObserver {
       title: 'Thử thông báo DayMind',
       body: 'Thông báo thử im lặng do bạn yêu cầu.',
     );
+    if (Platform.isIOS && _foreground) {
+      _announce(
+        const CompanionCue(
+          CompanionEvent.reminderDue,
+          'Đã gửi yêu cầu thử im lặng; iOS không hiện banner khi app đang mở.',
+          task: 'Thông báo thử',
+        ),
+      );
+    }
     if (diagnosticAttempt) {
       granted = await engine.scheduler
           .granted(); // Never infer permission/banner from show success.

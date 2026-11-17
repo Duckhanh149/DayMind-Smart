@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'ios_notification_scheduler.dart';
+
 import '../features/reminders/domain/notification_diagnostics.dart';
 
 import 'package:flutter/services.dart';
@@ -11,10 +13,21 @@ import '../features/reminders/domain/reminder.dart';
 import '../features/companion/domain/companion.dart';
 
 class PlatformNotificationScheduler
-    implements NotificationScheduler, NotificationDeliveryPolicy {
+    implements
+        NotificationScheduler,
+        NotificationDeliveryPolicy,
+        NotificationQueueWindow {
   PlatformNotificationScheduler({NotificationDiagnostics? diagnostics})
     : diagnostics = diagnostics ?? NotificationDiagnostics();
   final NotificationDiagnostics diagnostics;
+  final ios = IosNotificationAdapter();
+  @override
+  bool get osOwnsDelivery => Platform.isIOS || Platform.isAndroid;
+  @override
+  int get pendingLimit => Platform.isIOS ? IosNotificationAdapter.limit : 128;
+  @override
+  Future<Set<int>?> pendingIds() async =>
+      Platform.isIOS && _ready ? await ios.backend.pending() : null;
   static const windowChannel = MethodChannel('daymind/window');
   String permissionStatus = 'unknown';
   int? osSetting, osState, osQueryError;
@@ -55,7 +68,8 @@ class PlatformNotificationScheduler
   }
 
   @override
-  bool get supportsClosedApp => Platform.isAndroid;
+  bool get supportsClosedApp =>
+      Platform.isAndroid || (Platform.isIOS && ios.handedOff);
   Future<String> initialize(String databasePath) async {
     _ready = false;
     initializationError = null;
@@ -97,6 +111,13 @@ class PlatformNotificationScheduler
         }
       } catch (_) {
         initializationError = 'Chưa khởi tạo được thông báo Android. Kiểm tra quyền và mở lại ứng dụng.';
+      }
+    } else if (Platform.isIOS) {
+      try {
+        await ios.initialize();
+        _ready = ios.ready;
+      } catch (_) {
+        initializationError = 'Chưa khởi tạo được thông báo iOS. Hãy mở lại app và kiểm tra quyền trong Cài đặt.';
       }
     } else if (Platform.isWindows) {
       try {
@@ -143,6 +164,16 @@ class PlatformNotificationScheduler
     if (!_ready) return false;
     if (Platform.isAndroid) {
       final allowed = await channel.invokeMethod<bool>('granted') ?? false;
+      permissionStatus = allowed ? 'granted' : 'denied';
+      diagnostics.record(
+        allowed
+            ? NotificationDiagnosticCode.permissionGranted
+            : NotificationDiagnosticCode.permissionDenied,
+      );
+      return allowed;
+    }
+    if (Platform.isIOS) {
+      final allowed = await ios.granted();
       permissionStatus = allowed ? 'granted' : 'denied';
       diagnostics.record(
         allowed
@@ -200,11 +231,15 @@ class PlatformNotificationScheduler
     if (Platform.isAndroid) {
       return await channel.invokeMethod<bool>('requestPermission') ?? false;
     }
+    if (Platform.isIOS) return ios.backend.requestPermission();
     return granted();
   }
 
   Future<void> openSettings() async {
     if (Platform.isAndroid) await channel.invokeMethod<void>('openSettings');
+    if (Platform.isIOS) {
+      await IosNotificationAdapter.channel.invokeMethod<void>('openSettings');
+    }
     if (Platform.isWindows) {
       await windowChannel.invokeMethod<void>('openNotificationSettings');
     }
@@ -218,6 +253,8 @@ class PlatformNotificationScheduler
     if (Platform.isAndroid) {
       await channel.invokeMethod<void>('deactivate');
       channel.setMethodCallHandler(null);
+    } else if (Platform.isIOS) {
+      await ios.deactivate();
     } else if (Platform.isWindows && _ready) {
       await plugin.cancelAll();
     }
@@ -237,6 +274,7 @@ class PlatformNotificationScheduler
         'at': at.millisecondsSinceEpoch,
       });
     }
+    if (Platform.isIOS) await ios.schedule(id, eventKey, at);
     // Windows uses the guarded live engine; closed-process delivery is explicitly unavailable until its packaging POC passes.
   }
 
@@ -245,6 +283,7 @@ class PlatformNotificationScheduler
     if (Platform.isAndroid && _ready) {
       await channel.invokeMethod<void>('cancel', {'id': id});
     }
+    if (Platform.isIOS && _ready) await ios.backend.cancel(id);
   }
 
   @override
@@ -262,6 +301,9 @@ class PlatformNotificationScheduler
           'title': title,
           'body': body,
         });
+      } else if (Platform.isIOS) {
+        if (!await ios.granted()) throw StateError("ios_permission_denied");
+        await ios.backend.show(id, title, body);
       } else if (Platform.isWindows && _ready) {
         await plugin.show(
           id: id,

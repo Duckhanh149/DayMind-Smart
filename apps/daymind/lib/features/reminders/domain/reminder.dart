@@ -304,3 +304,10 @@ Future<bool> notificationAttemptAllowed(NotificationScheduler scheduler) =>
     scheduler is NotificationDeliveryPolicy
     ? (scheduler as NotificationDeliveryPolicy).canAttemptNotification()
     : scheduler.granted();
+
+/// Optional OS queue capability; absent on the existing live desktop engine.
+abstract interface class NotificationQueueWindow {
+  bool get osOwnsDelivery;
+  int get pendingLimit;
+  Future<Set<int>?> pendingIds();
+}
