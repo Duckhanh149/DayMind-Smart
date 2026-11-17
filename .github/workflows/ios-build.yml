@@ -3,7 +3,14 @@ on:
   push:
     branches: [feature/ios-support]
     paths:
-      - apps/daymind/**
+      - apps/daymind/lib/**
+      - apps/daymind/ios/**
+      - apps/daymind/assets/**
+      - apps/daymind/test/**
+      - apps/daymind/integration_test/**
+      - apps/daymind/tool/**
+      - apps/daymind/pubspec.*
+      - apps/daymind/analysis_options.yaml
       - .github/workflows/ios-build.yml
   workflow_dispatch:
 permissions:
@@ -48,8 +55,8 @@ jobs:
               f.write('DAYMIND_IOS_SIM_NAME=' + device['name'] + '\n')
           print('Selected:', runtime, device['name'])
           if device['state'] == 'Shutdown': subprocess.run(['xcrun','simctl','boot',device['udid']],check=True)
+          subprocess.run(['xcrun','simctl','bootstatus',device['udid'],'-b'],check=True)
           PY
-          xcrun simctl bootstatus "$DAYMIND_IOS_SIM_ID" -b
       - name: Dependencies and static checks
         run: |
           set -o pipefail

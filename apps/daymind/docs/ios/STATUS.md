@@ -10,8 +10,8 @@ Branch feature/ios-support; draft PR2 → native/flutter-app; PR1/main not merge
 | 3 offline/files | PASS44 local DB/backup/asset/workspace tests; Swift Keychain XCTest prepared, Apple pending6; commitd7ccd4c |
 | 4 sync | PASS12 local config/sync-record tests; default offline, production project missing; commit4232d13 |
 | 5 UI/Companion | PASS33 widget tests incl3 new iOS notch/keyboard/large-text cases; real editor overflow fixed; commit023fde9 |
-| 6 macOS CI | PENDING actual run; workflow, native XCTest and Flutter native smoke added; no signing secrets |
-| 7 real iPhone | PENDING Mac+iPhone and local signing; see07_DEVICE_ACCEPTANCE.md |
+| 6 macOS CI | First run44069212891 failed at simulator bootstatus variable before app build; fixed same-step env use, corrected run pending; native XCTest/smoke prepared; no signing secrets |
+| 7 real iPhone | BLOCKED: user has iPhone, no Mac; local signing needs borrowed/rented Mac; see07_DEVICE_ACCEPTANCE.md |
 
 Local final full regression: **257/257 passed**, flutter analyze clean; workflow YAML parsed. No claim of signed build, iPhone banner, real cross-device production sync, iPhone RAM/CPU measurements or official release. Native Android/Windows+Emulator regression CI also needs to complete for this branch.
 
