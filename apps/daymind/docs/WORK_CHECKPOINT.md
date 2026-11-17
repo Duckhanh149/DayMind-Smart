@@ -1,3 +1,9 @@
+# iOS work in progress — 17/11/2026
+
+Current task: implement iOS phases0–7 on `feature/ios-support`, [draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2) targeting `native/flutter-app`. Phases0–5 local gates passed; macOS CI/native checks are phase6 and real iPhone/signing phase7 remains pending. See [iOS status](ios/STATUS.md) and [device acceptance](ios/07_DEVICE_ACCEPTANCE.md) before changes. Preserve workspace and inspect CI; no parallel coding turn, no merge/main/release, no secrets. Automation remains OFF. Existing0.8.0 Android/Windows download evidence below remains valid for its original source commit, not a signed iOS release.
+
+---
+
 # Điểm tiếp tục — 14/11/2026
 
 Nguồn phần mềm đã kiểm: `d3749182de8afdcde62610f848ef0681eff91516`, tree `b27186411272920070d9a6ecc500241b3ce93822`; app0.8.0+10, nhánh native/flutter-app, PR#1 mở. [Native43435282895](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895) **SUCCESS cả hai nền tảng**, publish SKIPPED; Emulator43435282802 SUCCESS. Đã đọc checkpoint/status, kiểm workspace sạch và remote vẫn cùng nguồn khi tiếp tục. Không có worker code khác; giữ mọi thay đổi mới nếu có, không reset hard. Các thay đổi sau nguồn này chỉ ghi báo cáo/tài liệu.

@@ -1,3 +1,9 @@
+# iOS work in progress — 17/11/2026
+
+Current task: implement iOS phases0–7 on `feature/ios-support`, [draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2) targeting `native/flutter-app`. Phases0–5 local gates passed; macOS CI/native checks are phase6 and real iPhone/signing phase7 remains pending. See [iOS status](ios/STATUS.md) and [device acceptance](ios/07_DEVICE_ACCEPTANCE.md) before changes. Preserve workspace and inspect CI; no parallel coding turn, no merge/main/release, no secrets. Automation remains OFF. Existing0.8.0 Android/Windows download evidence below remains valid for its original source commit, not a signed iOS release.
+
+---
+
 # Tiến độ 0.8.0+10 — 14/11/2026
 
 Nguồn `d3749182de8afdcde62610f848ef0681eff91516` đã qua [Native CI](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895) và Firebase Emulator43435282802. Android247 tests/27 receiver, Windows245+2skip/component100, SDK native profile, restore/no replay, scoped credentials và installer retention đạt. [BUILD_STATUS](BUILD_STATUS.md) chứa gói đã kiểm và hash; [native](qa/HARDENING_080_NATIVE.json), [RAM/CPU](qa/HARDENING_080_RESOURCES.json).
