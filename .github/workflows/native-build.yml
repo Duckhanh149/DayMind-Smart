@@ -1,7 +1,7 @@
 name: Build Android and Windows
 on:
   push:
-    branches: [main, native/flutter-app]
+    branches: [main, native/flutter-app, feature/ios-support]
     paths:
       - apps/daymind/lib/**
       - apps/daymind/android/**

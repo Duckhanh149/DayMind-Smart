@@ -1,0 +1,91 @@
+name: iPhone unsigned release build
+on:
+  push:
+    branches: [feature/ios-support]
+    paths:
+      - apps/daymind/lib/**
+      - apps/daymind/ios/**
+      - apps/daymind/assets/**
+      - apps/daymind/pubspec.*
+      - .github/workflows/ios-device-build.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-device-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  iphone:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: apps/daymind
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Flutter
+        run: |
+          git init "$RUNNER_TEMP/daymind-flutter"
+          git -C "$RUNNER_TEMP/daymind-flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$RUNNER_TEMP/daymind-flutter" fetch --depth 1 origin refs/tags/3.47.9:refs/tags/3.47.9
+          git -C "$RUNNER_TEMP/daymind-flutter" checkout -B stable 3.47.9
+          test "$(git -C "$RUNNER_TEMP/daymind-flutter" rev-parse HEAD)" = c197ca5199e9ee5661e865596c9c07294dfab51c
+          echo "$RUNNER_TEMP/daymind-flutter/bin" >> "$GITHUB_PATH"
+      - name: Build iPhone release AOT without provisioning
+        run: |
+          set -euo pipefail
+          mkdir -p build/iphone-evidence
+          xcodebuild -version | tee build/iphone-evidence/xcode.txt
+          flutter --version | tee build/iphone-evidence/flutter.txt
+          flutter pub get --enforce-lockfile
+          flutter build ios --release --no-codesign --no-publish-port --target lib/main.dart | tee build/iphone-evidence/build.txt
+      - name: Verify device architecture and package unsigned IPA
+        run: |
+          set -euo pipefail
+          python3 - <<'PYVERIFY'
+          import json, pathlib, plistlib, subprocess
+          app = pathlib.Path('build/ios/iphoneos/Runner.app')
+          info = plistlib.loads((app/'Info.plist').read_bytes())
+          assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS'], info
+          assert info['DTPlatformName'] == 'iphoneos', info
+          assert info['CFBundleIdentifier'] == 'dev.daymind.daymindSmart', info
+          evidence = {'source': subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                      'version': info['CFBundleShortVersionString'], 'build': info['CFBundleVersion'],
+                      'minimumOS': info['MinimumOSVersion'], 'signedForInstall': False, 'binaries': {}}
+          for binary in [app/info['CFBundleExecutable'], app/'Frameworks/App.framework/App', app/'Frameworks/Flutter.framework/Flutter']:
+              arch = subprocess.check_output(['xcrun','lipo','-archs',str(binary)],text=True).strip()
+              assert arch == 'arm64', (binary, arch)
+              load = subprocess.check_output(['xcrun','vtool','-show-build',str(binary)],text=True)
+              assert 'platform IOS' in load and 'IOSSIMULATOR' not in load, (binary, load)
+              evidence['binaries'][str(binary)] = {'arch': arch, 'build': load}
+          assert not list(app.rglob('*.mobileprovision')), 'Unexpected provisioning profile'
+          assert not list(app.rglob('*.p12')) and not list(app.rglob('*.p8')), 'Unexpected signing secrets'
+          pathlib.Path('build/iphone-evidence/device.json').write_text(json.dumps(evidence,indent=2))
+          PYVERIFY
+          mkdir -p build/iphone-package/Payload
+          ditto build/ios/iphoneos/Runner.app build/iphone-package/Payload/Runner.app
+          (cd build/iphone-package && ditto -c -k --sequesterRsrc --keepParent Payload ../DayMind-iPhone-unsigned.ipa)
+          python3 -m zipfile -t build/DayMind-iPhone-unsigned.ipa
+          git -C ../.. archive --format=zip -o apps/daymind/build/DayMind-iPhone-source.zip HEAD
+          shasum -a 256 build/DayMind-iPhone-unsigned.ipa build/DayMind-iPhone-source.zip > build/iphone-evidence/SHA256SUMS.txt
+          cp docs/ios/08_WINDOWS_SIDELOAD.md build/INSTALL-iPhone.md
+      - name: Upload unsigned iPhone package and source
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayMind-iPhone-unsigned-${{ github.sha }}
+          path: |
+            apps/daymind/build/DayMind-iPhone-unsigned.ipa
+            apps/daymind/build/DayMind-iPhone-source.zip
+            apps/daymind/build/INSTALL-iPhone.md
+            apps/daymind/build/iphone-evidence/device.json
+            apps/daymind/build/iphone-evidence/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayMind-iPhone-evidence-${{ github.sha }}
+          path: apps/daymind/build/iphone-evidence
+          retention-days: 30

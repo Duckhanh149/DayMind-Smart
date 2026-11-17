@@ -24,6 +24,8 @@ import '../features/reminders/application/reminder_engine.dart';
 import '../features/reminders/domain/reminder.dart';
 import '../features/tasks/data/database.dart';
 import '../platform/notification_scheduler.dart';
+import '../platform/ios_notification_scheduler.dart';
+import '../features/assistant/domain/daily_assistant.dart';
 import '../platform/secure_session_store.dart';
 import '../platform/window_lifecycle.dart';
 import '../platform/floating_companion.dart';
@@ -453,6 +455,21 @@ class WorkspaceHost extends ChangeNotifier {
       c.openNotifications();
       if (window != null) unawaited(window!.show());
     };
+    scheduler.ios.resolveContent = (key) async {
+      final engine = ReminderEngine(db, scheduler);
+      final event = (await engine.events())
+          .where((e) => e.eventKey == key && e.state == 'planned')
+          .firstOrNull;
+      if (event == null) return null;
+      if (event.ruleId != 'digest') return IosNotificationContent(event.title);
+      final prefs = await engine.preferences();
+      final summary = DaySummary.calculate(
+        await c.reminderTasks(),
+        DateTime.fromMillisecondsSinceEpoch(event.scheduledMs, isUtc: true),
+        prefs.timezoneId,
+      ).digest;
+      return IosNotificationContent('Ảnh chụp lịch: $summary', digest: true);
+    };
     final zone = await scheduler.initialize(path);
     final reminders = ReminderCoordinator(
       ReminderEngine(db, scheduler),
@@ -474,6 +491,8 @@ class WorkspaceHost extends ChangeNotifier {
         deviceId: deviceId,
         deviceName: Platform.isWindows
             ? 'DayMind trên Windows'
+            : Platform.isIOS
+            ? 'DayMind trên iOS'
             : 'DayMind trên Android',
         onChanged: c.refreshFromSync,
         onPrimary: (here) async {

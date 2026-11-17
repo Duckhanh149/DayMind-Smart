@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../features/account_sync/domain/account.dart';
 
-/// Native OS encryption: Android Keystore AES-GCM / Windows user-bound DPAPI.
+/// Native OS encryption: Android Keystore AES-GCM / Windows DPAPI / iOS Keychain.
 class NativeSessionStore implements SecureSessionStore {
   NativeSessionStore({this.namespace = ''});
   final String namespace;

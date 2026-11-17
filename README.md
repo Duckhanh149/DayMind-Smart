@@ -2,9 +2,11 @@
 
 Ứng dụng **Android ARM64 và Windows 10/11 x64** nằm tại [apps/daymind](apps/daymind/README.md). Preview native **0.8.0** có lịch lặp, nhắc việc, trợ lý/thống kê, sao lưu có mật khẩu, tài khoản/đồng bộ Firebase có cấu hình tách Emulator/production (build mặc định chỉ local) và Companion Mầm/ảnh động; có cửa sổ nhân vật nổi tùy chọn trên Windows. Các cổng phần mềm tự động 0–9 đã đạt (8 dùng raster fallback, Live2D vẫn tắt). **Nghiệm thu thiết bị thật và ký phát hành còn thiếu**, chưa hoàn tất toàn dự án. [Tải preview và xem bằng chứng](apps/daymind/docs/BUILD_STATUS.md), [tiến độ](apps/daymind/docs/PHASE_STATUS.md), [PR #1](https://github.com/Duckhanh149/DayMind-Smart/pull/1). Website được giữ ở root bên dưới, dữ liệu tách khỏi app native.
 
+Bản iOS đang được bổ sung trên `feature/ios-support`, [PR #2](https://github.com/Duckhanh149/DayMind-Smart/pull/2): dùng lại Flutter/SQLite, hàng đợi nhắc của iOS và Keychain. [Tiến độ iOS](apps/daymind/docs/ios/STATUS.md) phân biệt kiểm thử Simulator với ký/cài và nghiệm thu iPhone thật; chưa có bản phát hành iPhone chính thức.
+
 ## DayMind SMART · Web
 
-Website được tạo bằng Sites theo yêu cầu mới nhất. Bản này triển khai **phần quản lý công việc cục bộ của giai đoạn 1 trên web**. Không phải bản Flutter Android/Windows hoàn chỉnh.
+Website được tạo bằng Sites. Bản này triển khai **phần quản lý công việc cục bộ của giai đoạn 1 trên web**. Không phải bản Flutter Android/Windows hoàn chỉnh.
 
 ## Sử dụng
 

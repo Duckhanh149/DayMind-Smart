@@ -1,7 +1,7 @@
 name: Firebase Emulator integration
 on:
   push:
-    branches: [main, native/flutter-app]
+    branches: [main, native/flutter-app, feature/ios-support]
     paths:
       - apps/daymind/firebase/**
       - apps/daymind/emulator_test/**
@@ -43,6 +43,8 @@ jobs:
       - run: flutter pub get --enforce-lockfile
         working-directory: apps/daymind/emulator_test
       - run: python ../tool/precache_sqlite.py
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         working-directory: apps/daymind/emulator_test
       - run: npm ci --no-audit --no-fund
       - run: npm run test:emulator

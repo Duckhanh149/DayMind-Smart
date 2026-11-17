@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-17",
+  "app_version": "0.8.0+10",
+  "status": "software_phases_0_to_6_passed; physical_phase_7_blocked",
+  "runtime_source": "4b9963a3371f8eb30448cc39cccee98d2a5b2425",
+  "runtime_tree": "b6e2c82ab5aee64493d6e87c0582ef09c5dbacd1",
+  "dart_lib_tree": "07c134ea84ded7750a23a623547e6d06b67143fd",
+  "ios": {
+    "run": 44086368066,
+    "job": 134049736965,
+    "conclusion": "success",
+    "xcode": "26.6 (17F113)",
+    "sdk": "iOS26.5",
+    "simulator": "iPhone Air, iOS26.5",
+    "minimum_ios": "15.0",
+    "shared_tests": 259,
+    "native_keychain_tests": 2,
+    "native_flutter_smoke_tests": 1,
+    "permission_observed": "not_granted; no automatic prompt or banner claim",
+    "verified": [
+      "normal Simulator build",
+      "Xcode embedded __TEXT entitlement sections",
+      "Keychain native/scoped replace/read/delete",
+      "SQLite background worker create/edit/delete/restore/reopen/integrity_check",
+      "owned image after picked source deletion",
+      "artwork backup/restore",
+      "normal main.dart rebuilt after integration entrypoint"
+    ]
+  },
+  "native_regression": {
+    "run": 44086368080,
+    "android_job": 134049737218,
+    "windows_job": 134049736820,
+    "conclusion": "success",
+    "source": "4b9963a3371f8eb30448cc39cccee98d2a5b2425"
+  },
+  "firebase_emulator": {
+    "run": 44087260988,
+    "job": 134052816640,
+    "conclusion": "success",
+    "ci_config_source": "9904e530a6aa4b38b360af91eb3c947118336a77",
+    "runtime_diff_from_ios_source": false,
+    "production_configured": false
+  },
+  "artifact": {
+    "run": 44086368066,
+    "package_id": 14329299716,
+    "package_bytes": 70951445,
+    "package_sha256": "14b20cc3b0e7bd891afca4070b730e5aea465c280e356cd21b1dad553630f35f",
+    "evidence_id": 14329813502,
+    "evidence_sha256": "d436ccdf5c93499495c8cff1333c77c458c0faa4ff49a7a41e3393b83ede3988",
+    "expires": "2026-12-17",
+    "simulator_zip_bytes": 68696849,
+    "simulator_zip_sha256": "016795f090ba15d34d986abf50e9b87c7b266f6921036e76fc0cded0f4689b8b",
+    "source_zip_bytes": 3008371,
+    "source_zip_sha256": "0440e134c3ad360d5fa246f08f59d76eb12522d9aa02a9ca53325edfd38a41ac",
+    "checked": [
+      "GitHub digest",
+      "outer and nested ZIP CRC",
+      "Info.plist identity/version/minimum/platform",
+      "source contains iOS target",
+      "no provisioning/private signing keys/user SQLite files",
+      "Xcode-managed Simulator identity"
+    ]
+  },
+  "pending": [
+    "Mac+iPhone/Personal Team signing/install",
+    "latest physical iPhone/iOS exact version",
+    "notification grant/deny/re-enable, locked/background/terminated/Focus/reboot",
+    "native Files picker UI/VoiceOver/upgrade/no-data-loss",
+    "iPhone RAM/CPU/heat/long animation/large backup",
+    "production Firebase project/config/rules deployment and real cross-device acceptance"
+  ],
+  "automation": "off",
+  "main_merged": false,
+  "official_release": false,
+  "live2d_enabled": false
+}

@@ -1,3 +1,13 @@
+# iOS software verification — 17/11/2026
+
+**Phases0–6 software gates PASS; phase7 needs signed install and real iPhone tests (Windows signing alternative available).** [Draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2), branch `feature/ios-support`; PR1/main unmerged, no official release, periodic automation OFF. Runtime source `4b9963a3371f8eb30448cc39cccee98d2a5b2425`. [iOS/macOS CI44086368066](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368066) passes259 tests,2 native Keychain tests, real Flutter/SQLite/files smoke and packaging. [Android/Windows44086368080](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368080) and [Emulator44087260988](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44087260988) pass; Emulator CI-only auth9904e53 preserves identical runtime. [iOS status](ios/STATUS.md), [QA report](qa/IOS_PORT_20261117.json), [device acceptance](ios/07_DEVICE_ACCEPTANCE.md).
+
+[Simulator + source download](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368066/artifacts/14329299716) is not an iPhone IPA. Tested latest available CI runtime26.5/iPhone Air; real latest iPhone model/OS, notification banners/Focus/terminated/reboot, upgrades and iPhone RAM/CPU remain unverified. User has iPhone and no Mac. Firebase default offline; production project/config still missing. Live2D OFF. Do not mark phase7 or official release complete.
+
+Resume with new requirements or real iPhone installation access: inspect git status/current branch/latest CI and preserve changes. Do not redo resolved CI issues: Xcode manages simulated entitlements; FLN22 no-request initialize false is authorization, readiness is separately verified with native settings/pending APIs. No manual signing repair, fake Keychain/permission success or disabled native assertions. Final documentation commits do not change tested runtime. Do not merge/main/publish or restart automation automatically.
+
+---
+
 # Tiến độ 0.8.0+10 — 14/11/2026
 
 Nguồn `d3749182de8afdcde62610f848ef0681eff91516` đã qua [Native CI](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895) và Firebase Emulator43435282802. Android247 tests/27 receiver, Windows245+2skip/component100, SDK native profile, restore/no replay, scoped credentials và installer retention đạt. [BUILD_STATUS](BUILD_STATUS.md) chứa gói đã kiểm và hash; [native](qa/HARDENING_080_NATIVE.json), [RAM/CPU](qa/HARDENING_080_RESOURCES.json).

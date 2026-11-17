@@ -1,5 +1,7 @@
 > **Preview0.8.0 đã qua cổng tự động**, nguồnD374/[CI](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895). [Windows0.8.0](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895/artifacts/14044235287) · [Android0.8.0](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/43435282895/artifacts/14044365559). Mặc định dùng dữ liệu cục bộ; Firebase production cần cấu hình project thật. [BUILD_STATUS](docs/BUILD_STATUS.md) ghi hash, RAM/CPU và giới hạn. Chưa ký/nghiệm thu phát hành chính thức.
 
+**iOS đã qua kiểm thử phần mềm0–6:** xem [trạng thái theo giai đoạn](docs/ios/STATUS.md), [macOS CI](docs/ios/06_CI_AND_DEVICE_TESTS.md) và [ký/cài iPhone cá nhân](docs/ios/07_DEVICE_ACCEPTANCE.md). iOS15+ theo Flutter pin; mục tiêu iOS mới nhất cần kiểm trên thiết bị thật. Simulator ZIP không cài được lên iPhone. Giai đoạn7 cần Mac chạy Xcode và iPhone thật.
+
 # DayMind SMART — Android & Windows
 
 Ứng dụng Flutter native cho **điện thoại Android ARM64** và **Windows 10 (1809 trở lên)/11 x64**. Có quản lý công việc cục bộ, nhắc việc, lịch/lặp lại, trợ lý/thống kê, tài khoản/đồng bộ Firebase Emulator và Companion tùy chỉnh. **Preview 0.8.0 đã qua cổng phần mềm tự động 0–9**; giai đoạn 8 dùng nhánh không Live2D. Dùng được không tài khoản. Nghiệm thu thiết bị thật và ký phát hành còn mở; [tiến độ từng giai đoạn](docs/PHASE_STATUS.md) ghi rõ giới hạn.
@@ -29,6 +31,9 @@ Chạy trong thư mục này:
 
 ```sh
 flutter pub get --enforce-lockfile
+cd emulator_test
+flutter pub get --enforce-lockfile
+cd ..
 python tool/precache_sqlite.py  # Khi đường download GitHub release bị HTTP504
 flutter analyze
 flutter test

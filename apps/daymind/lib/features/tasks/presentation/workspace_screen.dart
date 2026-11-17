@@ -710,7 +710,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             },
           ),
           const SizedBox(height: 20),
-          if (controller.preferences.companionEnabled) ...[
+          if (controller.preferences.companionEnabled &&
+              MediaQuery.viewInsetsOf(context).bottom == 0) ...[
             CompanionCard(
               controller: controller,
               dialogueKey: dialogueKey,
@@ -974,7 +975,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CompanionCard(controller: controller, dialogueKey: dialogueKey),
+              if (MediaQuery.viewInsetsOf(context).bottom == 0)
+                CompanionCard(controller: controller, dialogueKey: dialogueKey),
               const SizedBox(height: 20),
               CompanionSettingsSection(controller: controller),
               const SizedBox(height: 20),

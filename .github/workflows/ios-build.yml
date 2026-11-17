@@ -1,0 +1,117 @@
+name: iOS simulator verification
+on:
+  push:
+    branches: [feature/ios-support]
+    paths:
+      - apps/daymind/lib/**
+      - apps/daymind/ios/**
+      - apps/daymind/assets/**
+      - apps/daymind/test/**
+      - apps/daymind/integration_test/**
+      - apps/daymind/tool/**
+      - apps/daymind/pubspec.*
+      - apps/daymind/analysis_options.yaml
+      - .github/workflows/ios-build.yml
+      - .github/scripts/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  simulator:
+    runs-on: macos-latest
+    timeout-minutes: 55
+    defaults:
+      run:
+        working-directory: apps/daymind
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Flutter
+        run: |
+          git init "$RUNNER_TEMP/daymind-flutter"
+          git -C "$RUNNER_TEMP/daymind-flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$RUNNER_TEMP/daymind-flutter" fetch --depth 1 origin refs/tags/3.47.9:refs/tags/3.47.9
+          git -C "$RUNNER_TEMP/daymind-flutter" checkout -B stable 3.47.9
+          test "$(git -C "$RUNNER_TEMP/daymind-flutter" rev-parse HEAD)" = c197ca5199e9ee5661e865596c9c07294dfab51c
+          echo "$RUNNER_TEMP/daymind-flutter/bin" >> "$GITHUB_PATH"
+      - name: Record Apple toolchain and select newest available iPhone simulator
+        run: |
+          mkdir -p build/ios-evidence
+          xcodebuild -version | tee build/ios-evidence/xcode.txt
+          xcodebuild -showsdks | tee build/ios-evidence/sdks.txt
+          xcrun simctl list devices available -j > build/ios-evidence/simulators.json
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          data = json.load(open('build/ios-evidence/simulators.json'))
+          phones = [(tuple(map(int, re.findall(r'\d+', runtime))), runtime, d)
+                    for runtime, devices in data['devices'].items() if '.iOS-' in runtime
+                    for d in devices if d.get('isAvailable') and 'iPhone' in d['name']]
+          if not phones: raise SystemExit('No available iOS iPhone runtime on this runner')
+          _, runtime, device = max(phones, key=lambda x: (x[0], x[2]['name']))
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write('DAYMIND_IOS_SIM_ID=' + device['udid'] + '\n')
+              f.write('DAYMIND_IOS_SIM_NAME=' + device['name'] + '\n')
+          print('Selected:', runtime, device['name'])
+          if device['state'] == 'Shutdown': subprocess.run(['xcrun','simctl','boot',device['udid']],check=True)
+          subprocess.run(['xcrun','simctl','bootstatus',device['udid'],'-b'],check=True)
+          PY
+      - name: Dependencies and static checks
+        run: |
+          set -o pipefail
+          python3 -m unittest discover -s ../../.github/scripts -p "test_*.py"
+          flutter --version | tee build/ios-evidence/flutter.txt
+          flutter pub get --enforce-lockfile
+          (cd emulator_test && flutter pub get --enforce-lockfile)
+          flutter analyze --no-pub | tee build/ios-evidence/analyze.txt
+      - name: Shared unit and widget regressions
+        run: |
+          set -o pipefail
+          flutter test --no-pub --reporter expanded | tee build/ios-evidence/unit-tests.txt
+      - name: Compile simulator application without signing
+        run: |
+          set -o pipefail
+          flutter build ios --simulator --debug --no-codesign --no-publish-port | tee build/ios-evidence/build.txt
+      - name: Native Keychain XCTest
+        timeout-minutes: 18
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,id=$DAYMIND_IOS_SIM_ID" -derivedDataPath build/ios-native-qa -resultBundlePath build/ios-evidence/keychain.xcresult -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM="" test | tee build/ios-evidence/keychain.txt
+          python3 ../../.github/scripts/verify_ios_simulator.py build/ios-native-qa/Build/Products/Debug-iphonesimulator/Runner.app --evidence build/ios-evidence/identity-keychain.json
+      - name: Run actual Flutter app and native SQLite/files/secure channel
+        timeout-minutes: 15
+        run: |
+          set -o pipefail
+          flutter test --no-pub integration_test/ios_smoke_test.dart -d "$DAYMIND_IOS_SIM_ID" --reporter expanded | tee build/ios-evidence/native-smoke.txt
+      - name: Rebuild normal app after integration entrypoint and export simulator package
+        run: |
+          set -o pipefail
+          flutter build ios --simulator --debug --no-publish-port --target lib/main.dart | tee build/ios-evidence/final-build.txt
+          python3 ../../.github/scripts/verify_ios_simulator.py build/ios/iphonesimulator/Runner.app --evidence build/ios-evidence/identity-final.json
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphonesimulator/Runner.app build/DayMind-iOS-Simulator.zip
+          git -C ../.. archive --format=zip -o apps/daymind/build/DayMind-iOS-source.zip HEAD
+          shasum -a 256 build/DayMind-iOS-Simulator.zip build/DayMind-iOS-source.zip > build/ios-evidence/SHA256SUMS.txt
+      - name: Upload simulator app and source (not an iPhone IPA)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayMind-iOS-simulator-${{ github.sha }}
+          path: |
+            apps/daymind/build/DayMind-iOS-Simulator.zip
+            apps/daymind/build/DayMind-iOS-source.zip
+          retention-days: 30
+      - name: Extract native failure details
+        if: failure()
+        run: |
+          if [ -d build/ios-evidence/keychain.xcresult ]; then
+            xcrun xcresulttool get test-results tests --path build/ios-evidence/keychain.xcresult --format json > build/ios-evidence/test-results.json || true
+          fi
+          xcrun simctl spawn "$DAYMIND_IOS_SIM_ID" log show --last 5m --style compact --predicate 'process == "securityd" OR process == "amfid" OR process == "taskgated-helper"' > build/ios-evidence/simulator-security.log 2>&1 || true
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayMind-iOS-evidence-${{ github.sha }}
+          path: apps/daymind/build/ios-evidence
+          retention-days: 30

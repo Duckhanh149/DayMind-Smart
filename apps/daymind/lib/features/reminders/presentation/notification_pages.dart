@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/controller.dart';
@@ -221,7 +223,9 @@ class NotificationSettingsSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              reminders.engine.scheduler.supportsClosedApp
+              Platform.isIOS
+                  ? 'iOS giữ tối đa 60 mốc gần nhất đã đặt; mở app để nạp thêm lịch xa hơn. Đóng app không tự hủy lịch đã giao cho iOS, nhưng Focus, quyền hoặc chính sách hệ thống có thể ẩn/trì hoãn. Không xác nhận banner đã hiện. Trong app chỉ có lời nhắc nhẹ, mặc định im lặng; không dùng quyền Critical/Time Sensitive. Tóm tắt nền là ảnh chụp lịch tại lần mở gần nhất.'
+                  : reminders.engine.scheduler.supportsClosedApp
                   ? 'Android dùng lịch nhắc không chính xác tuyệt đối; hệ điều hành có thể trì hoãn. Không yêu cầu quyền báo thức chính xác hoặc bỏ qua tiết kiệm pin. Buộc dừng (Force stop) trong cài đặt Android sẽ chặn nhắc cho tới khi mở lại app.'
                   : '${window?.notificationLifetime ?? 'Windows chỉ tiếp tục nhắc khi DayMind còn chạy trong khay.'} Thoát hẳn, kết thúc tiến trình, đăng xuất hoặc khởi động lại: không có nhắc nền. DayMind không tự khởi động cùng Windows. Khi app đang ở trước màn hình, lời nhắc hiện trong app; hệ điều hành có thể không hiện banner khi Không làm phiền.',
               style: Theme.of(context).textTheme.bodySmall,
