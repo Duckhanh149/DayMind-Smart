@@ -1,6 +1,10 @@
-# iOS work in progress — 17/11/2026
+# iOS software verification — 17/11/2026
 
-Current task: implement iOS phases0–7 on `feature/ios-support`, [draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2) targeting `native/flutter-app`. Phases0–5 local gates passed; macOS CI/native checks are phase6 and real iPhone/signing phase7 remains pending. See [iOS status](ios/STATUS.md) and [device acceptance](ios/07_DEVICE_ACCEPTANCE.md) before changes. Preserve workspace and inspect CI; no parallel coding turn, no merge/main/release, no secrets. Automation remains OFF. Existing0.8.0 Android/Windows download evidence below remains valid for its original source commit, not a signed iOS release.
+**Phases0–6 software gates PASS; phase7 needs Mac+iPhone/local signing.** [Draft PR2](https://github.com/Duckhanh149/DayMind-Smart/pull/2), branch `feature/ios-support`; PR1/main unmerged, no official release, periodic automation OFF. Runtime source `4b9963a3371f8eb30448cc39cccee98d2a5b2425`. [iOS/macOS CI44086368066](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368066) passes259 tests,2 native Keychain tests, real Flutter/SQLite/files smoke and packaging. [Android/Windows44086368080](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368080) and [Emulator44087260988](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44087260988) pass; Emulator CI-only auth9904e53 preserves identical runtime. [iOS status](ios/STATUS.md), [QA report](qa/IOS_PORT_20261117.json), [device acceptance](ios/07_DEVICE_ACCEPTANCE.md).
+
+[Simulator + source download](https://github.com/Duckhanh149/DayMind-Smart/actions/runs/44086368066/artifacts/14329299716) is not an iPhone IPA. Tested latest available CI runtime26.5/iPhone Air; real latest iPhone model/OS, notification banners/Focus/terminated/reboot, upgrades and iPhone RAM/CPU remain unverified. User has iPhone and no Mac. Firebase default offline; production project/config still missing. Live2D OFF. Do not mark phase7 or official release complete.
+
+Resume with new requirements or Mac+iPhone access: inspect git status/current branch/latest CI and preserve changes. Do not redo resolved CI issues: Xcode manages simulated entitlements; FLN22 no-request initialize false is authorization, readiness is separately verified with native settings/pending APIs. No manual signing repair, fake Keychain/permission success or disabled native assertions. Final documentation commits do not change tested runtime. Do not merge/main/publish or restart automation automatically.
 
 ---
 

@@ -11,7 +11,7 @@ Nguồn thực tế `0f03082638b644a078095986951ceb3bfdacd2af`, app0.8.0+10; nat
 | P1 | app/workspace_host.dart | Nhãn thiết bị non-Windows thành Android | Nhãn iPhone; resolver event dùng DB hiện tại; scope session/backup và quiesce đổi tài khoản giữ nguyên |
 | P1 | notifications settings UI | supportsClosedApp suy thành Android/Windows | Mô tả iOS riêng: quyền, Focus, cửa sổ60, mở lại để bổ sung; không critical/time-sensitive/background entitlement |
 | P1 | Firebase REST/fromBuild | Production đã tách và default offline | Giữ nguyên HTTPS/rules/token validation; iOS production/config/live còn cần project thật |
-| P1 | ios/ | Chưa có target | Flutter pinned template, BundleID hợp lệ, target13+ theo plugin/SDK; signing để trống |
+| P1 | ios/ | Chưa có target | Flutter pinned template, BundleID hợp lệ, minimum theo Flutter template (phase1 xác lập15.0); signing thiết bị để trống |
 | P1 | UI/Companion/import/backup | Cần kiểm notch/keyboard/sandbox/documents picker/codec trên Apple | Widget regression; macOS simulator native kiểm Keychain/SQLite/files và handoff; iPhone thật vẫn pending |
 | P2 | Live2D/floating | Chỉ Windows có cửa sổ nổi | Không overlay iOS, Live2D OFF; giữ raster và accessibility |
 
